@@ -58,11 +58,31 @@ function App() {
             isHovered={hoveredModel === 'f1'}
             onPointerEnter={() => setHoveredModel('f1')}
             onPointerLeave={() => setHoveredModel(null)}
-            />
-          <Model model="f2"/>
-          <Model model="f3"/>
-          <Model model="f4"/>
-          <Model model="top"/>
+            />  
+          <Model 
+            model="f2" 
+            isHovered={hoveredModel === 'f2'}
+            onPointerEnter={() => setHoveredModel('f2')}
+            onPointerLeave={() => setHoveredModel(null)}
+          />
+          <Model 
+            model="f3" 
+            isHovered={hoveredModel === 'f3'}
+            onPointerEnter={() => setHoveredModel('f3')}
+            onPointerLeave={() => setHoveredModel(null)}
+          />
+          <Model 
+            model="f4" 
+            isHovered={hoveredModel === 'f4'}
+            onPointerEnter={() => setHoveredModel('f4')}
+            onPointerLeave={() => setHoveredModel(null)}
+          />
+          <Model 
+            model="top" 
+            isHovered={hoveredModel === 'top'}
+            onPointerEnter={() => setHoveredModel('top')}
+            onPointerLeave={() => setHoveredModel(null)}
+          />
         </Suspense>
        
 
