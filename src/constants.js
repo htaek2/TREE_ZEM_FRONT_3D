@@ -32,9 +32,9 @@ export const FLOOR_COLORS = [
  */
 export const CAMERA_CONFIG = {
   // 기본 카메라 위치 (전체 뷰)
-  DEFAULT_POSITION: [20, 10, 0],
+  DEFAULT_POSITION: [8, 20, -2],
   // 기본 카메라 타겟 (바라보는 지점) - FLOOR_HEIGHT(2) * 2 = 4
-  DEFAULT_TARGET: [1, 2, 1],
+  DEFAULT_TARGET: [1, 4, 1],
   // 시야각 (Field of View)
   FOV: 50,
   // 층 선택 시 카메라 높이 오프셋

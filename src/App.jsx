@@ -1,70 +1,113 @@
-import { act, Suspense, useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import './App.css'
-import { Canvas } from '@react-three/fiber'
+import { Canvas, useThree, useFrame } from '@react-three/fiber'
 import Model from './Model'
 import { OrbitControls } from '@react-three/drei'
-import { Camera } from 'three'
 import styled from 'styled-components'
-import { CAMERA_CONFIG} from './constants'
+import { CAMERA_CONFIG } from './constants'
+
 import CameraController from './components/CameraController'
-// import CameraController from './CameraController'
 
-
-const Container = styled.div `
-  width: 100vw;
-  height: 100vh;
+const Container = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
   background: #BFBFC6;
-  `
+  touch-action: none;
+`
+
+// 🎯 반응형 카메라 설정 함수
+const getResponsiveCameraSettings = () => {
+  const width = window.innerWidth;
+  
+  // 모바일 (768px 미만)
+  if (width < 768) {
+    return {
+      defaultPosition: [-50, 30, 20],
+      activePosition: [15, 8, 0],
+      fov: 50,
+      minDistance: 30,
+      maxDistance: 60,
+      target: [13, 8, -8]
+    };
+  } 
+  // 태블릿 (768px ~ 1024px)
+  else if (width <= 1024) {
+    return {
+      defaultPosition: [-60, 32, 22],
+      activePosition: [18, 9, 0],
+      fov: 40,
+      minDistance: 35,
+      maxDistance: 55,
+      target: [13, 9, -8]
+    };
+  }
+  // 데스크톱 (1024px 이상)
+  else {
+    return {
+      defaultPosition: [-65, 35, 25],
+      activePosition: CAMERA_CONFIG.DEFAULT_POSITION,
+      fov: 35,
+      minDistance: 40,
+      maxDistance: 50,
+      target: [13, 10, -8]
+    };
+  }
+};
+
 
 
 function App() {
-  const [count, setCount] = useState(0)
   const [hoveredModel, setHoveredModel] = useState(null);
   const [active, setActive] = useState({active: false, model: null});
+  const [cameraSettings, setCameraSettings] = useState(getResponsiveCameraSettings());
  
+  // 🔄 화면 크기 변경 감지
+  useEffect(() => {
+    const handleResize = () => {
+      const newSettings = getResponsiveCameraSettings();
+      setCameraSettings(newSettings);
+      console.log('화면 크기 변경:', window.innerWidth, 'x', window.innerHeight);
+      console.log('새 카메라 설정:', newSettings);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    console.log('초기 화면 크기:', window.innerWidth, 'x', window.innerHeight);
+    
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const handleModelClick = (modelName) => {
     console.log("찍힘", modelName);
     setActive({active: !active.active, model: modelName});
   }
 
-  
   useEffect(() => {
     console.log("active 변경:", active);
-    
   }, [active])
 
   return (
    <Container>
-    {/* 3D 캔버스 생성 Canvas는 
-    1. THREE.Scene() == 3D공간 생성 
-    2. THREE.PerspectiveCamera == 카메라 생성 
-    3. THREE.webGLRenderer == 렌더러 생성
-
-    위 3가지를 자동으로 생성해줌
-    그리고 애니메이션 루프도 자동 실행해줌
-    function animate() {
-        requestAnimationFrame(animate);
-        renderer.render(scene, camera);
-  }
-    클릭 감지 , 마우스가 어느 3D 오브젝트 위에 있는지 감지 등등 화면업데이트도 자동으로 해줌
-    */}
     <Canvas
         camera={{
-    position: active.active ? CAMERA_CONFIG.DEFAULT_POSITION : [-65, 35, 25],  // 각도 변경
-          fov: 35,
+          position: cameraSettings.defaultPosition,
+          fov: cameraSettings.fov,
           near: 0.1,
           far: 1000
         }}
       >
+        {/* 🎥 카메라 컨트롤러 추가 */}
+        <CameraController active={active} cameraSettings={cameraSettings} />
+        
         {/* 조명 */}
-        {/* 1. ambientLight - 전체를 은은하게 밝힘 */}
         <ambientLight intensity={1} />
-        {/* 2. directionalLight - 태양빛과 유사한 조명 position : 빛의 방향 위,오른쪽,앞*/}
         <directionalLight 
           position={[10, 10, 20]} 
           intensity={1} 
         />
-        {/* 3. pointLight - 전구처럼 한 점에서 사방으로 빛 distance : 빛이 닿는 거리 (1 = 매우 가까움) */}
         <pointLight 
           position={[10, 10, 20]} 
           intensity={5} 
@@ -122,7 +165,6 @@ function App() {
             <>
               <Model 
                 model="f1"
-              
                 isHovered={hoveredModel === 'f1'}
                 onPointerEnter={() => setHoveredModel('f1')}
                 onPointerLeave={() => setHoveredModel(null)}
@@ -159,25 +201,17 @@ function App() {
             </>
           )}
         </Suspense>
-       
 
-        {/* 컨트롤 */}
-        {/* OrbitControls : 마우스 드래그로 카메라 이동 가능
-          enableDamping : 부드럽게 이동
-          dampingFactor : 부드러운 정도 (1.0 = 매우 부드럽게)
-        */}
-
-        {/* <CameraController /> */}
+        {/* 컨트롤 - 반응형 설정 적용 */}
         <OrbitControls 
-        target={[13, 10, -8]}  // 건물 중심을 바라보도록
-    enableRotate={false}
-    enableZoom={true}
-    enablePan={false}
-    enableDamping={true}
-    dampingFactor={0.05} 
-    minDistance={40}  // 최소 거리도 조정
-    maxDistance={50}  // 최대 거리도 조정
-          
+          target={cameraSettings.target}
+          enableRotate={false}
+          enableZoom={true}
+          enablePan={false}
+          enableDamping={true}
+          dampingFactor={0.05} 
+          minDistance={cameraSettings.minDistance}
+          maxDistance={cameraSettings.maxDistance}
         />
       </Canvas>
     </Container>
@@ -185,5 +219,3 @@ function App() {
 }
 
 export default App
-
-
