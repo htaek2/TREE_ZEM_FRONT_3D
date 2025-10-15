@@ -24,7 +24,7 @@ function Model({ model, onClick, isSelected, onDeviceClick, selectedDevice }) {
       return;
     }
 
-    console.log(`\n🏗️ ===== ${model} 층 모델 분석 시작 =====`);
+    // console.log(`\n🏗️ ===== ${model} 층 모델 분석 시작 =====`);
 
     const deviceMeshMapping = {
       f1: {
@@ -54,7 +54,7 @@ function Model({ model, onClick, isSelected, onDeviceClick, selectedDevice }) {
     };
 
     const meshMapping = deviceMeshMapping[model] || {};
-    console.log(`📋 ${model} 층에서 찾을 기기 목록:`, Object.keys(meshMapping));
+    // console.log(`📋 ${model} 층에서 찾을 기기 목록:`, Object.keys(meshMapping));
 
     const positions = [];
     let meshCount = 0;
@@ -87,29 +87,29 @@ function Model({ model, onClick, isSelected, onDeviceClick, selectedDevice }) {
             position: [worldPos.x, worldPos.y + 1.5, worldPos.z],
           });
 
-          console.log(`✅ IOT 기기 등록 성공:`, {
-            메시이름: child.name,
-            기기이름: deviceInfo.name,
-            타입: deviceInfo.type,
-            위치: worldPos,
-          });
+          // console.log(`✅ IOT 기기 등록 성공:`, {
+          //   메시이름: child.name,
+          //   기기이름: deviceInfo.name,
+          //   타입: deviceInfo.type,
+          //   위치: worldPos,
+          // });
         }
       }
     });
 
-    console.log(`\n📊 ${model} 층 분석 결과:`);
-    console.log(`  - 전체 메시 개수: ${meshCount}`);
-    console.log(`  - 등록된 기기 개수: ${deviceCount}`);
-    console.log(`  - 모든 메시 이름 목록:`, allMeshNames);
+    // console.log(`\n📊 ${model} 층 분석 결과:`);
+    // console.log(`  - 전체 메시 개수: ${meshCount}`);
+    // console.log(`  - 등록된 기기 개수: ${deviceCount}`);
+    // console.log(`  - 모든 메시 이름 목록:`, allMeshNames);
 
-    if (deviceCount === 0) {
-      console.warn(`⚠️ ${model} 층에서 IOT 기기를 찾지 못했습니다!`);
-      console.log(`💡 찾으려는 메시:`, Object.keys(meshMapping));
-    }
+    // if (deviceCount === 0) {
+    //   console.warn(`⚠️ ${model} 층에서 IOT 기기를 찾지 못했습니다!`);
+    //   // console.log(`💡 찾으려는 메시:`, Object.keys(meshMapping));
+    // }
 
     setDevicePositions(positions);
-    console.log(`✅ ${model} 층 기기 위치 설정 완료:`, positions);
-    console.log(`===== ${model} 층 모델 분석 종료 =====\n`);
+    // console.log(`✅ ${model} 층 기기 위치 설정 완료:`, positions);
+    // console.log(`===== ${model} 층 모델 분석 종료 =====\n`);
   }, [scene, model]);
 
   // 부드러운 애니메이션

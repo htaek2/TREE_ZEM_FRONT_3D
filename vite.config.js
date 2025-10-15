@@ -7,5 +7,14 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 3000,
+    proxy: {
+      '/api': {
+        target: 'http://192.168.0.62:7770',
+        changeOrigin: true,
+        secure: false,
+        ws: true, // WebSocket 및 SSE 지원
+        timeout: 0, // SSE는 긴 연결이므로 타임아웃 비활성화
+      }
+    }
   }
 })

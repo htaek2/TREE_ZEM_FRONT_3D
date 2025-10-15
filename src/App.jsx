@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, use, useEffect, useState } from "react";
 import "./App.css";
 import { Canvas, useThree, useFrame } from "@react-three/fiber";
 import Model from "./Model";
@@ -212,39 +212,15 @@ const getResponsiveCameraSettings = (isAuthenticated) => {
       defaultPosition: [-60, 32, 22],
       activePosition: [-15, 80, 30],
       defaultFov: 40,
-      activeFov: 60,
-      minDistance: 35,
-      maxDistance: 55,
-      target: [13, 5, 4],
-    };
-  } 
-  // 모바일 (768px 미만) - 로그인된 사용자
-  else if (width < 768 && isAuthenticated) {
-     return {
-      defaultPosition: [-50, 30, 20],
-      activePosition: [15, 8, 0],
-      defaultFov: 50,
-      activeFov: 60,
-      minDistance: 30,
-      maxDistance: 60,
-      target: [13, 8, -8],
-    };
-  }
-
-  // 로그인된 사용자 - 모두 태블릿 설정 사용
-  else if (width >= 768 && isAuthenticated) {
-     return {
-      defaultPosition: [-60, 32, 22],
-      activePosition: [-15, 80, 30],
-      defaultFov: 40,
-      activeFov: 60,
+      activeFov: 30,
       minDistance: 35,
       maxDistance: 55,
       target: [13, 5, -8],
     };
+  } 
+  
   }
 
-};
 
 function App() {
   const [auth, setAuthState] = useState({ isAuthenticated: false, user: null });
@@ -255,12 +231,6 @@ function App() {
   const [cameraSettings, setCameraSettings] = useState(
     getResponsiveCameraSettings(auth.isAuthenticated)
   );
-
-  // 로그인 상태 변경 시 카메라 설정 업데이트
-  useEffect(() => {
-    console.log("🔄 로그인 상태 변경 - 카메라 설정 업데이트");
-    setCameraSettings(getResponsiveCameraSettings(auth.isAuthenticated));
-  }, [auth.isAuthenticated]);
 
   // 로그인된 사용자 정보 조회 함수
   const fetchUserInfo = async () => {
@@ -281,6 +251,31 @@ function App() {
     return null;
   };
 
+  const ElectFetch = () => {
+    console.log("api 요청!!!");
+    fetch('/api/energy/sse/all')
+  .then(response => {
+    // 응답이 성공적인지 확인합니다.
+    if (!response.ok) {
+      throw new Error('Network response was not ok ' + response.statusText);
+    }
+    return response.json(); // 응답 본문을 JSON으로 파싱합니다.
+  })
+  .then(data => {
+    console.log(data); // 파싱된 데이터를 출력합니다.
+  })
+  .catch(error => {
+    console.error('Fetch error:', error);
+  });
+  }
+
+
+
+  useEffect(() => {
+   
+     fetchUserInfo();
+  }, []);
+  
   const handleModelClick = (modelName) => {
     // top은 클릭해도 확대하지 않음
     if (modelName === "top") {
@@ -342,6 +337,7 @@ function App() {
 
   useEffect(() => {
     try { localStorage.setItem("floor-rail-open", railOpen ? "1" : "0"); } catch {}
+
   }, [railOpen]);
   
 
@@ -349,12 +345,14 @@ function App() {
 
 
   return (
+    <>
+      {!auth.isAuthenticated && <Login onLoginSuccess={fetchUserInfo} />}
+    
     <Container>
       <GlobalStyle />
 
       <HiddenToggle railOpen={railOpen} setRailOpen={setRailOpen} />
 
-      {!auth.isAuthenticated && <Login onLoginSuccess={fetchUserInfo} />}
 
       <Canvas
         camera={{
@@ -478,6 +476,8 @@ function App() {
       )}
       
     </Container>
+    </>
+
   );
 }
 

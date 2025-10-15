@@ -52,28 +52,57 @@ function Login({ onLoginSuccess }) {
     setIsFadeOut(true);
   };
 
+  const ElectFetch = () => {
+      console.log("SSE 연결 시작...");
+      // sse 연결 - 프록시를 통해 상대 경로 사용
+      const eventSource = new EventSource("/api/energy/sse/all");
+
+      // SSE 연결 성공
+      eventSource.onopen = function() {
+        console.log("✅ SSE 연결 성공");
+      };
+
+      // 데이터 수신 시
+      eventSource.onmessage = function(event) {
+        console.log("📩 SSE 데이터 수신:", event.data);
+        try {
+          const data = JSON.parse(event.data);
+          console.log("파싱된 데이터:", data);
+          // TODO: 여기서 데이터를 상태로 저장하거나 처리
+        } catch (error) {
+          console.log("텍스트 데이터:", event.data);
+        }
+      };
+
+      // 오류 발생 시
+      eventSource.onerror = function(err) {
+        console.error("❌ SSE 연결 오류:", err);
+        eventSource.close();
+      };
+    }
+
   const validateForm = () => {
     // username 검증
-    if (!username || username.trim().length === 0) {
-      setErrorMessage("사용자명을 입력해주세요.");
-      return false;
-    }
+    // if (!username || username.trim().length === 0) {
+    //   setErrorMessage("사용자명을 입력해주세요.");
+    //   return false;
+    // }
 
-    if (username.trim().length < 3) {
-      setErrorMessage("사용자명은 최소 3자 이상이어야 합니다.");
-      return false;
-    }
+    // if (username.trim().length < 3) {
+    //   setErrorMessage("사용자명은 최소 3자 이상이어야 합니다.");
+    //   return false;
+    // }
 
-    // password 검증
-    if (!password || password.length === 0) {
-      setErrorMessage("비밀번호를 입력해주세요.");
-      return false;
-    }
+    // // password 검증
+    // if (!password || password.length === 0) {
+    //   setErrorMessage("비밀번호를 입력해주세요.");
+    //   return false;
+    // }
 
-    if (password.length < 6) {
-      setErrorMessage("비밀번호는 최소 6자 이상이어야 합니다.");
-      return false;
-    }
+    // if (password.length < 6) {
+    //   setErrorMessage("비밀번호는 최소 6자 이상이어야 합니다.");
+    //   return false;
+    // }
 
     return true;
   };
@@ -92,66 +121,114 @@ function Login({ onLoginSuccess }) {
     setLoginText("로그인 중 입니다...");
 
     try {
-      const response = await fetch("/dummy_login/users.json");
 
-      if (!response.ok) {
-        throw new Error("사용자 데이터를 불러올 수 없습니다.");
-      }
+      // const response = await fetch("/dummy_login/users.json");
 
-      const data = await response.json();
+      // if (!response.ok) {
+      //   throw new Error("사용자 데이터를 불러올 수 없습니다.");
+      // }
 
-      console.log("사용자 데이터 로드 완료 :", data);
+      // const data = await response.json();
 
-      const user = data.users.find(
-        (u) => u.username === username && u.password === password
-      );
+      // console.log("사용자 데이터 로드 완료 :", data);
 
-      if (!user) {
-        console.error("❌ 로그인 실패: 사용자 없음 또는 비밀번호 불일치");
-        throw new Error("아이디 또는 비밀번호가 올바르지 않습니다.");
-      }
+      // const user = data.users.find(
+      //   (u) => u.username === username && u.password === password
+      // );
 
-      // Mock JWT 토큰 생성
-      const timestamp = new Date().getTime();
-      const accessToken = `mock-jwt-token-${username}-${timestamp}`;
+      // if (!user) {
+      //   console.error("❌ 로그인 실패: 사용자 없음 또는 비밀번호 불일치");
+      //   throw new Error("아이디 또는 비밀번호가 올바르지 않습니다.");
+      // }
 
-      const userWithToken = {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        accessToken: accessToken,
+      // // Mock JWT 토큰 생성
+      // const timestamp = new Date().getTime();
+      // const accessToken = `mock-jwt-token-${username}-${timestamp}`;
+
+      // const userWithToken = {
+      //   id: user.id,
+      //   username: user.username,
+      //   email: user.email,
+      //   accessToken: accessToken,
+      // };
+
+      // // localStorage에 사용자 정보 저장
+      // localStorage.setItem("user", JSON.stringify(userWithToken));
+      // console.log(
+      //   "[AUTH] 로그인 성공:",
+      //   userWithToken.username,
+      //   "| Roles:",
+      //   userWithToken.roles
+      // );
+      
+      // document.getElementById('loginForm').addEventListener('submit', function(event) {
+ 
+
+      const email = username;
+      const userPassword = password;
+
+      const credentials = {
+        email: email,
+        password: userPassword
       };
 
-      // localStorage에 사용자 정보 저장
-      localStorage.setItem("user", JSON.stringify(userWithToken));
-      console.log(
-        "[AUTH] 로그인 성공:",
-        userWithToken.username,
-        "| Roles:",
-        userWithToken.roles
-      );
+      fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(credentials)
+      })
+      .then(response => {
+        if (response.ok) {
+          const token = response.headers.get('Authorization');
+          if (token) {
+            localStorage.setItem('authToken', token);
 
-      setTimeout(() => {
-        setLoginText("로그인 성공!");
-      }, 3000);
+            // 사용자 정보 생성
+            const userWithToken = {
+              username: username,
+              email: email,
+              accessToken: token,
+            };
+            localStorage.setItem  ("user", JSON.stringify(userWithToken));
 
-      setTimeout(() => {
-        setLoading(false); // 로딩 종료 후 LoginForm 다시 표시
-        AnimationTriggerOn(); // 페이드 아웃 시작
-      }, 4000);
+            setTimeout(() => {
+              setLoginText("로그인 성공!");
+              ElectFetch();
+            }, 1000);
 
-      setTimeout(() => {
-        onLoginSuccess(userWithToken); // 페이드 아웃 완료 후 화면 전환
-      }, 10000);
+            setTimeout(() => {
+              setLoading(false);
+              AnimationTriggerOn();
+            }, 2000);
+
+            setTimeout(() => {
+              onLoginSuccess(userWithToken);
+            }, 3000);
+          } else {
+            alert('로그인에 성공했지만 토큰을 받지 못했습니다.');
+            setLoading(false);
+          }
+        } else {
+          alert('로그인 실패: 이메일 또는 비밀번호가 올바르지 않습니다.');
+          setLoading(false);
+        }
+      })
+      .catch(error => {
+        console.error('Error during login:', error);
+        alert('로그인 중 오류가 발생했습니다.');
+        setLoading(false);
+      });
     } catch (error) {
-      console.error("로그인 에러:", error.message);
-      setErrorMessage(error.message || "로그인에 실패했습니다.");
+      console.error('Error during login:', error);
+      alert('로그인 중 오류가 발생했습니다.');
       setLoading(false);
     }
-  };
+  }
 
   return (
-    <>
+    <Container>
       <Overlay $isFadeOut={isFadeOut} />
 
       {loading ? (
@@ -180,7 +257,7 @@ function Login({ onLoginSuccess }) {
           {errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
         </LoginForm>
       )}
-    </>
+    </Container>
   );
 }
 export default Login;
@@ -194,6 +271,7 @@ const Container = styled.div`
   overflow: hidden;
   background: #bfbfc6;
   touch-action: none;
+  z-index: ${(props) => (props.$isFadeOut === true ? 0 : 20)};
 `;
 
 const fadeOut = keyframes`
