@@ -5,17 +5,24 @@ import Model from "./Model";
 import { OrbitControls } from "@react-three/drei";
 import styled from "styled-components";
 import { CAMERA_CONFIG, MODEL_TO_FLOOR, MODELS } from "./constants";
+import GlobalStyle from "./GlobalStyle";
 
 import CameraController from "./components/CameraController";
 import DeviceInfoCard from "./components/DeviceInfoCard";
+import Login from "./components/Login";
+
+// 🍪
+import BrandClock from "./components/BrandClock";
+import Wing from "./components/Wing";
+import HiddenToggle from "./components/HiddenToggle"; 
 
 const Container = styled.div`
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+  // overflow: hidden;
   background: #bfbfc6;
   touch-action: none;
 `;
@@ -85,15 +92,30 @@ const HeaderText = styled.span`
 // 🏢 층 버튼 컨테이너
 const FloorButtons = styled.div`
   position: absolute;
-  left: 20px;
+  /* 열림이면 패널 옆, 닫힘이면 토글 옆 */
+  left: ${({ $open }) =>
+    $open
+      ? "calc(var(--edge-left) + var(--toggle-width) + var(--toggle-gap) + var(--wing-width) + var(--panel-gap))"
+      : "calc(var(--edge-left) + var(--toggle-width) + var(--toggle-gap))"};
+  z-index: 10;
   top: 50%;
+  width: var(--rail-width);
   transform: translateY(-50%);
+  transition: left 340ms cubic-bezier(0.22,0.61,0.36,1);
+
+  will-change: transform, opacity;
+  pointer-events: auto;
+
   display: flex;
   flex-direction: column;
   gap: 8px;
+  align-items: stretch;       /* 버튼을 열 폭에 맞춰 꽉 차게 */
 
   @media (max-width: 768px) {
-    left: 10px;
+    left: ${({ $open }) =>
+      $open
+        ? "calc(var(--edge-left) + var(--toggle-width) + var(--toggle-gap) + var(--wing-width) + var(--panel-gap))"
+        : "calc(var(--edge-left) + var(--toggle-width) + var(--toggle-gap))"};
     gap: 6px;
   }
 `;
@@ -169,11 +191,11 @@ const ResetButton = styled.button`
 `;
 
 // 🎯 반응형 카메라 설정 함수
-const getResponsiveCameraSettings = () => {
+const getResponsiveCameraSettings = (isAuthenticated) => {
   const width = window.innerWidth;
-
+  console.log(isAuthenticated ? "로그인된 사용자" : "비로그인 사용자", "화면 너비:", width);
   // 모바일 (768px 미만)
-  if (width < 768) {
+  if (width < 768 && !isAuthenticated) {
     return {
       defaultPosition: [-50, 30, 20],
       activePosition: [15, 8, 0],
@@ -184,60 +206,80 @@ const getResponsiveCameraSettings = () => {
       target: [13, 8, -8],
     };
   }
-  // 태블릿 (768px ~ 1024px)
-  else if (width <= 1024) {
+  // 태블릿 및 PC (768px 이상) - 모두 태블릿 설정 사용
+  else if (width >= 768 && !isAuthenticated) {
     return {
       defaultPosition: [-60, 32, 22],
       activePosition: [-15, 80, 30],
-      defaultFov: 60,
+      defaultFov: 40,
       activeFov: 60,
       minDistance: 35,
       maxDistance: 55,
-      target: [13, 9, -8],
+      target: [13, 5, 4],
+    };
+  } 
+  // 모바일 (768px 미만) - 로그인된 사용자
+  else if (width < 768 && isAuthenticated) {
+     return {
+      defaultPosition: [-50, 30, 20],
+      activePosition: [15, 8, 0],
+      defaultFov: 50,
+      activeFov: 60,
+      minDistance: 30,
+      maxDistance: 60,
+      target: [13, 8, -8],
     };
   }
-  // 데스크톱 (1024px 이상)
-  else {
-    return {
-      defaultPosition: [-65, 35, 25],
-      activePosition: CAMERA_CONFIG.DEFAULT_POSITION,
-      defaultFov: CAMERA_CONFIG.DEFAULT_FOV,
-      activeFov: CAMERA_CONFIG.ACTIVE_FOV,
-      minDistance: 20,
-      maxDistance: 45,
+
+  // 로그인된 사용자 - 모두 태블릿 설정 사용
+  else if (width >= 768 && isAuthenticated) {
+     return {
+      defaultPosition: [-60, 32, 22],
+      activePosition: [-15, 80, 30],
+      defaultFov: 40,
+      activeFov: 60,
+      minDistance: 35,
+      maxDistance: 55,
       target: [13, 5, -8],
     };
   }
+
 };
 
 function App() {
+  const [auth, setAuthState] = useState({ isAuthenticated: false, user: null });
   const [active, setActive] = useState({ active: false, model: null });
   const modelsToShow = active.active ? [active.model] : MODELS;
   const [selectedDevice, setSelectedDevice] = useState(null);
 
   const [cameraSettings, setCameraSettings] = useState(
-    getResponsiveCameraSettings()
+    getResponsiveCameraSettings(auth.isAuthenticated)
   );
 
-  // 🔄 화면 크기 변경 감지
+  // 로그인 상태 변경 시 카메라 설정 업데이트
   useEffect(() => {
-    const handleResize = () => {
-      const newSettings = getResponsiveCameraSettings();
-      setCameraSettings(newSettings);
-      console.log(
-        "화면 크기 변경:",
-        window.innerWidth,
-        "x",
-        window.innerHeight
-      );
-      console.log("새 카메라 설정:", newSettings);
-    };
+    console.log("🔄 로그인 상태 변경 - 카메라 설정 업데이트");
+    setCameraSettings(getResponsiveCameraSettings(auth.isAuthenticated));
+  }, [auth.isAuthenticated]);
 
-    window.addEventListener("resize", handleResize);
-    console.log("초기 화면 크기:", window.innerWidth, "x", window.innerHeight);
+  // 로그인된 사용자 정보 조회 함수
+  const fetchUserInfo = async () => {
+    const user = localStorage.getItem("user");
+    if (user) {
+      try {
+        const userObj = JSON.parse(user);
+        console.log("로그인된 사용자 정보 조회", userObj);
+        setAuthState({ isAuthenticated: true, user: userObj });
+      } catch (error) {
+        console.error("사용자 정보 파싱 실패:", error);
+      }
+    } else {
+      console.log("[Auth] 로그인된 사용자가 없습니다.");
+      setAuthState({ isAuthenticated: false, user: null });
+    }
 
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+    return null;
+  };
 
   const handleModelClick = (modelName) => {
     // top은 클릭해도 확대하지 않음
@@ -288,16 +330,32 @@ function App() {
     setSelectedDevice(null);
   };
 
-  useEffect(() => {
-    console.log("active 변경:", active);
-  }, [active]);
+
+  // 좌측 층 버튼 패널 접힘/펼침 상태
+  const [railOpen, setRailOpen] = useState(() => {
+    try {
+      const s = localStorage.getItem("floor-rail-open");
+      if (s != null) return s === "1";
+    } catch {}
+    return window.innerWidth > 900; // 데스크탑=열림, 모바일=닫힘
+  });
 
   useEffect(() => {
-    console.log("selectedDevice 변경:", selectedDevice);
-  }, [selectedDevice]);
+    try { localStorage.setItem("floor-rail-open", railOpen ? "1" : "0"); } catch {}
+  }, [railOpen]);
+  
+
+
+
 
   return (
     <Container>
+      <GlobalStyle />
+
+      <HiddenToggle railOpen={railOpen} setRailOpen={setRailOpen} />
+
+      {!auth.isAuthenticated && <Login onLoginSuccess={fetchUserInfo} />}
+
       <Canvas
         camera={{
           position: cameraSettings.defaultPosition,
@@ -306,8 +364,12 @@ function App() {
           far: 1000,
         }}
       >
-        {/* 🎥 카메라 컨트롤러 추가 */}
-        <CameraController active={active} cameraSettings={cameraSettings} />
+        {auth.isAuthenticated && (
+          <>
+            {/* 🎥 카메라 컨트롤러 추가 */}
+            <CameraController active={active} cameraSettings={cameraSettings} />
+          </>
+        )}
 
         {/* 조명 */}
         <ambientLight intensity={1.5} />
@@ -320,61 +382,101 @@ function App() {
             <Model
               key={modelName}
               model={modelName}
-              onClick={() => handleModelClick(modelName)}
-              isSelected={active.active}
-              onDeviceClick={handleDeviceClick}
-              selectedDevice={selectedDevice}
+              onClick={
+                auth.isAuthenticated
+                  ? () => handleModelClick(modelName)
+                  : undefined
+              }
+              isSelected={auth.isAuthenticated ? active.active : undefined}
+              onDeviceClick={
+                auth.isAuthenticated ? handleDeviceClick : undefined
+              }
+              selectedDevice={auth.isAuthenticated ? selectedDevice : undefined}
+              ishover={auth.isAuthenticated ? true : false}
             />
           ))}
         </Suspense>
-
-        {/* 컨트롤 - 반응형 설정 적용 */}
-        <OrbitControls
-          target={cameraSettings.target}
-          enableRotate={false}
-          enableZoom={true}
-          enablePan={false}
-          enableDamping={true}
-          dampingFactor={0.05}
-          minDistance={cameraSettings.minDistance}
-          maxDistance={cameraSettings.maxDistance}
-        />
+        {auth.isAuthenticated ? (
+          <>
+            {/* 컨트롤 - 반응형 설정 적용 */}
+            <OrbitControls
+              target={cameraSettings.target}
+              enableRotate={true}
+              enableZoom={true}
+              enablePan={true}
+              enableDamping={true}
+              dampingFactor={0.05}
+              minDistance={cameraSettings.minDistance}
+              maxDistance={cameraSettings.maxDistance}
+            />
+          </>
+        ) : (
+          <>
+            <OrbitControls
+              target={cameraSettings.target}
+              enableZoom={false}
+              enableRotate={false}
+              enablePan={false}
+              enableDamping={false}
+              minDistance={cameraSettings.minDistance}
+              maxDistance={cameraSettings.maxDistance}
+            />
+          </>
+        )}
       </Canvas>
 
-      {/* 헤더 박스 */}
-      <HeaderBox>
-        <HeaderIcon src="public/Icon/header_title_logo.svg" alt="토리 빌딩" />
-        <HeaderText>
-          {active.active
-            ? `토리 빌딩 - ${MODEL_TO_FLOOR[active.model] + 1}층`
-            : "토리 빌딩"}
-        </HeaderText>
-      </HeaderBox>
 
-      {/* 층 버튼 */}
-      <FloorButtons>
-        <FloorButton onClick={() => setActive({ active: false, model: null })}>
-          <img src="public/Icon/Home_logo.svg" alt="전체보기" width={24} />
-        </FloorButton>
-        {MODELS.filter((model) => model !== "top").map((modelName) => (
-          <FloorButton
-            key={modelName}
-            onClick={() => handleModelButtonClick(modelName)}
-            className={active.model === modelName ? "active" : ""}
-          >
-            {MODEL_TO_FLOOR[modelName] + 1}F
-          </FloorButton>
-        ))}
-      </FloorButtons>
+      <BrandClock />
 
-      {/* 기기 정보 카드 */}
-      {selectedDevice && (
-        <DeviceInfoCard
-          device={selectedDevice}
-          onClose={handleCloseDeviceCard}
-          onControl={handleDeviceControl}
-        />
+      <Wing railOpen={railOpen} onC />
+
+
+
+
+      {auth.isAuthenticated && (
+        <>
+          {/* 헤더 박스 */}
+          <HeaderBox>
+            <HeaderIcon
+              src="public/Icon/header_title_logo.svg"
+              alt="토리 빌딩"
+            />
+            <HeaderText>
+              {active.active
+                ? `토리 빌딩 - ${MODEL_TO_FLOOR[active.model] + 1}층`
+                : "토리 빌딩"}
+            </HeaderText>
+          </HeaderBox>
+
+          {/* 층 버튼 */}
+          <FloorButtons>
+            <FloorButton $open={railOpen} className="floor-rail"
+              onClick={() => setActive({ active: false, model: null })}
+            >
+              <img src="public/Icon/Home_logo.svg" alt="전체보기" width={24} />
+            </FloorButton>
+            {MODELS.filter((model) => model !== "top").map((modelName) => (
+              <FloorButton
+                key={modelName}
+                onClick={() => handleModelButtonClick(modelName)}
+                className={active.model === modelName ? "active" : ""}
+              >
+                {MODEL_TO_FLOOR[modelName] + 1}F
+              </FloorButton>
+            ))}
+          </FloorButtons>
+
+          {/* 기기 정보 카드 */}
+          {selectedDevice && (
+            <DeviceInfoCard
+              device={selectedDevice}
+              onClose={handleCloseDeviceCard}
+              onControl={handleDeviceControl}
+            />
+          )}
+        </>
       )}
+      
     </Container>
   );
 }

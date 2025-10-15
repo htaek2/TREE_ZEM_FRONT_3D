@@ -25,7 +25,7 @@ function CameraController({ active, cameraSettings }) {
     let progress = 0;
 
     const animateCamera = () => {
-      progress += 0.05; // 속도 조절
+      progress += 0.04; // 속도 조절
 
       if (progress < 1) {
         camera.position.lerpVectors(startPosition, endPosition, progress);
