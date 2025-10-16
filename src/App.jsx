@@ -227,10 +227,79 @@ function App() {
   const [active, setActive] = useState({ active: false, model: null });
   const modelsToShow = active.active ? [active.model] : MODELS;
   const [selectedDevice, setSelectedDevice] = useState(null);
-
+  const [computers, setComputer] = useState([]);
   const [cameraSettings, setCameraSettings] = useState(
     getResponsiveCameraSettings(auth.isAuthenticated)
   );
+  const [gasUsage, setGasUsage] = useState({datas : [{timestamp: '', usage: 0}]});
+  const [floors, setFloors] = useState([
+    {waterUsage : 0, devices: []},{waterUsage : 0, devices: []},{waterUsage : 0, devices: []},{waterUsage : 0, devices: []}
+  ]);
+
+
+  const ElectFetch = () => {
+      console.log("SSE 연결 시작...");
+      // sse 연결 - 프록시를 통해 상대 경로 사용
+      const eventSource = new EventSource("/api/energy/sse/all");
+
+      // SSE 연결 성공
+      eventSource.onopen = function() {
+        console.log("✅ SSE 연결 성공");
+      };
+
+      // 데이터 수신 시
+      eventSource.onmessage = function(event) {
+        try {
+          const data = JSON.parse(event.data);
+          console.log("파싱된 데이터:", data.floors[0]);
+        
+          setGasUsage(data.gasUsage);
+          // TODO: 여기서 데이터를 상태로 저장하거나 처리
+        } catch (error) {
+          console.log("텍스트 데이터:", event.data);
+        }
+      };
+
+      // 오류 발생 시
+      eventSource.onerror = function(err) {
+        console.error("❌ SSE 연결 오류:", err);
+        eventSource.close();
+      };
+    }
+
+
+
+  const TestFetch = async () => {
+    try {
+      console.log('Fetch 시작');
+
+      let now = new Date();
+      let start = new Date(now.getTime() - 6 * 60 * 60 * 1000); // 00:00:00 이걸로 바꾸기
+      let end = now;
+
+      start = start.toISOString().slice(0, 19).replace('T', ' ');
+      end = end.toISOString().slice(0, 19).replace('T', ' ');
+      console.log('Fetch 시작 시간:', start, '끝 시간:', end);
+
+      const response = await fetch(`api/energy/elec?start=${start}&end=${end}&datetimeType=0`);
+      if (response.ok) {
+        const json = await response.json();
+        console.log('Fetch JSON 데이터:', json);
+        setFloors(json.floors);
+
+        // 가져온 값들 다 더하기
+
+        // 이후에 들어오는 실시간 값을 여기에 더해주기
+
+
+      } else {
+        console.error('Fetch 실패:', response.status, response.statusText);
+      }
+    } catch (error) {
+      console.error('Fetch error:', error);
+    }
+  };
+   
 
   // 로그인된 사용자 정보 조회 함수
   const fetchUserInfo = async () => {
@@ -251,31 +320,18 @@ function App() {
     return null;
   };
 
-  const ElectFetch = () => {
-    console.log("api 요청!!!");
-    fetch('/api/energy/sse/all')
-  .then(response => {
-    // 응답이 성공적인지 확인합니다.
-    if (!response.ok) {
-      throw new Error('Network response was not ok ' + response.statusText);
-    }
-    return response.json(); // 응답 본문을 JSON으로 파싱합니다.
-  })
-  .then(data => {
-    console.log(data); // 파싱된 데이터를 출력합니다.
-  })
-  .catch(error => {
-    console.error('Fetch error:', error);
-  });
-  }
-
-
+  useEffect(() => {
+     fetchUserInfo();
+      
+  }, []);
 
   useEffect(() => {
-   
-     fetchUserInfo();
-  }, []);
-  
+    if(auth.isAuthenticated) {
+      console.log("로그인 상태 변경: 로그인됨");
+      ElectFetch();
+    }
+  }, [auth.isAuthenticated]);
+
   const handleModelClick = (modelName) => {
     // top은 클릭해도 확대하지 않음
     if (modelName === "top") {
@@ -346,7 +402,7 @@ function App() {
 
   return (
     <>
-      {!auth.isAuthenticated && <Login onLoginSuccess={fetchUserInfo} />}
+      {!auth.isAuthenticated && <Login onLoginSuccess={fetchUserInfo} TestFetch={TestFetch} />}
     
     <Container>
       <GlobalStyle />
@@ -394,7 +450,7 @@ function App() {
             />
           ))}
         </Suspense>
-        {auth.isAuthenticated ? (
+        {auth.isAuthenticated ?  (
           <>
             {/* 컨트롤 - 반응형 설정 적용 */}
             <OrbitControls
@@ -426,7 +482,7 @@ function App() {
 
       <BrandClock />
 
-      <Wing railOpen={railOpen} onC />
+      <Wing railOpen={railOpen} onClose={() => setRailOpen(false)} gasUsage={gasUsage} />
 
 
 
