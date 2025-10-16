@@ -197,33 +197,24 @@ const PlanMain = styled.div`
   gap: 8px;
 
   > div {
-
-
-
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    width: calc(100% - 16px);
+    height: 10%;
+    border: 1px solid rgba(166, 166, 166, 0.2);
+    border-radius: 10px;
+    padding: 8px;
   }
+
 `;  
 
 const MachineDiv = styled.div`
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  width: calc(100% - 16px);
-  height: 10%;
-  border: 1px solid rgba(166, 166, 166, 0.2);
-  border-radius: 10px;
-  padding: 8px;
-  background: ${({ title }) => 
-    {switch (title) {  
-      case 't1':
-        return 'Yellow';
-      case 't2':
-        return 'Green';
-      case 't3':
-        return 'Blue';
-      default:
-        return 'transparent';
-    }
-  }};      
+      background: ${({ title }) => 
+      title === 't1' ? '#106963' :
+      title === 't2' ? '#13243B' :
+      title === 't3' ? '#FB2C36' :
+      'transparent'};    
 `;
 
 
@@ -313,15 +304,15 @@ function Analysis({ onClose }) {
                 <PlanTop>에너지 절감 방안 제시</PlanTop>
                 <PlanMain MachinePlans={MachinePlan}>
                   {MachinePlan.map((Plan, index) => (
-                    <div className={MachineTitle[index]}>
-                      <MachineDiv>
+                    <MachineDiv title={MachineTitle[index]}>
+                      <div>
                         <div>{MachineTitle[index]}</div>
                         <div>{Plan}</div>
-                      </MachineDiv>
+                      </div>
                       <div className={`MachineImg${index}`}>
                         이미지
                       </div>
-                    </div>
+                    </MachineDiv>
                   ))}
                 </PlanMain>
               </AnalysisPlan>
