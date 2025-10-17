@@ -244,8 +244,8 @@ const MachineDiv = styled.div`
 function Analysis({ onClose }) {
     const [ExpectRatio, setExpectRatio] = useState([20, -30]);
     // MachinePlan 예시 데이터는 8개까지 가능
-    const [MachineTitle, setMachineTitle] = useState(["greenCom", "usage", "warning", "greenAircon", "t5", "t6", "t7", "t8"]);
-    const [MachinePlan, setMachinePlan] = useState(["test1", "test2", "test3", "test4", "test5", "test6", "test7", "test8"]);
+    const [MachineTitle, setMachineTitle] = useState(["greenCom", "usage", "warning", "greenAircon"]);
+    const [MachinePlan, setMachinePlan] = useState(["test1", "test2", "test3", "test4"]);
     const AlertIcon = (index) =>
       MachineTitle[index] === "greenCom" ? "/Icon/GreenComIcon.svg"
       : MachineTitle[index] === "greenAircon" ? "/Icon/GreenAirconIcon.svg"
