@@ -81,8 +81,8 @@ function Login({ onLoginSuccess}) {
     return true;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (e, autoMode = false) => {
+    e?.preventDefault();
 
     console.log("로그인 시도:", { username, password });
 
@@ -139,8 +139,15 @@ function Login({ onLoginSuccess}) {
       // document.getElementById('loginForm').addEventListener('submit', function(event) {
  
 
-      const email = username;
-      const userPassword = password;
+      let email = username;
+      let userPassword = password;
+      let userName = username;
+
+      if(autoMode) {
+        email = "ad";
+        userPassword = "123";
+        userName = "ad";
+      }
 
       const credentials = {
         email: email,
@@ -162,7 +169,7 @@ function Login({ onLoginSuccess}) {
 
             // 사용자 정보 생성
             const userWithToken = {
-              username: username,
+              username: userName,
               email: email,
               accessToken: token,
             };
@@ -234,6 +241,7 @@ function Login({ onLoginSuccess}) {
               onChange={(e) => setPassword(e.target.value)}
             />
             <Button type="submit">Login</Button>
+            <Button onClick={() => handleSubmit(null, true)}>자동로그인</Button>
           </InputGroup>
           {errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
         </LoginForm>
