@@ -476,7 +476,6 @@ function Wing({railOpen, onClose, gasUsage={gasUsage}, elecUsage={elecUsage} ,wa
   const [managerName] = useState("이**"); // TODO: 실제 데이터 연결하면 교체
   const [alertCount, setAlertCount] = useState(0);
   const [outerTemp, setOuterTemp] = useState(null);
-  const [usage, setUsage] = useState({ power: 0, gas: 0, water: 0 }); // TODO: 백엔드 연동 시 갱신
 
   // 외부 날씨: OpenWeatherMap (무료 키) 사용. 키 없으면 26도로 폴백
   useEffect(() => {
@@ -528,7 +527,8 @@ function Wing({railOpen, onClose, gasUsage={gasUsage}, elecUsage={elecUsage} ,wa
               />
               <StatLabel>전력</StatLabel>
               <StatValue>
-                <span>{usage.power}</span><StatUnit>kWh</StatUnit>
+                {/* 🍪 */}
+                <span>{elecUsage}</span><StatUnit>kWh</StatUnit>
               </StatValue>
             </StatRow>
 
@@ -540,7 +540,8 @@ function Wing({railOpen, onClose, gasUsage={gasUsage}, elecUsage={elecUsage} ,wa
               />
               <StatLabel>가스</StatLabel>
               <StatValue>
-                <span>{usage.gas}</span><StatUnit>㎥</StatUnit>
+                 {/* 🍪 */}
+                <span>{gasUsage}</span><StatUnit>㎥</StatUnit>
               </StatValue>
             </StatRow>
 
@@ -552,7 +553,8 @@ function Wing({railOpen, onClose, gasUsage={gasUsage}, elecUsage={elecUsage} ,wa
               />
               <StatLabel>수도</StatLabel>
               <StatValue>
-                <span>{usage.water}</span><StatUnit>㎥</StatUnit>
+       {/* 🍪 */}
+                <span>{waterUsage}</span><StatUnit>㎥</StatUnit>
               </StatValue>
             </StatRow>
           </StatList>

@@ -15,7 +15,6 @@ import Login from "./components/Login";
 import BrandClock from "./components/BrandClock";
 import Wing from "./components/Wing";
 import HiddenToggle from "./components/HiddenToggle"; 
-import Wing2 from "./components/Wing2";
 
 const Container = styled.div`
   position: fixed;
