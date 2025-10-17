@@ -704,5 +704,3 @@ function Wing({railOpen, onClose, gasUsage={gasUsage}, elecUsage={elecUsage} ,wa
 }
 
 export default Wing;
-
-

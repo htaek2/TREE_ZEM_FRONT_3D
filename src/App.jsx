@@ -172,7 +172,7 @@ function App() {
 
 
 
-  const getHourlyUsage = async () => {
+  const getHourlyUsageFecth = async () => {
     try {
       console.log('Fetch 시작');
 
@@ -183,6 +183,7 @@ function App() {
       let start = dataFormat(today);
       let end = dataFormat(now);
 
+      
       console.log('Fetch 시작 시간:', start, '끝 시간:', end);
        const [gasResponse, elecResponse, waterResponse] = await Promise.all([
         fetch(`api/energy/gas?start=${start}&end=${end}&datetimeType=0`),
@@ -266,7 +267,7 @@ function App() {
     if(!auth.isAuthenticated) return;
 
     // 최초 접속 시 즉시 실행
-    getHourlyUsage().then(() => {
+    getHourlyUsageFecth().then(() => {
       ElectFetch();
     });
 
@@ -430,7 +431,7 @@ function App() {
 
       <BrandClock />
 
-      <Wing2 railOpen={railOpen} onClose={() => setRailOpen(false)} gasUsage={gasUsage.totalUsage} elecUsage={elecUsage.totalUsage} waterUsage={waterUsage.totalUsage} active={active} setActive={setActive} selectedDevice={selectedDevice} setSelectedDevice={setSelectedDevice} />
+      <Wing railOpen={railOpen} onClose={() => setRailOpen(false)} gasUsage={gasUsage.totalUsage} elecUsage={elecUsage.totalUsage} waterUsage={waterUsage.totalUsage} active={active} setActive={setActive} selectedDevice={selectedDevice} setSelectedDevice={setSelectedDevice} />
 
     </Container>
     </>
