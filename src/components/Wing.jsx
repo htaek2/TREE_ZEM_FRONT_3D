@@ -267,7 +267,7 @@ const InfoIcon = styled.img`
 const InfoLabel = styled.span` opacity: 0.95; `;
 const InfoValue = styled.span` margin-left: auto; font-weight: 800; `;
 
-function Wing({ railOpen , gasUsage }) {
+function Wing({ railOpen , gasUsage , elecUsage}) {
   const [managerName] = useState("이**");
   const [alertCount] = useState(0);
   const [outerTemp, setOuterTemp] = useState(null);
@@ -309,14 +309,14 @@ function Wing({ railOpen , gasUsage }) {
             <StatIcon src="/Icon/power_icon.svg" alt="전력"
               onError={(e)=>{ e.currentTarget.style.display='none'; }} />
             <StatLabel>전력</StatLabel>
-            <StatValue>43,235.3 kWh</StatValue>
+            <StatValue>{elecUsage.totalUsage ?? 0} kWh</StatValue>
           </StatRow>
 
           <StatRow>
             <StatIcon src="/Icon/gas_icon.svg" alt="가스"
               onError={(e)=>{ e.currentTarget.style.display='none'; }} />
             <StatLabel>가스</StatLabel>
-            <StatValue>{gasUsage?.datas[0]?.usage ?? 0} m³</StatValue>
+            <StatValue>{gasUsage.totalUsage ?? 0} m³</StatValue>
           </StatRow>
 
           <StatRow>

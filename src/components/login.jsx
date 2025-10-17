@@ -35,7 +35,7 @@ const getResponsiveCameraSettings = () => {
   }
 };
 
-function Login({ onLoginSuccess , TestFetch }) {
+function Login({ onLoginSuccess}) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -179,7 +179,6 @@ function Login({ onLoginSuccess , TestFetch }) {
 
             setTimeout(() => {
               onLoginSuccess(userWithToken);
-              TestFetch();
             }, 3000);
           } else {
               setLoginText('로그인에 성공했지만 토큰을 받지 못했습니다.');
