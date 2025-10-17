@@ -11,59 +11,44 @@ import { MODEL_TO_FLOOR, MODELS } from "../constants";
 // 🏢 헤더 박스 스타일
 const HeaderBox = styled.div`
   position: absolute;
-  top: 12%;
+  top: 56px;
   left: 50%;
-  transform: translate(-50%, -120%);
+  transform: translateX(-50%);
 
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 15px;
 
-  background: linear-gradient(
-    to right,
-    rgba(45, 45, 45, 0) 0%,
-    rgba(45, 45, 45, 0.95) 20%,
-    rgba(121, 121, 121, 0.95) 80%,
-    rgba(174, 171, 171, 0) 100%
-  );
-  color: white;
-  padding: 6px 80px;
-  border-radius: 8px;
-
-  font-size: 18px;
-  font-weight: 600;
+    /* ⤵️ 이미지와 동일한 고정 사이즈(400×40) */
+  box-sizing: border-box;
+  width: 350px;
+  height: 40px;
+  padding: 0 16px;                /* 좌우 여백만 */
+  border-radius: 999px;          /* 알약형 */
+  color: #fff;
+  font-size: 24px;
+  font-weight: 800;
   letter-spacing: 0.5px;
 
-  box-shadow: none;
-
-  /* 반응형 스타일 */
-  @media (max-width: 768px) {
-    font-size: 16px;
-    padding: 8px 16px;
-    top: 8%;
-  }
-
-  @media (max-width: 480px) {
-    font-size: 14px;
-    padding: 8px 16px;
-  }
+  /* 중앙 진하게 → 양옆 점점 투명: 완전 대칭 */
+  background:
+    linear-gradient(90deg,
+      rgba(0,0,0,0) 0%,
+      rgba(20,20,20,0.12) 20%,
+      rgba(20,20,20,0.55) 40%,
+      rgba(20,20,20,0.92) 55%,
+      rgba(20,20,20,0.55) 68%,
+      rgba(20,20,20,0.12) 80%,
+      rgba(0,0,0,0) 100%
+    );
 `;
+
 
 const HeaderIcon = styled.img`
   width: 28px;
   height: 28px;
   filter: brightness(0) invert(1);
-
-  @media (max-width: 768px) {
-    width: 24px;
-    height: 24px;
-  }
-
-  @media (max-width: 480px) {
-    width: 20px;
-    height: 20px;
-  }
 `;
 
 const HeaderText = styled.span`
@@ -91,14 +76,6 @@ const FloorButtons = styled.div`
   flex-direction: column;
   gap: 8px;
   align-items: stretch;       /* 버튼을 열 폭에 맞춰 꽉 차게 */
-
-  @media (max-width: 768px) {
-    left: ${({ $open }) =>
-      $open
-        ? "calc(var(--edge-left) + var(--toggle-width) + var(--toggle-gap) + var(--wing-width) + var(--panel-gap))"
-        : "calc(var(--edge-left) + var(--toggle-width) + var(--toggle-gap))"};
-    gap: 6px;
-  }
 `;
 
 // 🔘 층 버튼
@@ -126,16 +103,6 @@ const FloorButton = styled.button`
     box-shadow: 0 0 12px rgba(255, 215, 0, 0.4);
     transform: translateX(8px);
   }
-
-  @media (max-width: 768px) {
-    padding: 10px 16px;
-    font-size: 13px;
-  }
-
-  @media (max-width: 480px) {
-    padding: 8px 12px;
-    font-size: 12px;
-  }
 `;
 
 // 🔄 리셋 버튼
@@ -161,13 +128,6 @@ const ResetButton = styled.button`
 
   &:active {
     transform: translateY(0);
-  }
-
-  @media (max-width: 768px) {
-    right: 10px;
-    bottom: 10px;
-    padding: 12px 20px;
-    font-size: 13px;
   }
 `;
 
@@ -345,13 +305,15 @@ const ChartCanvas = styled.div`
 
 
 
-/* 하단 작은 버튼 3개 */
 const DockActions = styled.div`
-  display: grid;
-  grid-template-columns: repeat(3, var(--dock-w));
-  gap: 8px;
-  justify-items: center;  /* 칸 안 버튼 가로 중앙 */
-  align-items: center;    /* 칸 안 버튼 세로 중앙 */
+  /* 카드(200px)와 좌우 에지 정렬 */
+  width: 200px;
+  margin: 50 auto;                 /* LeftWing(232px) 안에서 중앙 정렬 */
+  box-sizing: border-box;
+  display: flex;
+  justify-content: space-between; /* 좌/우 끝에 붙이고 사이 간격 자동 */
+  align-items: center;
+  padding: 0;                     /* 버튼 60×40 유지 */
 `;
 
 
@@ -362,8 +324,8 @@ const DockBtn = styled.button`
   border-radius: 12px;
   font-size: 10px;        /* 요청 폰트 크기 */
   font-weight: 800;       /* extrabold */
-  width: var(--dock-w);
-  height: var(--dock-h);
+  width: 60px;                    /* 고정 */
+  height: 40px;                   /* 고정 */
   box-sizing: border-box; /* ⬅️ padding/border 포함해도 총 60×40 유지 */
   cursor: pointer;
   overflow: hidden;  /* ⬅️ 아이콘이 60×40 박스 밖으로 나가면 잘라냄 */
@@ -418,7 +380,7 @@ const DockIcon = styled.img`
 // 우측 상단 정보 스택
 const RightInfo = styled.div`
   position: absolute;
-  top: 44px;
+  top: 56px;
   right: 20px;
   display: grid;
   gap: 8px;
@@ -434,9 +396,11 @@ const RightInfo = styled.div`
 /* 각 항목 박스 */
 const InfoItem = styled.div`
   position: relative;
-  display: flex;
+  display: grid; 
+  grid-template-columns: 20px var(--label-w, 64px) 1fr;
   align-items: center;
-  gap: 10px;
+  column-gap: 10px;
+
   box-sizing: border-box;          /* 🔧 외곽 184×34 정확히 */
   width: 184px;                    /* 🔧 폭 고정 */
   min-width: 184px;
@@ -445,7 +409,7 @@ const InfoItem = styled.div`
   padding: 7px 14px;               /* 🔧 18px 아이콘 기준 상하 7px */
   
   /* 페이드 폭(마지막부터 몇 px를 서서히 없앨지) */
-  --fade: 36px;
+  --fade: 26px;
   padding-right: calc(14px + var(--fade));  /* 🔧 좌우 14px 통일 */
   border-radius: 9999px;           /* 🔧 완전한 알약 */
   background: rgba(45,45,45,0.85);
@@ -454,6 +418,7 @@ const InfoItem = styled.div`
   font-size: 14px;
   font-weight: 700;
   overflow: hidden;
+  white-space: nowrap;
   /* ⬇️ 가운데부터 사라지게: --cut 지점까지는 완전 불투명(보장),
         이후 100%로 갈수록 투명 */
   --cut: 60%; /* ← 페이드 시작 지점(50~65% 추천). 퍼센트 말고 px로 주고 싶으면 style로 덮어써도 됨 */
@@ -487,13 +452,20 @@ const InfoIcon = styled.img`
 
 const InfoLabel = styled.span`
   opacity: 0.95;
+
+  text-overflow: ellipsis;
+  line-height: 20px;                            /* ✅ 아이콘(20px)과 수직맞춤 */
 `;
 
 const InfoValue = styled.span`
-  margin-left: auto;  /* 값은 오른쪽 정렬 */
+  margin-left: 0;                               /* ✅ 그리드라 필요없음 */
+  justify-self: start;                          /* ✅ 값 열을 항상 왼쪽 시작 */
+  text-align: left;
   font-weight: 800;
+  flex-shrink: 0;
+  white-space: nowrap;
+  line-height: 20px;                            /* ✅ 아이콘과 수직맞춤 */
 `;
-
 
 
 
