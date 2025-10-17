@@ -334,7 +334,7 @@ const InfoValue = styled.span`
 
 
 
-function Wing({railOpen, onClose, gasUsage={gasUsage}, elecUsage={elecUsage} waterUsage={waterUsage}}) {
+function Wing({railOpen, onClose, gasUsage={gasUsage}, elecUsage={elecUsage}, waterUsage={waterUsage}}) {
 
   // 우측 패널 값들
   const [managerName] = useState("이**"); // TODO: 실제 데이터 연결하면 교체
