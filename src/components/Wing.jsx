@@ -388,7 +388,7 @@ const RightInfo = styled.div`
   transform: ${({ $open }) => ($open ? "translateX(0)" : "translateX(160%)")};
   opacity: ${({ $open }) => ($open ? 1 : 0)};
   pointer-events: ${({ $open }) => ($open ? "auto" : "none")};
-  transition:
+  transition:git
     transform 360ms cubic-bezier(0.22,0.61,0.36,1),
     opacity 260ms ease-out;
 `;
@@ -476,6 +476,7 @@ function Wing({railOpen, onClose, gasUsage={gasUsage}, elecUsage={elecUsage} ,wa
   const [managerName] = useState("이**"); // TODO: 실제 데이터 연결하면 교체
   const [alertCount, setAlertCount] = useState(0);
   const [outerTemp, setOuterTemp] = useState(null);
+ 
 
   // 외부 날씨: OpenWeatherMap (무료 키) 사용. 키 없으면 26도로 폴백
   useEffect(() => {
@@ -527,7 +528,6 @@ function Wing({railOpen, onClose, gasUsage={gasUsage}, elecUsage={elecUsage} ,wa
               />
               <StatLabel>전력</StatLabel>
               <StatValue>
-                {/* 🍪 */}
                 <span>{elecUsage}</span><StatUnit>kWh</StatUnit>
               </StatValue>
             </StatRow>
@@ -540,7 +540,6 @@ function Wing({railOpen, onClose, gasUsage={gasUsage}, elecUsage={elecUsage} ,wa
               />
               <StatLabel>가스</StatLabel>
               <StatValue>
-                 {/* 🍪 */}
                 <span>{gasUsage}</span><StatUnit>㎥</StatUnit>
               </StatValue>
             </StatRow>
@@ -553,7 +552,6 @@ function Wing({railOpen, onClose, gasUsage={gasUsage}, elecUsage={elecUsage} ,wa
               />
               <StatLabel>수도</StatLabel>
               <StatValue>
-       {/* 🍪 */}
                 <span>{waterUsage}</span><StatUnit>㎥</StatUnit>
               </StatValue>
             </StatRow>
