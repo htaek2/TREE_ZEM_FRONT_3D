@@ -15,6 +15,7 @@ import Login from "./components/Login";
 import BrandClock from "./components/BrandClock";
 import Wing from "./components/Wing";
 import HiddenToggle from "./components/HiddenToggle"; 
+import Wing2 from "./components/Wing2";
 
 const Container = styled.div`
   position: fixed;
@@ -109,49 +110,53 @@ function App() {
         try {
           const data = JSON.parse(event.data);
           
-          console.log(data);
+          console.log("수도 사용량:", data.floors.map(floor => floor.waterUsage.datas[0].usage));
 
-          console.log("가스 데이터:", data.gasUsage.datas);
-      
+          console.log("가스 데이터:", data.gasUsage.datas[0].usage);
+        
+          console.log("전력 데이터:", data.florrs.map(floor => floor));
           
-          // SSE로 받은 usage를 기존 totalUsage에 누적
-          setGasUsage(prevGasUsage => {
-            const newUsage = data.gasUsage.datas.reduce((sum, item) => sum + item.usage, 0);
-            const newTotalUsage = prevGasUsage.totalUsage + newUsage;
 
-            console.log(`SSE 가스 누적: ${Math.floor(prevGasUsage.totalUsage * 10000) / 10000} + ${Math.floor(newUsage * 10000) / 10000} = ${Math.floor(newTotalUsage * 10000) / 10000}`);
+        //   // SSE로 받은 usage를 기존 totalUsage에 누적
+        //   setGasUsage(prevGasUsage => {
+        //     const newUsage = data.gasUsage.datas.reduce((sum, item) => sum + item.usage, 0);
+        //     const newTotalUsage = prevGasUsage.totalUsage + newUsage;
+            
+        //     console.log("newTotalUsage:", newTotalUsage);
+        //     console.log(`SSE 가스 누적: ${Math.floor(prevGasUsage.totalUsage * 10000) / 10000} + ${Math.floor(newUsage * 10000) / 10000} = ${Math.floor(newTotalUsage * 10000) / 10000}`);
 
-            return {
-              // 4자리수까지만 저장
-              totalUsage: Math.floor(newTotalUsage * 10000) / 10000, 
-              datas: [...prevGasUsage.datas, ...data.gasUsage.datas]
-            };
-          });
+        //     return {
+        //       // 4자리수까지만 저장
+        //       totalUsage: Math.floor(newTotalUsage * 10000) / 10000, 
+        //       datas: [...prevGasUsage.datas, ...data.gasUsage.datas]
+        //     };
+        //   });
           
-          setFloors([
-            floors[0].devices = data.floors[0].devices,
-            floors[1].devices = data.floors[1].devices,
-            floors[2].devices = data.floors[2].devices,
-            floors[3].devices = data.floors[3].devices,
-            floors[0].waterUsage = data.floors[0].waterUsage,
-            floors[1].waterUsage = data.floors[1].waterUsage,
-            floors[2].waterUsage = data.floors[2].waterUsage,
-            floors[3].waterUsage = data.floors[3].waterUsage
-          ])
+        //   setFloors([
+        //     floors[0].devices = data.floors[0].devices,
+        //     floors[1].devices = data.floors[1].devices,
+        //     floors[2].devices = data.floors[2].devices,
+        //     floors[3].devices = data.floors[3].devices,
+        //     floors[0].waterUsage = data.floors[0].waterUsage,
+        //     floors[1].waterUsage = data.floors[1].waterUsage,
+        //     floors[2].waterUsage = data.floors[2].waterUsage,
+        //     floors[3].waterUsage = data.floors[3].waterUsage
+        //   ])
 
-          // 모든 층의 물 사용량 합산
-          const totalWaterUsage = floors.reduce((sum, floor, index) => {
-            console.log(`${index+1}층 물 사용량:`, floor.waterUsage);
-            return sum + (floor.waterUsage?.datas?.[0]?.usage || 0);
-          }, 0);
+        //   // 모든 층의 물 사용량 합산
+        //   const totalWaterUsage = floors.reduce((sum, floor, index) => {
+        //     console.log(`${index+1}층 물 사용량:`, floor.waterUsage);
+        //     return sum + (floor.waterUsage?.datas?.[0]?.usage || 0);
+        //   }, 0);
 
-          // 객체 형태로 상태 업데이트
-          setWaterUsage(prev => ({
-            ...prev,
-            totalUsage: totalWaterUsage
-          }));
-          d
-        console.log("업데이트된 층 데이터:", floors);
+        //   // 객체 형태로 상태 업데이트
+        //   setWaterUsage(prev => ({
+        //     ...prev,
+        //     totalUsage: totalWaterUsage
+        //   }));
+          
+          
+        // console.log("업데이트된 층 데이터:", floors);
 
         } catch (error) {
           console.log("텍스트 데이터:", event.data);
@@ -167,7 +172,7 @@ function App() {
 
 
 
-  const TestFetch = async () => {
+  const getHourlyUsage = async () => {
     try {
       console.log('Fetch 시작');
 
@@ -178,9 +183,6 @@ function App() {
       let start = dataFormat(today);
       let end = dataFormat(now);
 
-     
-
-    
       console.log('Fetch 시작 시간:', start, '끝 시간:', end);
        const [gasResponse, elecResponse, waterResponse] = await Promise.all([
         fetch(`api/energy/gas?start=${start}&end=${end}&datetimeType=0`),
@@ -197,23 +199,34 @@ function App() {
       if (gasResponse.ok && elecResponse.ok && waterResponse.ok) {
         // 모든 usage 합산
         const totalGasUsage = gasJson.datas.reduce((sum, item) => sum + item.usage, 0);
-        console.log('Fetch JSON 가스 총 사용량:', totalGasUsage);
 
         setGasUsage({
-          totalUsage: totalGasUsage.toFixed(4),
+          totalUsage: Math.floor(totalGasUsage * 10000) / 10000,
           datas: gasJson.datas
         });
 
+
+        
+
         const totalElecUsage = elecJson.datas.reduce((sum, item) => sum + item.usage, 0);
-        console.log('Fetch JSON 전기 총 사용량:', totalElecUsage);
+     
 
         setElecUsage({
-          totalUsage: totalElecUsage.toFixed(4),
+          totalUsage: Math.floor(totalElecUsage * 10) / 10,
           datas: elecJson.datas
         });
         
-        console.log('Fetch JSON 전기데이터:', elecJson);
-        console.log('Fetch JSON 수도데이터:', waterJson);
+       
+
+        const totalWaterUsage = waterJson.datas.reduce((sum,item) => sum + item.usage, 0);
+
+        setWaterUsage({
+          totalUsage: Math.floor(totalWaterUsage * 10000) / 10000,
+          datas: waterJson.datas
+        });
+
+
+
       } else {
         console.error('Fetch 실패:', gasResponse.status, elecResponse.status, waterResponse.status);
       }
@@ -253,13 +266,13 @@ function App() {
     if(!auth.isAuthenticated) return;
 
     // 최초 접속 시 즉시 실행
-    TestFetch().then(() => {
+    getHourlyUsage().then(() => {
       ElectFetch();
     });
 
     // // 1시간마다 반복 실행
     // const interval = setInterval(() => {
-    //   TestFetch().then(() => {
+    //   getHourlyUsage().then(() => {
     //     ElectFetch();
     //   });
     // }, 3600000);
@@ -417,15 +430,8 @@ function App() {
 
       <BrandClock />
 
-      <Wing railOpen={railOpen} onClose={() => setRailOpen(false)} gasUsage={gasUsage} elecUsage={elecUsage} waterUsage={waterUsage} active={active} setActive={setActive} selectedDevice={selectedDevice} />
+      <Wing2 railOpen={railOpen} onClose={() => setRailOpen(false)} gasUsage={gasUsage.totalUsage} elecUsage={elecUsage.totalUsage} waterUsage={waterUsage.totalUsage} active={active} setActive={setActive} selectedDevice={selectedDevice} setSelectedDevice={setSelectedDevice} />
 
-
-
-
-      {/* {auth.isAuthenticated && (
-       
-      )} */}
-      
     </Container>
     </>
 
