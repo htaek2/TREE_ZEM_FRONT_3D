@@ -267,7 +267,7 @@ const InfoIcon = styled.img`
 const InfoLabel = styled.span` opacity: 0.95; `;
 const InfoValue = styled.span` margin-left: auto; font-weight: 800; `;
 
-function Wing({ railOpen , gasUsage , elecUsage}) {
+function Wing({ railOpen , gasUsage , elecUsage, waterUsage }) {
   const [managerName] = useState("이**");
   const [alertCount] = useState(0);
   const [outerTemp, setOuterTemp] = useState(null);
@@ -323,7 +323,7 @@ function Wing({ railOpen , gasUsage , elecUsage}) {
             <StatIcon src="/Icon/water_icon.svg" alt="수도"
               onError={(e)=>{ e.currentTarget.style.display='none'; }} />
             <StatLabel>수도</StatLabel>
-            <StatValue>00.0 m³</StatValue>
+            <StatValue>{waterUsage.totalUsage ?? 0} m³</StatValue>
           </StatRow>
         </WingCard>
 

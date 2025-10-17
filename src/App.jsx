@@ -233,7 +233,7 @@ function App() {
   );
   const [gasUsage, setGasUsage] = useState({totalUsage: 0, datas: [{timestamp: '', usage: 0}]});
   const [elecUsage, setElecUsage] = useState({totalUsage: 0, datas: [{timestamp: '', usage: 0}]});
-  const [waterUsage, setWaterUsage] = useState({totalUsage: 0, datas: [{timestamp: '', usage: 0}]});
+  const [waterUsage, setWaterUsage] = useState({totalUsage: 0, datas: {usage: 0}});
 
   const [floors, setFloors] = useState([
     {waterUsage : 0, devices: []},{waterUsage : 0, devices: []},{waterUsage : 0, devices: []},{waterUsage : 0, devices: []}
@@ -269,12 +269,11 @@ function App() {
       eventSource.onmessage = function(event) {
         try {
           const data = JSON.parse(event.data);
+          
+          console.log(data);
 
           console.log("가스 데이터:", data.gasUsage.datas);
-          console.log("파싱된 데이터:", data.floors[0]);
-          console.log("파싱된 데이터:", data.floors[1]);
-          console.log("파싱된 데이터:", data.floors[2]);
-          console.log("파싱된 데이터:", data.floors[3]);
+      
           
           // SSE로 받은 usage를 기존 totalUsage에 누적
           setGasUsage(prevGasUsage => {
@@ -290,7 +289,28 @@ function App() {
             };
           });
           
+          setFloors([
+            floors[0].devices = data.floors[0].devices,
+            floors[1].devices = data.floors[1].devices,
+            floors[2].devices = data.floors[2].devices,
+            floors[3].devices = data.floors[3].devices,
+            floors[0].waterUsage = data.floors[0].waterUsage,
+            floors[1].waterUsage = data.floors[1].waterUsage,
+            floors[2].waterUsage = data.floors[2].waterUsage,
+            floors[3].waterUsage = data.floors[3].waterUsage
+          ])
 
+          // 모든 층의 물 사용량 합산
+          const totalWaterUsage = floors.reduce((sum, floor, index) => {
+            console.log(`${index+1}층 물 사용량:`, floor.waterUsage);
+            return sum + (floor.waterUsage?.datas?.[0]?.usage || 0);
+          }, 0);
+
+          // 객체 형태로 상태 업데이트
+          setWaterUsage(prev => ({
+            ...prev,
+            totalUsage: totalWaterUsage
+          }));
 
       //       setFloors(prevFloors => {
       //   // data.floors의 새로운 데이터를 prevFloors에 merge
@@ -570,7 +590,7 @@ function App() {
 
       <BrandClock />
 
-      <Wing railOpen={railOpen} onClose={() => setRailOpen(false)} gasUsage={gasUsage} elecUsage={elecUsage} />
+      <Wing railOpen={railOpen} onClose={() => setRailOpen(false)} gasUsage={gasUsage} elecUsage={elecUsage} waterUsage={waterUsage} />
 
 
 
