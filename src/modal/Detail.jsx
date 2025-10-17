@@ -96,6 +96,8 @@ const DetailHeader = styled.div`
         position: relative;
 
         > img {
+            margin: 4px 0 0 4px;
+            width: 18px;
             transition: transform 0.3s ease;
             ${({ DetailIsOpen }) =>
             DetailIsOpen
@@ -129,9 +131,11 @@ const DetailRealTime = styled.div`
     width: 100%;
     height: 10%;
     font: 400 18px "나눔고딕";
-    color: #FAFAFA;
     cursor: pointer;
     margin-top: -4px;
+    color: #FAFAFA;
+    background-color: ${({ active }) => (active ? 'rgba(255, 255, 255, 0.2)' : 'transparent')};
+
 
     > span {
         font: 400 12px "나눔고딕";
@@ -191,9 +195,9 @@ const DetailFloorSelect = styled.div`
         color: #FAFAFA;
         cursor: pointer;
     }
-    > div:active {
+    > div.active {
         background: rgba(255, 255, 255, 0.2);
-        color: #000000;
+        color: #FAFAFA;
     }
 `;
 const DetailCharge = styled.div`
@@ -205,8 +209,9 @@ const DetailCharge = styled.div`
     border: 2px solid rgba(166, 166, 166, 0.2);
     border-radius: 10px;
     font: 400 18px "나눔고딕";
-    color: #FAFAFA;
     cursor: pointer;
+    color: #FAFAFA;
+    background-color: ${({ active }) => (active ? 'rgba(255, 255, 255, 0.2)' : 'transparent')};
 `;
 
 
@@ -273,19 +278,20 @@ const DetailSelectMenu = styled.ul`
     background: white;
     border: 1px solid rgba(166, 166, 166, 0.2);
     border-radius: 6px;
-    margin-top: 4px;
+    margin: -8px 40px;
     list-style: none;
     padding: 4px 0;
     width: 80px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
     z-index: 1001;
     background-color: #2B2D30;
+    color: #FAFAFA;
 `;
 
 const DetailSelectItem = styled.li`
     padding: 6px 10px;
     cursor: pointer;
-    font-size: 14px;
+    font: 400 18px "나눔고딕";
     &:hover {
         background-color: #2B2D30;
     }   
@@ -295,8 +301,10 @@ const DetailSelectItem = styled.li`
 function Detail({ onClose }) {
 
     // ✅ 날짜 선택기
-    const [value, setValue] = useState(dayjs());
-    const [isRealtime, setIsRealtime] = useState(false);
+    const [startValue, setStartValue] = useState(dayjs());
+    const [endValue, setEndValue] = useState(dayjs());
+        // 실시간 버튼 상태 관리
+    const [isRealtimeClick, setIsRealtimeClick] = useState(false);
 
     // ✅ 대 분류 선택기
     const [DetailSelected, setDetailSelected] = useState("전력");
@@ -319,6 +327,38 @@ function Detail({ onClose }) {
             document.removeEventListener("mousedown", DetailClickOutside);
         }, []);
 
+    // ✅ 층 버튼 활성화 관리
+    const [EveryFloor, setEveryFloor] = useState(["전체 층", "F1", "F2", "F3", "F4"]);
+    // ✅ 선택 층 상태
+    const [SelectedFloor, setSelectedFloor] = useState([""]);
+
+    const FloorClick = (floor) => {
+        if (floor === "전체 층") {
+            if (SelectedFloor.includes("전체 층")) {
+                setSelectedFloor([]);
+            } else {
+                setSelectedFloor(["전체 층"]);
+            }
+        } else {
+            setSelectedFloor((prev) => {
+                let updatedFloors = prev.filter((f) => f !== "전체 층");
+
+                if (updatedFloors.includes(floor)) {
+                    updatedFloors = updatedFloors.filter((f) => f !== floor);
+                } else {
+                    updatedFloors.push(floor);
+                }
+                return updatedFloors;
+            });
+        }
+        
+    };
+
+    // ✅ 실시간, 요금보기 상태관리
+    const [IsChargeClick, setIsChargeClick] = useState(false);
+    
+
+
     return (        
 
         <Overlay>
@@ -331,16 +371,21 @@ function Detail({ onClose }) {
                 {/* 좌측 리모컨 */}
                 <DetailMain>
                     <DetailTop>
-                        <DetailHeader ref={ref} DetailIsOpen={DetailIsOpen}>
+                        <DetailHeader ref={ref} DetailIsOpen={DetailIsOpen} onClick={ToggleDetail}>
                             <div>상세 정보</div>
-                            <span onClick={ToggleDetail}>
+                            <span>
                                 {DetailSelected} <img src="/Icon/dropdown.svg" alt="드롭" />
                             </span>
 
                             {DetailIsOpen && (
                                 <DetailSelectMenu>
                                     {["전력", "가스", "수도"].map((item, index) => (
-                                        <DetailSelectItem key={index} onClick={() => DetailSelect(item)}>
+                                        <DetailSelectItem 
+                                            key={index} 
+                                            onClick={(event) => {
+                                                event.stopPropagation(); // 이벤트 전파 방지(내장 함수)
+                                                DetailSelect(item);
+                                            }}>
                                             {item}
                                         </DetailSelectItem>
                                     ))}
@@ -356,22 +401,22 @@ function Detail({ onClose }) {
                                 <DateTimePickerdiv>
                                     <DateTimePicker
                                         label="시작 날짜"
-                                        value={value}
-                                        onChange={setValue}
+                                        value={startValue}
+                                        onChange={setStartValue}
                                         defaultValue={dayjs("2022-10-01T00:00")}
                                         minDateTime={dayjs("2022-10-01T00:00")}  // ✅ 2022년 10월 이전 선택 불가
                                         maxDateTime={dayjs()}                     // ✅ 현재 시각 이후 선택 불가
-                                        disabled={isRealtime}     // 실시간 모드 시 비활성화
+                                        disabled={isRealtimeClick}     // 실시간 모드 시 비활성화
                                     />
 
                                     <DateTimePicker
                                         label="종료 날짜"
-                                        value={value}
-                                        onChange={(newValue) => setValue(newValue)}
+                                        value={endValue}
+                                        onChange={setEndValue}
                                         format="YYYY.MM.DD. hh:mm A" // 연/월/일 순서, 24시간 표시
                                         minDateTime={dayjs("2022-10-01T00:00")}  // ✅ 시작 제한 동일
                                         maxDateTime={dayjs()}                    // ✅ 현재 시각까지만 가능
-                                        disabled={isRealtime}     // 실시간 모드 시 비활성화
+                                        disabled={isRealtimeClick}     // 실시간 모드 시 비활성화
                                     />
                                 </DateTimePickerdiv>
                             </LocalizationProvider>
@@ -379,7 +424,8 @@ function Detail({ onClose }) {
                         </DetailDate>
 
                         <DetailRealTime 
-                            onClick={() => setIsRealtime(prev => !prev)}>
+                            active={isRealtimeClick}
+                            onClick={() => setIsRealtimeClick(prev => !prev)}>
                             실시간 보기<span>(오늘 기준)</span>
                         </DetailRealTime>
                     </DetailTop>
@@ -388,15 +434,21 @@ function Detail({ onClose }) {
                         <DetailFloor>
                             <div className="DetailTitle">건물 / 층별</div>
                             <DetailFloorSelect>
-                                <div>전체 층</div>
-                                <div>1층</div>
-                                <div>2층</div>
-                                <div>3층</div>
-                                <div>4층</div>
+                                {EveryFloor.map((floor) => (
+                                    <div
+                                    key={floor}
+                                    onClick={() => FloorClick(floor)}
+                                    className={SelectedFloor.includes(floor) ? "active" : ""}
+                                    >
+                                        {floor}
+                                    </div>
+                                ))}
                             </DetailFloorSelect>
                         </DetailFloor>
 
-                        <DetailCharge>요금 보기</DetailCharge>
+                        <DetailCharge active={IsChargeClick} onClick={() => setIsChargeClick(prev => !prev)}>
+                            요금 보기
+                        </DetailCharge>
                     </DetailBottom>
                 </DetailMain>
 

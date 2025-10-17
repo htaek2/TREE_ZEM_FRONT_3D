@@ -498,11 +498,7 @@ const InfoValue = styled.span`
 
 
 
-<<<<<<< HEAD
 function Wing({railOpen, onClose, gasUsage={gasUsage}, elecUsage={elecUsage} ,waterUsage={waterUsage}, active={active}, setActive={setActive}, selectedDevice, setSelectedDevice}) {
-=======
-function Wing({railOpen, onClose, gasUsage={gasUsage}, elecUsage={elecUsage}, waterUsage={waterUsage}}) {
->>>>>>> 56442db1a9c4f7b5cc1d1a3e12a78eca2bdde423
 
   // 우측 패널 값들
   const [managerName] = useState("이**"); // TODO: 실제 데이터 연결하면 교체
