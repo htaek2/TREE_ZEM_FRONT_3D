@@ -35,7 +35,7 @@ const getResponsiveCameraSettings = () => {
   }
 };
 
-function Login({ onLoginSuccess }) {
+function Login({ onLoginSuccess}) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -47,39 +47,13 @@ function Login({ onLoginSuccess }) {
     getResponsiveCameraSettings()
   );
   const [LoginText, setLoginText] = useState("");
+  const [LoginTextSize, setLoginTextSize] = useState(24);
 
   const AnimationTriggerOn = () => {
     setIsFadeOut(true);
   };
 
-  const ElectFetch = () => {
-      console.log("SSE 연결 시작...");
-      // sse 연결 - 프록시를 통해 상대 경로 사용
-      const eventSource = new EventSource("/api/energy/sse/all");
 
-      // SSE 연결 성공
-      eventSource.onopen = function() {
-        console.log("✅ SSE 연결 성공");
-      };
-
-      // 데이터 수신 시
-      eventSource.onmessage = function(event) {
-        console.log("📩 SSE 데이터 수신:", event.data);
-        try {
-          const data = JSON.parse(event.data);
-          console.log("파싱된 데이터:", data);
-          // TODO: 여기서 데이터를 상태로 저장하거나 처리
-        } catch (error) {
-          console.log("텍스트 데이터:", event.data);
-        }
-      };
-
-      // 오류 발생 시
-      eventSource.onerror = function(err) {
-        console.error("❌ SSE 연결 오류:", err);
-        eventSource.close();
-      };
-    }
 
   const validateForm = () => {
     // username 검증
@@ -118,6 +92,7 @@ function Login({ onLoginSuccess }) {
 
     // 로딩 상태 시작
     setLoading(true);
+    setLoginTextSize(24);
     setLoginText("로그인 중 입니다...");
 
     try {
@@ -195,7 +170,6 @@ function Login({ onLoginSuccess }) {
 
             setTimeout(() => {
               setLoginText("로그인 성공!");
-              ElectFetch();
             }, 1000);
 
             setTimeout(() => {
@@ -207,22 +181,29 @@ function Login({ onLoginSuccess }) {
               onLoginSuccess(userWithToken);
             }, 3000);
           } else {
-            alert('로그인에 성공했지만 토큰을 받지 못했습니다.');
-            setLoading(false);
+              setLoginText('로그인에 성공했지만 토큰을 받지 못했습니다.');
+              setLoginTextSize(12);
+            setTimeout(() => {
+              setLoading(false);
+            }, 3000);
           }
         } else {
-          alert('로그인 실패: 이메일 또는 비밀번호가 올바르지 않습니다.');
-          setLoading(false);
+          setLoginText('로그인 실패: 이메일 또는 비밀번호가 올바르지 않습니다.');
+              setLoginTextSize(12);
+
+          setTimeout(() => {
+            setLoading(false);
+          }, 3000);
         }
       })
       .catch(error => {
         console.error('Error during login:', error);
-        alert('로그인 중 오류가 발생했습니다.');
+        setLoginText('로그인 중 오류가 발생했습니다.');
         setLoading(false);
       });
     } catch (error) {
       console.error('Error during login:', error);
-      alert('로그인 중 오류가 발생했습니다.');
+      setLoginText('로그인 중 오류가 발생했습니다.');
       setLoading(false);
     }
   }
@@ -234,7 +215,7 @@ function Login({ onLoginSuccess }) {
       {loading ? (
         <LoadingContainer>
           <LoadingIcon src="/Icon/loading_icon.gif" alt="Loading..." />
-          <LodingText>{LoginText}</LodingText>
+          <LodingText $LoginTextSize={LoginTextSize}>{LoginText}</LodingText>
         </LoadingContainer>
       ) : (
         <LoginForm onSubmit={handleSubmit} $isFadeOut={isFadeOut}>
@@ -409,7 +390,7 @@ const LoadingIcon = styled.img`
 `;
 
 const LodingText = styled.h2`
-  font-size: 24px;
+  font-size: ${props => props.$LoginTextSize}px;
   color: white;
   margin-top: 10px;
   font-weight: 800;
