@@ -33,10 +33,6 @@ const RailToggle = styled.button`
     transition: transform .22s ease;
   }
 
-  /* ⬇️ 모바일(<=768px)에서는 FloorButtons left를 32px로 밀 예정이므로 토글은 10px로 맞춰서 버튼과의 간격(8px)을 유지 */
-  @media (max-width: 768px) {
-    left: var(--edge-left);
-  }
 `;
 function HiddenToggle({ railOpen, setRailOpen }) {
 {/* 좌측 패널 토글 탭(항상 보임) */}
