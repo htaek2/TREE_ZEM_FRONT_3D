@@ -1,30 +1,32 @@
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import styled from "styled-components";
 
 import Condition from "../modal/Condition";
 import Detail from "../modal/Detail";
 import Analysis from "../modal/Analysis";
-// Emission은 파일이 없으므로 import하지 않습니다.
 
-/* ⬅️ 좌측 날개 컨테이너 */
+
+
+
+// ⬅️ 좌측 날개 컨테이너
 const LeftWing = styled.aside`
   position: absolute;
   left: ${({ $open }) =>
     $open
-      ? "var(--wing-left)"
-      : "calc(-1 * (var(--wing-left) + var(--wing-width) + 40px))"};
-  top: 56px;
-  bottom: 20px;
-  width: var(--wing-width);
+     ? "20px"                                  /* 🔧 고정 여백 */
+     : "calc(-1 * (20px + 232px + 40px))"};    /* 🔧 20(여백)+232(폭)+40(추가오프셋) */
+  top: 56px;                  /* 상단 기준 */
+  bottom: 20px;               /* 하단에도 붙여서 전체 높이 확보 */
+  width: 232px;                                 /* 🔧 날개 폭 고정 */
   display: grid;
 
-  /* 위에서부터: 실시간 사용량 / 전일 대비 / 전년 대비 / 버튼Dock */
-  grid-template-rows: var(--wing-card-h) var(--wing-card-h) var(--wing-card-h) auto;
+    /* 위에서부터: 실시간 사용량 / 전일 대비 / 전년 대비 / 버튼Dock */
+  grid-template-rows: 210px 210px 210px auto;   /* 🔧 각 카드 높이 고정 */
+ 
+  gap: 12px;                  /* 모든 간격 동일 */
+  z-index: 950;               /* 토글(1100) > 버튼열(1000) > 패널(950) */
 
-  gap: 12px;
-  z-index: 950;
 
-  min-height: 0;
   opacity: ${({ $open }) => ($open ? 1 : 0)};
   pointer-events: ${({ $open }) => ($open ? "auto" : "none")};
   transition:
@@ -32,31 +34,36 @@ const LeftWing = styled.aside`
     opacity 260ms ease-out;
 `;
 
-/* 공통 카드 */
+/* 공통 카드(우측 박스와 동일 톤/opacity) + 우측 페이드 */
 const WingCard = styled.div`
   position: relative;
+  /* #000(검정) 15% opacity */
   background: rgba(0,0,0,0.15);
   border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 10px;
+  border-radius: 10px;                 /* 더 둥글게 */
   color: #fff;
   padding: 10px 12px;
   overflow: hidden;
-  width: var(--wing-card-w);
-  height: var(--wing-card-h);
+  /* ⬇️ 카드 외곽(패딩/보더 포함) 기준으로 200×208 딱 맞추기 */
+  width: 200px;                               /* 🔧 카드 폭 고정 */
+  height: 208px;                              /* 🔧 카드 높이 고정 */
   box-sizing: border-box;
+  display: flex;               /* ⬅️ 세로 플렉스 */
+  flex-direction: column;      /* ⬅️ 위: 타이틀 / 아래: 리스트 */
 `;
 
-/* 상단 칩 — 184×35 절대 고정 */
+
+/* 상단 칩(“실시간 사용량”) — 우측 InfoItem과 동일 톤, 184×34 고정 */
 const CardTitle = styled.div`
   width: 184px;
-  height: 35px;
-  flex: 0 0 35px;    /* 플렉스 부모에서도 줄어들지 않게 고정 */
-  min-height: 35px;  /* 안전핀 */
-  line-height: 35px;
+  min-width: 184px;   /* 🔒 가로 수축 금지 */
+  height: 34px;
+  min-height: 34px;   /* 🔒 세로 수축 금지 */
+  flex: 0 0 34px;     /* 🔒 flex 컨테이너(ChartCard)에서 높이 딱 고정 */
+  line-height: 14px;          /* ⬅️ 텍스트 자체 높이 고정 */
   box-sizing: border-box;
   border-radius: 9999px;
-  padding: 0 14px;
-
+  padding: 9px 14px;          /* ⬅️ 위/아래 9px 고정 (테두리 포함 총 34px 정확히) */
   display: flex;
   align-items: center;
   justify-content: flex-start;
@@ -65,82 +72,102 @@ const CardTitle = styled.div`
   font-size: 14px;
   color: #fff;
   white-space: nowrap;
-  overflow: hidden;
   text-overflow: ellipsis;
   position: relative;
-
   border: 1px solid rgba(255,255,255,0.12);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.06),
-    inset 0 -1px 0 rgba(0,0,0,0.45);
-
-  background:
-    radial-gradient(40px 48px at -10% 50%, rgba(255,255,255,0.08), rgba(255,255,255,0) 60%),
-    linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 60%),
-    linear-gradient(90deg, #2f2f2f 0%, #1a1a1a 60%, #0a0a0a 100%);
-
-  &::before{
-    content:"";
-    position:absolute;
-    top:-20%;
-    right:-8px;
-    width:72px;
-    height:140%;
-    pointer-events:none;
-    background:
-      radial-gradient(6px 6px at 85% 50%, rgba(255,255,255,0.16) 0, rgba(255,255,255,0) 60%),
-      radial-gradient(4px 4px at 70% 45%, rgba(255,255,255,0.14) 0, rgba(255,255,255,0) 60%),
-      radial-gradient(3px 3px at 60% 55%, rgba(255,255,255,0.12) 0, rgba(255,255,255,0) 60%),
-      radial-gradient(2px 2px at 75% 60%, rgba(255,255,255,0.10) 0, rgba(255,255,255,0) 60%),
-      linear-gradient(90deg, rgba(255,255,255,0.00) 0%, rgba(255,255,255,0.08) 45%, rgba(255,255,255,0) 100%);
-    filter: blur(.2px);
-  }
-  &::after{
-    content:"";
-    position:absolute;
-    top:0; right:0;
-    width:28px;
-    height:100%;
-    pointer-events:none;
-    background: linear-gradient(
-      to right,
-      rgba(0,0,0,0) 0%,
-      rgba(0,0,0,0.35) 60%,
-      rgba(0,0,0,0.85) 100%
-    );
-  }
+  background: rgba(45,45,45,0.85);
+  overflow: hidden;
+  margin-bottom: 8px;          /* ⬅️ 타이틀-리스트 간격만 딱 고정 */
+  /* ✅ InfoItem과 동일한 우측 페이드(마스크) */
+  --fade: 36px;
+  --cut: 60%;
+  padding-right: calc(14px + var(--fade));
+  -webkit-mask-image: linear-gradient(
+    to right,
+    #000 0,
+    #000 calc(var(--cut, 60%) - var(--fade)),
+    rgba(0,0,0,.9) var(--cut, 60%),
+    rgba(0,0,0,0) 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    #000 0,
+    #000 calc(var(--cut, 60%) - var(--fade)),
+    rgba(0,0,0,.9) var(--cut, 60%),
+    rgba(0,0,0,0) 100%
+  );
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  /* ✅ 이전 장식 pseudo 비활성화 */
+  &::before, &::after { content: none !important; }
 `;
 
-/* 실시간 사용량의 행들 */
+const StatList = styled.div`
+  flex: 1;                                      /* ⬅️ 카드의 남는 높이를 전부 차지 */
+  display: grid;
+  grid-template-rows: repeat(3, 1fr);           /* ⬅️ 세 행 동일 높이 */
+`;
+
 const StatRow = styled.div`
-  display: flex;
+  display: grid;
+  grid-template-columns: 20px 1fr auto;  /* 아이콘 | 라벨 | 값 */
   align-items: center;
-  gap: 10px;
-  padding: 8px 4px 6px;
+  column-gap: 10px;
+  padding: 0 10px;                       /* ⬅️ 세로 패딩 0 (높이는 1fr이 담당) */
   border-bottom: 1px solid rgba(255,255,255,0.10);
   &:last-child { border-bottom: 0; }
 `;
+
 const StatIcon = styled.img`
-  width: 16px; height: 16px; display: block;
+  width: 20px; height: 20px; display: block;
   filter: brightness(0) invert(1);
 `;
-const StatLabel = styled.span` opacity: .95; `;
-const StatValue = styled.span` margin-left: auto; font-weight: 800; `;
 
-/* 차트 카드 */
-const ChartCard = styled(WingCard)`
-  padding: 12px 12px 12px;
+const StatLabel = styled.span`
+  font-family: 'Nanum Gothic', system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 16px;
+  letter-spacing: -0.2px;
+`;
+const StatValue = styled.div`
   display: flex;
-  flex-direction: column;
-  min-height: 0;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Nanum Gothic', system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 16px;
 `;
 
-/* 카드 높이 합계가 딱 맞도록 여유값 조정 */
+const StatUnit = styled.span``;
+
+
+
+
+
+
+
+
+
+
+
+/* 차트 카드(틀만; 실제 그래프는 이후 연결) */
+const ChartCard = styled(WingCard)`
+  padding: 10px 12px;                 // 🔧 실시간 카드와 동일(위/아래 10px)
+  display: flex;             /* 내부를 세로로 채우게 */
+  flex-direction: column;
+
+`;
+
+
+
+
+
 const ChartCanvas = styled.div`
-  flex: 1;
-  min-height: 135px;   /* 135 + 8(margin-top) + 35(title) + 24(padding) ≈ 202 → 210 내 안정 */
+  /* 208(box) - 2(border) - 20(padding) - 34(title) - 18(gap: 8+10) = 134 */
+  height: 134px;
+  flex: 0 0 134px;
   border-radius: 10px;
-  margin-top: 8px;
+  margin-top: 10px;
   background: rgba(0,0,0,0.15);
   border: 1px solid rgba(255,255,255,0.25);
   background-image:
@@ -150,34 +177,41 @@ const ChartCanvas = styled.div`
   overflow: hidden;
 `;
 
+
+
+
+
 /* 하단 작은 버튼 3개 */
 const DockActions = styled.div`
   display: grid;
   grid-template-columns: repeat(3, var(--dock-w));
   gap: 8px;
-  justify-items: center;
-  align-items: center;
+  justify-items: center;  /* 칸 안 버튼 가로 중앙 */
+  align-items: center;    /* 칸 안 버튼 세로 중앙 */
 `;
+
 
 const DockBtn = styled.button`
   background: rgba(45,45,45,0.85);
   border: 1px solid rgba(255,255,255,0.18);
   color: #fff;
   border-radius: 12px;
-  font-size: 10px;
-  font-weight: 800;
+  font-size: 10px;        /* 요청 폰트 크기 */
+  font-weight: 800;       /* extrabold */
   width: var(--dock-w);
   height: var(--dock-h);
-  box-sizing: border-box;
+  box-sizing: border-box; /* ⬅️ padding/border 포함해도 총 60×40 유지 */
   cursor: pointer;
-  overflow: hidden;
-  position: relative;
+  overflow: hidden;  /* ⬅️ 아이콘이 60×40 박스 밖으로 나가면 잘라냄 */
+  position: relative; /* ⬅️ 아이콘/라벨 절대배치 기준 */
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 0;
 `;
+
+
 
 const DockLabel = styled.span`
   position: absolute;
@@ -189,23 +223,35 @@ const DockLabel = styled.span`
   line-height: var(--dock-label-h);
   text-align: center;
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 800; /* Nanum Gothic ExtraBold 대응 */
   pointer-events: none;
 `;
 
+
+
+
 const DockIcon = styled.img`
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: calc(var(--dock-label-bottom) + var(--dock-label-h) + var(--dock-gap));
-  width: auto;
-  height: auto;
-  max-width: none;
-  max-height: none;
-  display: block;
+ position: absolute;
+ left: 50%;
+ transform: translateX(-50%);
+ bottom: calc(var(--dock-label-bottom) + var(--dock-label-h) + var(--dock-gap));
+ width: auto;       /* ⬅️ SVG 파일의 고유 크기 그대로 */
+ height: auto;      /* ⬅️ SVG 파일의 고유 크기 그대로 */
+ max-width: none;   /* ⬅️ 전역 img 리셋(max-width:100%) 무력화 */
+ max-height: none;  /* ⬅️ 전역 리셋 무력화 */
+ display: block;
 `;
 
-/* 우측 상단 정보 스택 */
+
+
+
+
+
+
+
+
+
+// 우측 상단 정보 스택
 const RightInfo = styled.div`
   position: absolute;
   top: 44px;
@@ -227,21 +273,30 @@ const InfoItem = styled.div`
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 12px;
+  box-sizing: border-box;          /* 🔧 외곽 184×34 정확히 */
+  width: 184px;                    /* 🔧 폭 고정 */
+  min-width: 184px;
+  height: 34px;                    /* 🔧 높이 고정 */
+  min-height: 34px;
+  padding: 7px 14px;               /* 🔧 18px 아이콘 기준 상하 7px */
+  
+  /* 페이드 폭(마지막부터 몇 px를 서서히 없앨지) */
   --fade: 36px;
-  padding-right: calc(12px + var(--fade));
-  border-radius: 18px;
+  padding-right: calc(14px + var(--fade));  /* 🔧 좌우 14px 통일 */
+  border-radius: 9999px;           /* 🔧 완전한 알약 */
   background: rgba(45,45,45,0.85);
   border: 1px solid rgba(255,255,255,0.12);
   color: #fff;
   font-size: 14px;
   font-weight: 700;
   overflow: hidden;
-  --cut: 60%;
+  /* ⬇️ 가운데부터 사라지게: --cut 지점까지는 완전 불투명(보장),
+        이후 100%로 갈수록 투명 */
+  --cut: 60%; /* ← 페이드 시작 지점(50~65% 추천). 퍼센트 말고 px로 주고 싶으면 style로 덮어써도 됨 */
   -webkit-mask-image: linear-gradient(
     to right,
     #000 0,
-    #000 calc(var(--cut, 60%) - var(--fade)),
+    #000 calc(var(--cut, 60%) - var(--fade)), /* 완전 불투명 구간 확보 */
     rgba(0,0,0,.9) var(--cut, 60%),
     rgba(0,0,0,0) 100%
   );
@@ -257,24 +312,40 @@ const InfoItem = styled.div`
 `;
 
 const InfoIcon = styled.img`
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   flex-shrink: 0;
   display: block;
+  /* 흰색으로 강제할 때만 쓰는 옵션.
+     transient prop($white)는 DOM으로 안 흘러감 */
   filter: ${({ $white }) => ($white ? "brightness(0) invert(1)" : "none")};
 `;
 
-const InfoLabel = styled.span` opacity: 0.95; `;
-const InfoValue = styled.span` margin-left: auto; font-weight: 800; `;
+const InfoLabel = styled.span`
+  opacity: 0.95;
+`;
 
-function Wing({ railOpen , gasUsage , elecUsage, waterUsage }) {
-  const [managerName] = useState("이**");
-  const [alertCount] = useState(0);
+const InfoValue = styled.span`
+  margin-left: auto;  /* 값은 오른쪽 정렬 */
+  font-weight: 800;
+`;
+
+
+
+
+
+function Wing({railOpen, onClose, gasUsage={gasUsage}, elecUsage={elecUsage} waterUsage={waterUsage}}) {
+
+  // 우측 패널 값들
+  const [managerName] = useState("이**"); // TODO: 실제 데이터 연결하면 교체
+  const [alertCount, setAlertCount] = useState(0);
   const [outerTemp, setOuterTemp] = useState(null);
+  const [usage, setUsage] = useState({ power: 0, gas: 0, water: 0 }); // TODO: 백엔드 연동 시 갱신
 
+  // 외부 날씨: OpenWeatherMap (무료 키) 사용. 키 없으면 26도로 폴백
   useEffect(() => {
-    const API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY;
-    const fetchWeather = async (lat = 37.5665, lon = 126.9780) => {
+    const API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY; // .env에 넣기
+    const fetchWeather = async (lat = 37.5665, lon = 126.9780) => { // 서울 기본
       try {
         if (!API_KEY) { setOuterTemp(26); return; }
         const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&lang=kr&appid=${API_KEY}`;
@@ -285,6 +356,8 @@ function Wing({ railOpen , gasUsage , elecUsage, waterUsage }) {
         setOuterTemp(26);
       }
     };
+
+    // 위치 권한 시도 → 실패/거부 시 서울로 폴백
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => fetchWeather(pos.coords.latitude, pos.coords.longitude),
@@ -295,7 +368,13 @@ function Wing({ railOpen , gasUsage , elecUsage, waterUsage }) {
     }
   }, []);
 
+
+    // 🍪
   const [activeModal, setActiveModal] = useState(null);
+
+
+
+
 
   return (
     <>
@@ -304,27 +383,43 @@ function Wing({ railOpen , gasUsage , elecUsage, waterUsage }) {
         {/* 실시간 사용량 */}
         <WingCard onClick={() => setActiveModal("condition")}>
           <CardTitle>실시간 사용량</CardTitle>
+          <StatList>
+            <StatRow>
+              <StatIcon
+                src="Icon/elect_icon.svg"
+                alt="전력"
+                onError={(e)=>{ const img=e.currentTarget; if(!img.dataset.fbk){ img.dataset.fbk=1; img.src="/Icon/elect_icon.svg"; }}}
+              />
+              <StatLabel>전력</StatLabel>
+              <StatValue>
+                <span>{usage.power}</span><StatUnit>kWh</StatUnit>
+              </StatValue>
+            </StatRow>
 
-          <StatRow>
-            <StatIcon src="/Icon/power_icon.svg" alt="전력"
-              onError={(e)=>{ e.currentTarget.style.display='none'; }} />
-            <StatLabel>전력</StatLabel>
-            <StatValue>{elecUsage.totalUsage ?? 0} kWh</StatValue>
-          </StatRow>
+            <StatRow>
+              <StatIcon
+                src="/Icon/gas_icon.svg"
+                alt="가스"
+                onError={(e)=>{ const img=e.currentTarget; if(!img.dataset.fbk){ img.dataset.fbk=1; img.src="/Icon/gas_icon.svg"; }}}
+              />
+              <StatLabel>가스</StatLabel>
+              <StatValue>
+                <span>{usage.gas}</span><StatUnit>㎥</StatUnit>
+              </StatValue>
+            </StatRow>
 
-          <StatRow>
-            <StatIcon src="/Icon/gas_icon.svg" alt="가스"
-              onError={(e)=>{ e.currentTarget.style.display='none'; }} />
-            <StatLabel>가스</StatLabel>
-            <StatValue>{gasUsage.totalUsage ?? 0} m³</StatValue>
-          </StatRow>
-
-          <StatRow>
-            <StatIcon src="/Icon/water_icon.svg" alt="수도"
-              onError={(e)=>{ e.currentTarget.style.display='none'; }} />
-            <StatLabel>수도</StatLabel>
-            <StatValue>{waterUsage.totalUsage ?? 0} m³</StatValue>
-          </StatRow>
+            <StatRow>
+              <StatIcon
+                src="/Icon/water_icon.svg"
+                alt="수도"
+                onError={(e)=>{ const img=e.currentTarget; if(!img.dataset.fbk){ img.dataset.fbk=1; img.src="/Icon/water_icon.svg"; }}}
+              />
+              <StatLabel>수도</StatLabel>
+              <StatValue>
+                <span>{usage.water}</span><StatUnit>㎥</StatUnit>
+              </StatValue>
+            </StatRow>
+          </StatList>
         </WingCard>
 
         {/* 전일 대비 전력 사용량 */}
@@ -343,7 +438,7 @@ function Wing({ railOpen , gasUsage , elecUsage, waterUsage }) {
         <DockActions>
           <DockBtn onClick={() => setActiveModal("analysis")} >
             <DockIcon
-              src="/Icon/analysis_icon.svg"
+              src="public/Icon/analysis_icon.svg"
               alt=""
               aria-hidden="true"
               onError={(e)=>{ const img=e.currentTarget; if(!img.dataset.fbk){ img.dataset.fbk=1; img.src="/Icon/analysis_icon.svg"; }}}
@@ -352,7 +447,7 @@ function Wing({ railOpen , gasUsage , elecUsage, waterUsage }) {
           </DockBtn>
           <DockBtn onClick={() => setActiveModal("detail")} >
             <DockIcon
-              src="/Icon/detail_icon.svg"
+              src="public/Icon/detail_icon.svg"
               alt=""
               aria-hidden="true"
               onError={(e)=>{ const img=e.currentTarget; if(!img.dataset.fbk){ img.dataset.fbk=1; img.src="/Icon/detail_icon.svg"; }}}
@@ -361,7 +456,7 @@ function Wing({ railOpen , gasUsage , elecUsage, waterUsage }) {
           </DockBtn>
           <DockBtn onClick={() => setActiveModal("emission")}>
             <DockIcon 
-              src="/Icon/emission_icon.svg"
+              src="public/Icon/emission_icon.svg"
               alt=""
               aria-hidden="true"
               onError={(e)=>{ const img=e.currentTarget; if(!img.dataset.fbk){ img.dataset.fbk=1; img.src="/Icon/analysis_icon.svg"; }}}
@@ -370,39 +465,58 @@ function Wing({ railOpen , gasUsage , elecUsage, waterUsage }) {
           </DockBtn>
         </DockActions>
       </LeftWing>
+        
+        {activeModal === "condition" && (
+          <Condition onClose={() => setActiveModal(null)}>현황</Condition>
+        )}
+        {activeModal === "analysis" && (
+          <Analysis onClose={() => setActiveModal(null)}>통합분석</Analysis>
+        )}
+        {activeModal === "detail" && (
+          <Detail onClose={() => setActiveModal(null)}>상세분석</Detail>
+        )}
+        {activeModal === "emission" && (
+          <Emission onClose={() => setActiveModal(null)}>탄소배출</Emission>
+        )}
 
-      {/* 모달 렌더링: Emission은 아직 파일 없으니 제외 */}
-      {activeModal === "condition" && (
-        <Condition onClose={() => setActiveModal(null)}>현황</Condition>
-      )}
-      {activeModal === "analysis" && (
-        <Analysis onClose={() => setActiveModal(null)}>통합분석</Analysis>
-      )}
-      {activeModal === "detail" && (
-        <Detail onClose={() => setActiveModal(null)}>상세분석</Detail>
-      )}
-      {/* emission 분기는 화면구성 단계 완료 후 필요 시 추가 */}
-      {/* {activeModal === "emission" && <Emission onClose={() => setActiveModal(null)}>탄소배출</Emission>} */}
+
+
 
       {/* 우측 정보 스택 */}
       <RightInfo $open={railOpen}>
+        {/* 1) 책임자 */}
         <InfoItem>
-          <InfoIcon $white src="/Icon/manager_icon.svg" alt="책임자"
-            onError={(e) => { if (!e.currentTarget.dataset.fbk){ e.currentTarget.dataset.fbk=1; e.currentTarget.src="/Icon/manager_icon.svg"; } }} />
+          <InfoIcon
+            $white
+            src="/Icon/manager_icon.svg"
+            alt="책임자"
+            onError={(e) => { if (!e.currentTarget.dataset.fbk){ e.currentTarget.dataset.fbk=1; e.currentTarget.src="/icon/manager_icon.svg"; } }}
+          />
           <InfoLabel>책임자</InfoLabel>
           <InfoValue>{managerName}</InfoValue>
         </InfoItem>
-
+      
+        {/* 2) 외부날씨 */}
         <InfoItem>
-          <InfoIcon $white src="/Icon/weather_icon.svg" alt="외부온도"
-            onError={(e) => { if (!e.currentTarget.dataset.fbk){ e.currentTarget.dataset.fbk=1; e.currentTarget.src="/Icon/weather_icon.svg"; } }} />
+          <InfoIcon
+            $white
+            src="/Icon/weather_icon.svg"
+            alt="외부온도"
+            onError={(e) => { if (!e.currentTarget.dataset.fbk){ e.currentTarget.dataset.fbk=1; e.currentTarget.src="/icon/weather_icon.svg"; } }}
+          />
           <InfoLabel>외부온도</InfoLabel>
-          <InfoValue>{outerTemp == null ? "—" : `${Math.round(outerTemp)}°C`}</InfoValue>
+          <InfoValue>
+            {outerTemp == null ? "—" : `${Math.round(outerTemp)}°C`}
+          </InfoValue>
         </InfoItem>
-
+      
+        {/* 3) 경고/알림 — 원색 아이콘 유지(필터 미적용) */}
         <InfoItem>
-          <InfoIcon src="/Icon/warning_icon.svg" alt="경고/알림"
-            onError={(e) => { if (!e.currentTarget.dataset.fbk){ e.currentTarget.dataset.fbk=1; e.currentTarget.src="/Icon/warning_icon.svg"; } }} />
+          <InfoIcon
+            src="/Icon/warning_icon.svg"
+            alt="경고/알림"
+            onError={(e) => { if (!e.currentTarget.dataset.fbk){ e.currentTarget.dataset.fbk=1; e.currentTarget.src="/icon/warning_icon.svg"; } }}
+          />
           <InfoLabel>경고/알림</InfoLabel>
           <InfoValue>{alertCount}</InfoValue>
         </InfoItem>
@@ -412,3 +526,5 @@ function Wing({ railOpen , gasUsage , elecUsage, waterUsage }) {
 }
 
 export default Wing;
+
+
