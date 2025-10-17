@@ -227,174 +227,10 @@ function App() {
   const [active, setActive] = useState({ active: false, model: null });
   const modelsToShow = active.active ? [active.model] : MODELS;
   const [selectedDevice, setSelectedDevice] = useState(null);
-  const [computers, setComputer] = useState([]);
+
   const [cameraSettings, setCameraSettings] = useState(
     getResponsiveCameraSettings(auth.isAuthenticated)
   );
-  const [gasUsage, setGasUsage] = useState({totalUsage: 0, datas: [{timestamp: '', usage: 0}]});
-  const [elecUsage, setElecUsage] = useState({totalUsage: 0, datas: [{timestamp: '', usage: 0}]});
-  const [waterUsage, setWaterUsage] = useState({totalUsage: 0, datas: {usage: 0}});
-
-  const [floors, setFloors] = useState([
-    {waterUsage : 0, devices: []},{waterUsage : 0, devices: []},{waterUsage : 0, devices: []},{waterUsage : 0, devices: []}
-  ]);
-
-  const dataFormat = (data) => {
-     let month = data.getMonth() + 1;
-        let day = data.getDate();
-        let hour = data.getHours();
-        let minute = data.getMinutes();
-        let second = data.getSeconds();
-
-        month = month >= 10 ? month : '0' + month;
-        day = day >= 10 ? day : '0' + day;
-        hour = hour >= 10 ? hour : '0' + hour;
-        minute = minute >= 10 ? minute : '0' + minute;
-        second = second >= 10 ? second : '0' + second;
-
-        return data.getFullYear() + '-' + month + '-' + day + ' ' + hour + ':' + minute + ':' + second;
-  }
-
-  const ElectFetch = () => {
-      console.log("SSE 연결 시작...");
-      // sse 연결 - 프록시를 통해 상대 경로 사용
-      const eventSource = new EventSource("/api/energy/sse/all");
-
-      // SSE 연결 성공
-      eventSource.onopen = function() {
-        console.log("✅ SSE 연결 성공");
-      };
-
-      // 데이터 수신 시
-      eventSource.onmessage = function(event) {
-        try {
-          const data = JSON.parse(event.data);
-          
-          console.log(data);
-
-          console.log("가스 데이터:", data.gasUsage.datas);
-      
-          
-          // SSE로 받은 usage를 기존 totalUsage에 누적
-          setGasUsage(prevGasUsage => {
-            const newUsage = data.gasUsage.datas.reduce((sum, item) => sum + item.usage, 0);
-            const newTotalUsage = prevGasUsage.totalUsage + newUsage;
-
-            console.log(`SSE 가스 누적: ${Math.floor(prevGasUsage.totalUsage * 10000) / 10000} + ${Math.floor(newUsage * 10000) / 10000} = ${Math.floor(newTotalUsage * 10000) / 10000}`);
-
-            return {
-              // 4자리수까지만 저장
-              totalUsage: Math.floor(newTotalUsage * 10000) / 10000, 
-              datas: [...prevGasUsage.datas, ...data.gasUsage.datas]
-            };
-          });
-          
-          setFloors([
-            floors[0].devices = data.floors[0].devices,
-            floors[1].devices = data.floors[1].devices,
-            floors[2].devices = data.floors[2].devices,
-            floors[3].devices = data.floors[3].devices,
-            floors[0].waterUsage = data.floors[0].waterUsage,
-            floors[1].waterUsage = data.floors[1].waterUsage,
-            floors[2].waterUsage = data.floors[2].waterUsage,
-            floors[3].waterUsage = data.floors[3].waterUsage
-          ])
-
-          // 모든 층의 물 사용량 합산
-          const totalWaterUsage = floors.reduce((sum, floor, index) => {
-            console.log(`${index+1}층 물 사용량:`, floor.waterUsage);
-            return sum + (floor.waterUsage?.datas?.[0]?.usage || 0);
-          }, 0);
-
-          // 객체 형태로 상태 업데이트
-          setWaterUsage(prev => ({
-            ...prev,
-            totalUsage: totalWaterUsage
-          }));
-
-      //       setFloors(prevFloors => {
-      //   // data.floors의 새로운 데이터를 prevFloors에 merge
-      //   // 예: 각 층의 devices 배열에 새 데이터 추가
-      //   return prevFloors.map((floor, index) => ({
-      //     ...floor,
-      //     waterUsage: data.floors[index]?.waterUsage || floor.waterUsage,
-      //     devices: floor.devices.map(device => {
-      //       const newDevice = data.floors[index]?.devices.find(d => d.id === device.id);
-      //       return newDevice ? { ...device, ...newDevice } : device;
-      //     })
-      //   }));
-      // });
-        console.log("업데이트된 층 데이터:", floors);
-
-        } catch (error) {
-          console.log("텍스트 데이터:", event.data);
-        }
-      };
-
-      // 오류 발생 시
-      eventSource.onerror = function(err) {
-        console.error("❌ SSE 연결 오류:", err);
-        eventSource.close();
-      };
-    }
-
-
-
-  const TestFetch = async () => {
-    try {
-      console.log('Fetch 시작');
-
-      let now = new Date();
-      const today = new Date();
-      today.setHours(0, 0, 0, 0); 
-
-      let start = dataFormat(today);
-      let end = dataFormat(now);
-
-     
-
-    
-      console.log('Fetch 시작 시간:', start, '끝 시간:', end);
-       const [gasResponse, elecResponse, waterResponse] = await Promise.all([
-        fetch(`api/energy/gas?start=${start}&end=${end}&datetimeType=0`),
-        fetch(`api/energy/elec?start=${start}&end=${end}&datetimeType=0`),
-        fetch(`api/energy/water?start=${start}&end=${end}&datetimeType=0`)
-      ]);
-    
-      const [gasJson, elecJson, waterJson] = await Promise.all([
-        gasResponse.json(),
-        elecResponse.json(),
-        waterResponse.json()
-      ]);
-
-      if (gasResponse.ok && elecResponse.ok && waterResponse.ok) {
-        // 모든 usage 합산
-        const totalGasUsage = gasJson.datas.reduce((sum, item) => sum + item.usage, 0);
-        console.log('Fetch JSON 가스 총 사용량:', totalGasUsage);
-
-        setGasUsage({
-          totalUsage: totalGasUsage.toFixed(4),
-          datas: gasJson.datas
-        });
-
-        const totalElecUsage = elecJson.datas.reduce((sum, item) => sum + item.usage, 0);
-        console.log('Fetch JSON 전기 총 사용량:', totalElecUsage);
-
-        setElecUsage({
-          totalUsage: totalElecUsage.toFixed(4),
-          datas: elecJson.datas
-        });
-        
-        console.log('Fetch JSON 전기데이터:', elecJson);
-        console.log('Fetch JSON 수도데이터:', waterJson);
-      } else {
-        console.error('Fetch 실패:', gasResponse.status, elecResponse.status, waterResponse.status);
-      }
-    } catch (error) {
-      console.error('Fetch error:', error);
-    }
-  };
-   
 
   // 로그인된 사용자 정보 조회 함수
   const fetchUserInfo = async () => {
@@ -415,31 +251,31 @@ function App() {
     return null;
   };
 
+  const ElectFetch = () => {
+    console.log("api 요청!!!");
+    fetch('/api/energy/sse/all')
+  .then(response => {
+    // 응답이 성공적인지 확인합니다.
+    if (!response.ok) {
+      throw new Error('Network response was not ok ' + response.statusText);
+    }
+    return response.json(); // 응답 본문을 JSON으로 파싱합니다.
+  })
+  .then(data => {
+    console.log(data); // 파싱된 데이터를 출력합니다.
+  })
+  .catch(error => {
+    console.error('Fetch error:', error);
+  });
+  }
+
+
+
   useEffect(() => {
+   
      fetchUserInfo();
-      
   }, []);
-
-
-  // 로그인 됫을때 작동하는 useEffect
-  useEffect(() => {
-    if(!auth.isAuthenticated) return;
-
-    // 최초 접속 시 즉시 실행
-    TestFetch().then(() => {
-      ElectFetch();
-    });
-
-    // // 1시간마다 반복 실행
-    // const interval = setInterval(() => {
-    //   TestFetch().then(() => {
-    //     ElectFetch();
-    //   });
-    // }, 3600000);
-
-    // return () => clearInterval(interval);
-  }, [auth.isAuthenticated]);
-
+  
   const handleModelClick = (modelName) => {
     // top은 클릭해도 확대하지 않음
     if (modelName === "top") {
@@ -558,7 +394,7 @@ function App() {
             />
           ))}
         </Suspense>
-        {auth.isAuthenticated ?  (
+        {auth.isAuthenticated ? (
           <>
             {/* 컨트롤 - 반응형 설정 적용 */}
             <OrbitControls
@@ -590,7 +426,7 @@ function App() {
 
       <BrandClock />
 
-      <Wing railOpen={railOpen} onClose={() => setRailOpen(false)} gasUsage={gasUsage} elecUsage={elecUsage} waterUsage={waterUsage} />
+      <Wing railOpen={railOpen} onC />
 
 
 
