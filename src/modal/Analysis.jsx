@@ -185,13 +185,11 @@ const PlanTop = styled.div`
   font: bold 22px "나눔고딕";
   width: 100%;
   height: 5%;
-  border: 1px solid rgba(166, 166, 166, 0.2);
 `;
 const PlanMain = styled.div`
   display: flex;
   width: 100%;
   height: calc(95% - 8px);
-  border: 1px solid rgba(166, 166, 166, 0.2);
   flex-direction: column;
   justify-content: flex-start;
   gap: 8px;
@@ -200,29 +198,60 @@ const PlanMain = styled.div`
     display: flex;
     justify-content: flex-start;
     align-items: center;
-    width: calc(100% - 16px);
+    width: 100%;
     height: 10%;
     border: 1px solid rgba(166, 166, 166, 0.2);
     border-radius: 10px;
-    padding: 8px;
+
   }
 
 `;  
 
 const MachineDiv = styled.div`
-      background: ${({ title }) => 
-      title === 't1' ? '#106963' :
-      title === 't2' ? '#13243B' :
-      title === 't3' ? '#FB2C36' :
-      'transparent'};    
+    background: ${({ title }) => 
+    title === 'usage' ? 'rgba(37, 127, 255, 0.3)' :
+    title === 'warning' ? 'rgba(251, 44, 54, 0.3)' :
+    'rgba(35, 212, 147, 0.3)'};    
+
+    > div:first-child {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      width: calc(90% - 24px);
+      height: calc(100% - 16px);
+      font: 400 14px "나눔고딕";
+      color: #FAFAFA;
+      padding: 0px 8px;
+
+      > div:first-child {
+        font: bold 18px "나눔고딕";
+      }
+    }
+    > div:last-child {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 10%;
+      height: 100%;
+
+      > img {
+        width: 38px;
+      }
+    }
 `;
 
 
 function Analysis({ onClose }) {
     const [ExpectRatio, setExpectRatio] = useState([20, -30]);
     // MachinePlan 예시 데이터는 8개까지 가능
-    const [MachineTitle, setMachineTitle] = useState(["t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8"]);
+    const [MachineTitle, setMachineTitle] = useState(["greenCom", "usage", "warning", "greenAircon", "t5", "t6", "t7", "t8"]);
     const [MachinePlan, setMachinePlan] = useState(["test1", "test2", "test3", "test4", "test5", "test6", "test7", "test8"]);
+    const AlertIcon = (index) =>
+      MachineTitle[index] === "greenCom" ? "/Icon/GreenComIcon.svg"
+      : MachineTitle[index] === "greenAircon" ? "/Icon/GreenAirconIcon.svg"
+      : MachineTitle[index] === "usage" ? "/Icon/UsageAiconIcon.svg"
+      : MachineTitle[index] === "warning" ? "/Icon/WarningIcon.svg" : null;
+
   
     return (
         <Overlay>
@@ -304,13 +333,13 @@ function Analysis({ onClose }) {
                 <PlanTop>에너지 절감 방안 제시</PlanTop>
                 <PlanMain MachinePlans={MachinePlan}>
                   {MachinePlan.map((Plan, index) => (
-                    <MachineDiv title={MachineTitle[index]}>
+                    <MachineDiv key={index} title={MachineTitle[index]}>
                       <div>
                         <div>{MachineTitle[index]}</div>
                         <div>{Plan}</div>
                       </div>
                       <div className={`MachineImg${index}`}>
-                        이미지
+                        <img src={AlertIcon(index)} alt={MachineTitle[index]} />
                       </div>
                     </MachineDiv>
                   ))}
