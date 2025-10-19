@@ -84,8 +84,23 @@ const AverageLocation = styled.div`
 `;
 
 /* ---  2025-10-18 🍪 백민기 추가 props => elecUsage, waterUsage, gasUsage ---- */
-function Condition({ onClose, elecUsage, waterUsage, gasUsage }) {
+function Condition({
+  onClose,
+  elecUsage,
+  waterUsage,
+  gasUsage,
+  yesterdayUsage,
+  monthElecUsage,
+  monthWaterUsage,
+  monthGasUsage,
+  lastMonthUsage,
+  buildingInfo,
+}) {
   const [ratio, setRatio] = useState(105);
+
+  console.log("Condition - buildingInfo:", buildingInfo);
+  console.log("Condition - elecUsage:", elecUsage);
+  console.log("Condition - monthElecUsage:", monthElecUsage);
 
   return (
     <Overlay>
@@ -107,18 +122,63 @@ function Condition({ onClose, elecUsage, waterUsage, gasUsage }) {
           title="전력"
           icon="elect_icon.svg"
           toDayElecUsage={elecUsage}
+          yesterdayUsage={yesterdayUsage.elec}
+          yesterdayMaxUsage={yesterdayUsage.maxElec}
+          toMonthElecUsage={monthElecUsage}
+          lastMonthUsage={lastMonthUsage.elec}
+          lastMonthMaxUsage={lastMonthUsage.maxElec}
+          usagePerArea={
+            buildingInfo?.totalArea
+              ? (elecUsage / buildingInfo.totalArea).toFixed(4)
+              : 0
+          }
+          monthUsagePerArea={
+            buildingInfo?.totalArea
+              ? (monthElecUsage / buildingInfo.totalArea).toFixed(4)
+              : 0
+          }
         />
         <Energy
           type="gas"
           title="가스"
           icon="gas_icon.svg"
           toDayGasUsage={gasUsage}
+          yesterdayUsage={yesterdayUsage.gas}
+          yesterdayMaxUsage={yesterdayUsage.maxGas}
+          toMonthGasUsage={monthGasUsage}
+          lastMonthUsage={lastMonthUsage.gas}
+          lastMonthMaxUsage={lastMonthUsage.maxGas}
+          usagePerArea={
+            buildingInfo?.totalArea
+              ? (gasUsage / buildingInfo.totalArea).toFixed(4)
+              : 0
+          }
+          monthUsagePerArea={
+            buildingInfo?.totalArea
+              ? (monthGasUsage / buildingInfo.totalArea).toFixed(4)
+              : 0
+          }
         />
         <Energy
           type="water"
           title="수도"
           icon="water_icon.svg"
           toDayWaterUsage={waterUsage}
+          yesterdayUsage={yesterdayUsage.water}
+          yesterdayMaxUsage={yesterdayUsage.maxWater}
+          toMonthWaterUsage={monthWaterUsage}
+          lastMonthUsage={lastMonthUsage.water}
+          lastMonthMaxUsage={lastMonthUsage.maxWater}
+          usagePerArea={
+            buildingInfo?.totalArea
+              ? (waterUsage / buildingInfo.totalArea).toFixed(6)
+              : 0
+          }
+          monthUsagePerArea={
+            buildingInfo?.totalArea
+              ? (monthWaterUsage / buildingInfo.totalArea).toFixed(6)
+              : 0
+          }
         />
 
         <AverageAndEnergy>

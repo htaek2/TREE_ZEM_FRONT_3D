@@ -440,9 +440,11 @@ const InfoValue = styled.span`
 function Wing({
   railOpen,
   onClose,
-  gasUsage = { gasUsage },
-  elecUsage = { elecUsage },
-  waterUsage = { waterUsage },
+  todayUsage = { todayUsage },
+  yesterdayUsage = { yesterdayUsage },
+  monthUsage = { monthUsage },
+  lastMonthUsage = { lastMonthUsage },
+  buildingInfo = { buildingInfo },
   active = { active },
   setActive = { setActive },
   selectedDevice,
@@ -508,7 +510,7 @@ function Wing({
               />
               <StatLabel>전력</StatLabel>
               <StatValue>
-                <span>{elecUsage}</span>
+                <span>{todayUsage.elec}</span>
                 <StatUnit>kWh</StatUnit>
               </StatValue>
             </StatRow>
@@ -527,7 +529,7 @@ function Wing({
               />
               <StatLabel>가스</StatLabel>
               <StatValue>
-                <span>{gasUsage}</span>
+                <span>{todayUsage.gas}</span>
                 <StatUnit>㎥</StatUnit>
               </StatValue>
             </StatRow>
@@ -546,7 +548,7 @@ function Wing({
               />
               <StatLabel>수도</StatLabel>
               <StatValue>
-                <span>{waterUsage}</span>
+                <span>{todayUsage.water}</span>
                 <StatUnit>㎥</StatUnit>
               </StatValue>
             </StatRow>
@@ -618,9 +620,15 @@ function Wing({
       {activeModal === "condition" && (
         <Condition
           onClose={() => setActiveModal(null)}
-          elecUsage={elecUsage}
-          waterUsage={waterUsage}
-          gasUsage={gasUsage}
+          elecUsage={todayUsage.elec}
+          waterUsage={todayUsage.water}
+          gasUsage={todayUsage.gas}
+          yesterdayUsage={yesterdayUsage}
+          monthElecUsage={monthUsage.elec}
+          monthWaterUsage={monthUsage.water}
+          monthGasUsage={monthUsage.gas}
+          lastMonthUsage={lastMonthUsage}
+          buildingInfo={buildingInfo}
         >
           현황
         </Condition>

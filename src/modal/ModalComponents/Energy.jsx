@@ -88,13 +88,22 @@ function Energy({
   toDayElecUsage,
   toDayGasUsage,
   toDayWaterUsage,
+  yesterdayUsage,
+  yesterdayMaxUsage,
+  usagePerArea,
+  toMonthElecUsage,
+  toMonthGasUsage,
+  toMonthWaterUsage,
+  lastMonthUsage,
+  lastMonthMaxUsage,
+  monthUsagePerArea,
   /* ------------------------------- */
 }) {
   /* ---  2025-10-18 🍪 백민기 수정 ---- */
   const [usage, setUsage] = useState({
-    elect: [toDayElecUsage, 11.1111],
-    gas: [toDayGasUsage, 22.2222],
-    water: [toDayWaterUsage, 33.3333],
+    elect: [toDayElecUsage, toMonthElecUsage],
+    gas: [toDayGasUsage, toMonthGasUsage],
+    water: [toDayWaterUsage, toMonthWaterUsage],
   });
   /* ------------------------------- */
   const [ratio, setRatio] = useState({
@@ -106,11 +115,16 @@ function Energy({
   /* ---  2025-10-18 🍪 백민기 추가 ---- */
   useEffect(() => {
     setUsage({
-      elect: [toDayElecUsage, 11.1111],
-      gas: [toDayGasUsage, 22.2222],
-      water: [toDayWaterUsage, 33.3333],
+      elect: [toDayElecUsage, toMonthElecUsage],
+      gas: [toDayGasUsage, toMonthGasUsage],
+      water: [toDayWaterUsage, toMonthWaterUsage],
     });
-  }, [toDayElecUsage, toDayGasUsage, toDayWaterUsage]);
+  }, [toDayElecUsage, toDayGasUsage, toDayWaterUsage, toMonthElecUsage, toMonthGasUsage, toMonthWaterUsage]);
+
+  useEffect(() => {
+    console.log(`[${type}] 금일 1㎡ 당 사용량:`, usagePerArea);
+    console.log(`[${type}] 금월 1㎡ 당 사용량:`, monthUsagePerArea);
+  }, [usagePerArea, monthUsagePerArea, type]);
   /* ------------------------------- */
 
   const explainFilter = type === "elect" ? "최고 사용량" : "시간당 최고 사용량";
@@ -198,16 +212,22 @@ function Energy({
               <img src={icons.circle} alt="⚪" /> 전일 사용량
             </div>
             <div>
-              <img src={icons.circle} alt="⚪" /> 1㎥ 당 사용량
+              <img src={icons.circle} alt="⚪" /> 1㎡ 당 사용량
             </div>
             <div>
               <img src={icons.circle} alt="⚪" /> {explainFilter}
             </div>
           </Energy1UsageFooterL>
           <Energy1UsageFooterR>
-            <div>0,000.0 {unitFilter}</div>
-            <div>0,000.0 {unitFilter}</div>
-            <div>0,000.0 {unitFilter}</div>
+            <div>
+              {yesterdayUsage} {unitFilter}
+            </div>
+            <div>
+              {usagePerArea} {unitFilter}/㎡
+            </div>
+            <div>
+              {yesterdayMaxUsage} {unitFilter}
+            </div>
           </Energy1UsageFooterR>
         </Energy1UsageFooter>
       </Energy1Usage>
@@ -280,16 +300,22 @@ function Energy({
               <img src={icons.circle} alt="⚪" /> 전월 사용량
             </div>
             <div>
-              <img src={icons.circle} alt="⚪" /> 1㎥ 당 사용량
+              <img src={icons.circle} alt="⚪" /> 1㎡ 당 사용량
             </div>
             <div>
               <img src={icons.circle} alt="⚪" /> {explainFilter}
             </div>
           </Energy30UsageFooterL>
           <Energy30UsageFooterR>
-            <div>0,000.0 {unitFilter}</div>
-            <div>0,000.0 {unitFilter}</div>
-            <div>0,000.0 {unitFilter}</div>
+            <div>
+              {lastMonthUsage} {unitFilter}
+            </div>
+            <div>
+              {monthUsagePerArea} {unitFilter}/㎡
+            </div>
+            <div>
+              {lastMonthMaxUsage} {unitFilter}
+            </div>
           </Energy30UsageFooterR>
         </Energy30UsageFooter>
       </Energy30Usage>
@@ -311,7 +337,7 @@ function Energy({
               <img src={icons.circle} alt="⚪" /> 전월 사용량
             </div>
             <div>
-              <img src={icons.circle} alt="⚪" /> 1㎥ 당 사용량
+              <img src={icons.circle} alt="⚪" /> 1㎡ 당 사용량
             </div>
           </EnergyChargeFooterL>
           <EnergyChargeFooterR>
