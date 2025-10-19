@@ -14,7 +14,7 @@ import Login from "./components/Login";
 // 🍪
 import BrandClock from "./components/BrandClock";
 import Wing from "./components/Wing";
-import HiddenToggle from "./components/HiddenToggle"; 
+import HiddenToggle from "./components/HiddenToggle";
 
 const Container = styled.div`
   position: fixed;
@@ -27,12 +27,14 @@ const Container = styled.div`
   touch-action: none;
 `;
 
-
-
 // 🎯 반응형 카메라 설정 함수
 const getResponsiveCameraSettings = (isAuthenticated) => {
   const width = window.innerWidth;
-  console.log(isAuthenticated ? "로그인된 사용자" : "비로그인 사용자", "화면 너비:", width);
+  console.log(
+    isAuthenticated ? "로그인된 사용자" : "비로그인 사용자",
+    "화면 너비:",
+    width
+  );
   // 모바일 (768px 미만)
   if (width < 768) {
     return {
@@ -56,10 +58,8 @@ const getResponsiveCameraSettings = (isAuthenticated) => {
       maxDistance: 55,
       target: [13, 5, -8],
     };
-  } 
-  
   }
-
+};
 
 function App() {
   const [auth, setAuthState] = useState({ isAuthenticated: false, user: null });
@@ -70,171 +70,201 @@ function App() {
   const [cameraSettings, setCameraSettings] = useState(
     getResponsiveCameraSettings(auth.isAuthenticated)
   );
-  const [gasUsage, setGasUsage] = useState({totalUsage: 0, datas: [{timestamp: '', usage: 0}]});
-  const [elecUsage, setElecUsage] = useState({totalUsage: 0, datas: [{timestamp: '', usage: 0}]});
-  const [waterUsage, setWaterUsage] = useState({totalUsage: 0, datas: {usage: 0}});
+  const [gasUsage, setGasUsage] = useState({
+    totalUsage: 0,
+    datas: [{ timestamp: "", usage: 0 }],
+  });
+  const [elecUsage, setElecUsage] = useState({
+    totalUsage: 0,
+    datas: [{ timestamp: "", usage: 0 }],
+  });
+  const [waterUsage, setWaterUsage] = useState({
+    totalUsage: 0,
+    datas: { usage: 0 },
+  });
 
   const [floors, setFloors] = useState([
-    {waterUsage : 0, devices: []},{waterUsage : 0, devices: []},{waterUsage : 0, devices: []},{waterUsage : 0, devices: []}
+    { devices: [] },
+    { devices: [] },
+    { devices: [] },
+    { devices: [] },
   ]);
 
   const dataFormat = (data) => {
-     let month = data.getMonth() + 1;
-        let day = data.getDate();
-        let hour = data.getHours();
-        let minute = data.getMinutes();
-        let second = data.getSeconds();
+    let month = data.getMonth() + 1;
+    let day = data.getDate();
+    let hour = data.getHours();
+    let minute = data.getMinutes();
+    let second = data.getSeconds();
 
-        month = month >= 10 ? month : '0' + month;
-        day = day >= 10 ? day : '0' + day;
-        hour = hour >= 10 ? hour : '0' + hour;
-        minute = minute >= 10 ? minute : '0' + minute;
-        second = second >= 10 ? second : '0' + second;
+    month = month >= 10 ? month : "0" + month;
+    day = day >= 10 ? day : "0" + day;
+    hour = hour >= 10 ? hour : "0" + hour;
+    minute = minute >= 10 ? minute : "0" + minute;
+    second = second >= 10 ? second : "0" + second;
 
-        return data.getFullYear() + '-' + month + '-' + day + ' ' + hour + ':' + minute + ':' + second;
-  }
+    return (
+      data.getFullYear() +
+      "-" +
+      month +
+      "-" +
+      day +
+      " " +
+      hour +
+      ":" +
+      minute +
+      ":" +
+      second
+    );
+  };
 
   const ElectFetch = () => {
-      console.log("SSE 연결 시작...");
-      // sse 연결 - 프록시를 통해 상대 경로 사용
-      const eventSource = new EventSource("/api/energy/sse/all");
+    console.log("SSE 연결 시작...");
+    // sse 연결 - 프록시를 통해 상대 경로 사용
+    const eventSource = new EventSource("/api/energy/sse/all");
 
-      // SSE 연결 성공
-      eventSource.onopen = function() {
-        console.log("✅ SSE 연결 성공");
-      };
+    // SSE 연결 성공
+    eventSource.onopen = function () {
+      console.log("✅ SSE 연결 성공");
+    };
 
-      // 데이터 수신 시
-      eventSource.onmessage = function(event) {
-        try {
-          const data = JSON.parse(event.data);
-          
-          console.log("수도 사용량:", data.floors.map(floor => floor.waterUsage.datas[0].usage));
+    // 데이터 수신 시
+    eventSource.onmessage = function (event) {
+      try {
+        const data = JSON.parse(event.data);
 
-          console.log("가스 데이터:", data.gasUsage.datas[0].usage);
-        
-          console.log("전력 데이터:", data.florrs.map(floor => floor));
-          
+        const waterUsages = data.floors.map(
+          (floor) => floor.waterUsage.datas[0].usage
+        );
+        const totalWater = waterUsages.reduce((sum, usage) => sum + usage, 0);
 
-        //   // SSE로 받은 usage를 기존 totalUsage에 누적
-        //   setGasUsage(prevGasUsage => {
-        //     const newUsage = data.gasUsage.datas.reduce((sum, item) => sum + item.usage, 0);
-        //     const newTotalUsage = prevGasUsage.totalUsage + newUsage;
-            
-        //     console.log("newTotalUsage:", newTotalUsage);
-        //     console.log(`SSE 가스 누적: ${Math.floor(prevGasUsage.totalUsage * 10000) / 10000} + ${Math.floor(newUsage * 10000) / 10000} = ${Math.floor(newTotalUsage * 10000) / 10000}`);
+        console.log("수도 사용량:", waterUsages);
+        console.log("수도 사용량 합계:", totalWater);
 
-        //     return {
-        //       // 4자리수까지만 저장
-        //       totalUsage: Math.floor(newTotalUsage * 10000) / 10000, 
-        //       datas: [...prevGasUsage.datas, ...data.gasUsage.datas]
-        //     };
-        //   });
-          
-        //   setFloors([
-        //     floors[0].devices = data.floors[0].devices,
-        //     floors[1].devices = data.floors[1].devices,
-        //     floors[2].devices = data.floors[2].devices,
-        //     floors[3].devices = data.floors[3].devices,
-        //     floors[0].waterUsage = data.floors[0].waterUsage,
-        //     floors[1].waterUsage = data.floors[1].waterUsage,
-        //     floors[2].waterUsage = data.floors[2].waterUsage,
-        //     floors[3].waterUsage = data.floors[3].waterUsage
-        //   ])
+        setWaterUsage((prev) => ({
+          ...prev,
+          totalUsage:
+            Math.floor((prev.totalUsage + totalWater) * 100000) / 100000,
+        }));
 
-        //   // 모든 층의 물 사용량 합산
-        //   const totalWaterUsage = floors.reduce((sum, floor, index) => {
-        //     console.log(`${index+1}층 물 사용량:`, floor.waterUsage);
-        //     return sum + (floor.waterUsage?.datas?.[0]?.usage || 0);
-        //   }, 0);
+        const gasUsage = data.gasUsage.datas[0].usage;
 
-        //   // 객체 형태로 상태 업데이트
-        //   setWaterUsage(prev => ({
-        //     ...prev,
-        //     totalUsage: totalWaterUsage
-        //   }));
-          
-          
-        // console.log("업데이트된 층 데이터:", floors);
+        console.log("가스 데이터:", gasUsage);
 
-        } catch (error) {
-          console.log("텍스트 데이터:", event.data);
-        }
-      };
+        setGasUsage((prev) => ({
+          ...prev,
+          totalUsage: Math.floor((prev.totalUsage + gasUsage) * 10000) / 10000,
+        }));
 
-      // 오류 발생 시
-      eventSource.onerror = function(err) {
-        console.error("❌ SSE 연결 오류:", err);
-        eventSource.close();
-      };
-    }
+        setFloors((prevFloors) => {
+          const newFloors = [...prevFloors];
+          data.floors.forEach((floor) => {
+            if (floor.floorNum >= 1 && floor.floorNum <= 4) {
+              newFloors[floor.floorNum - 1].devices = floor.devices;
+            }
+          });
+          return newFloors;
+        });
 
+        // 모든 층의 디바이스 전력 사용량 합산하여 elecUsage 업데이트
+        const totalFloorElecUsage = data.floors.reduce((sum, floor) => {
+          const floorTotal = floor.devices.reduce((deviceSum, device) => {
+            const deviceUsage = device.electricityUsage?.datas?.[0]?.usage || 0;
+            return deviceSum + deviceUsage;
+          }, 0);
+          return sum + floorTotal;
+        }, 0);
 
+        console.log("1층 디바이스" + JSON.stringify(data.floors[0].devices));
+        console.log("층별 전기 사용량 합계:", totalFloorElecUsage);
+
+        setElecUsage((prev) => ({
+          ...prev,
+          totalUsage:
+            Math.floor((prev.totalUsage + totalFloorElecUsage) * 10) / 10,
+        }));
+      } catch (error) {
+        console.log("텍스트 데이터:", event.data);
+      }
+    };
+
+    // 오류 발생 시
+    eventSource.onerror = function (err) {
+      console.error("❌ SSE 연결 오류:", err);
+      eventSource.close();
+    };
+  };
 
   const getHourlyUsageFecth = async () => {
     try {
-      console.log('Fetch 시작');
+      console.log("Fetch 시작");
 
       let now = new Date();
       const today = new Date();
-      today.setHours(0, 0, 0, 0); 
+      today.setHours(0, 0, 0, 0);
 
       let start = dataFormat(today);
       let end = dataFormat(now);
 
-      
-      console.log('Fetch 시작 시간:', start, '끝 시간:', end);
-       const [gasResponse, elecResponse, waterResponse] = await Promise.all([
-        fetch(`api/energy/gas?start=${start}&end=${end}&datetimeType=0`),
-        fetch(`api/energy/elec?start=${start}&end=${end}&datetimeType=0`),
-        fetch(`api/energy/water?start=${start}&end=${end}&datetimeType=0`)
+      console.log("Fetch 시작 시간:", start, "끝 시간:", end);
+      const [gasResponse, elecResponse, waterResponse] = await Promise.all([
+        fetch(`/api/energy/gas?start=${start}&end=${end}&datetimeType=0`),
+        fetch(`/api/energy/elec?start=${start}&end=${end}&datetimeType=0`),
+        fetch(`/api/energy/water?start=${start}&end=${end}&datetimeType=0`),
       ]);
-    
+
       const [gasJson, elecJson, waterJson] = await Promise.all([
         gasResponse.json(),
         elecResponse.json(),
-        waterResponse.json()
+        waterResponse.json(),
       ]);
 
       if (gasResponse.ok && elecResponse.ok && waterResponse.ok) {
         // 모든 usage 합산
-        const totalGasUsage = gasJson.datas.reduce((sum, item) => sum + item.usage, 0);
+        const totalGasUsage = gasJson.datas.reduce(
+          (sum, item) => sum + item.usage,
+          0
+        );
 
         setGasUsage({
           totalUsage: Math.floor(totalGasUsage * 10000) / 10000,
-          datas: gasJson.datas
+          datas: gasJson.datas,
         });
 
+        // const totalElecUsage = elecJson.datas.reduce(
+        //   (sum, item) => sum + item.usage,
+        //   0
+        // );
+        let totalElecUsage = 252.42; // 임시 고정값
 
-        
-
-        const totalElecUsage = elecJson.datas.reduce((sum, item) => sum + item.usage, 0);
-     
+        console.log("전기 전체 사용량:", totalElecUsage);
 
         setElecUsage({
           totalUsage: Math.floor(totalElecUsage * 10) / 10,
-          datas: elecJson.datas
+          datas: elecJson.datas,
         });
-        
-       
 
-        const totalWaterUsage = waterJson.datas.reduce((sum,item) => sum + item.usage, 0);
+        const totalWaterUsage = waterJson.datas.reduce(
+          (sum, item) => sum + item.usage,
+          0
+        );
 
         setWaterUsage({
-          totalUsage: Math.floor(totalWaterUsage * 10000) / 10000,
-          datas: waterJson.datas
+          totalUsage: Math.floor(totalWaterUsage * 100000) / 100000,
+          datas: waterJson.datas,
         });
-
-
-
       } else {
-        console.error('Fetch 실패:', gasResponse.status, elecResponse.status, waterResponse.status);
+        console.error(
+          "Fetch 실패:",
+          gasResponse.status,
+          elecResponse.status,
+          waterResponse.status
+        );
       }
     } catch (error) {
-      console.error('Fetch error:', error);
+      console.error("Fetch error:", error);
     }
   };
-   
 
   // 로그인된 사용자 정보 조회 함수
   const fetchUserInfo = async () => {
@@ -256,14 +286,12 @@ function App() {
   };
 
   useEffect(() => {
-     fetchUserInfo();
-      
+    fetchUserInfo();
   }, []);
-
 
   // 로그인 됫을때 작동하는 useEffect
   useEffect(() => {
-    if(!auth.isAuthenticated) return;
+    if (!auth.isAuthenticated) return;
 
     // 최초 접속 시 즉시 실행
     getHourlyUsageFecth().then(() => {
@@ -329,7 +357,6 @@ function App() {
     setSelectedDevice(null);
   };
 
-
   // 좌측 층 버튼 패널 접힘/펼침 상태
   const [railOpen, setRailOpen] = useState(() => {
     try {
@@ -340,101 +367,109 @@ function App() {
   });
 
   useEffect(() => {
-    try { localStorage.setItem("floor-rail-open", railOpen ? "1" : "0"); } catch {}
-
+    try {
+      localStorage.setItem("floor-rail-open", railOpen ? "1" : "0");
+    } catch {}
   }, [railOpen]);
-  
-
-
-
 
   return (
     <>
       {!auth.isAuthenticated && <Login onLoginSuccess={fetchUserInfo} />}
-    
-    <Container>
-      <GlobalStyle />
 
-      <HiddenToggle railOpen={railOpen} setRailOpen={setRailOpen} />
+      <Container>
+        <GlobalStyle />
 
+        <HiddenToggle railOpen={railOpen} setRailOpen={setRailOpen} />
 
-      <Canvas
-        camera={{
-          position: cameraSettings.defaultPosition,
-          fov: cameraSettings.defaultFov,
-          near: 0.1,
-          far: 1000,
-        }}
-      >
-        {auth.isAuthenticated && (
-          <>
-            {/* 🎥 카메라 컨트롤러 추가 */}
-            <CameraController active={active} cameraSettings={cameraSettings} />
-          </>
-        )}
+        <Canvas
+          camera={{
+            position: cameraSettings.defaultPosition,
+            fov: cameraSettings.defaultFov,
+            near: 0.1,
+            far: 1000,
+          }}
+        >
+          {auth.isAuthenticated && (
+            <>
+              {/* 🎥 카메라 컨트롤러 추가 */}
+              <CameraController
+                active={active}
+                cameraSettings={cameraSettings}
+              />
+            </>
+          )}
 
-        {/* 조명 */}
-        <ambientLight intensity={1.5} />
-        <directionalLight position={[10, 10, 20]} intensity={1} />
-        <pointLight position={[10, 10, 20]} intensity={5} distance={1} />
+          {/* 조명 */}
+          <ambientLight intensity={1.5} />
+          <directionalLight position={[10, 10, 20]} intensity={1} />
+          <pointLight position={[10, 10, 20]} intensity={5} distance={1} />
 
-        {/* 3D 모델 - 로딩 중 fallback 표시 */}
-        <Suspense fallback={null}>
-          {modelsToShow.map((modelName) => (
-            <Model
-              key={modelName}
-              model={modelName}
-              onClick={
-                auth.isAuthenticated
-                  ? () => handleModelClick(modelName)
-                  : undefined
-              }
-              isSelected={auth.isAuthenticated ? active.active : undefined}
-              onDeviceClick={
-                auth.isAuthenticated ? handleDeviceClick : undefined
-              }
-              selectedDevice={auth.isAuthenticated ? selectedDevice : undefined}
-              ishover={auth.isAuthenticated ? true : false}
-            />
-          ))}
-        </Suspense>
-        {auth.isAuthenticated ?  (
-          <>
-            {/* 컨트롤 - 반응형 설정 적용 */}
-            <OrbitControls
-              target={cameraSettings.target}
-              enableRotate={true}
-              enableZoom={true}
-              enablePan={true}
-              enableDamping={true}
-              dampingFactor={0.05}
-              minDistance={cameraSettings.minDistance}
-              maxDistance={cameraSettings.maxDistance}
-            />
-          </>
-        ) : (
-          <>
-            <OrbitControls
-              target={cameraSettings.target}
-              enableZoom={false}
-              enableRotate={false}
-              enablePan={false}
-              enableDamping={false}
-              minDistance={cameraSettings.minDistance}
-              maxDistance={cameraSettings.maxDistance}
-            />
-          </>
-        )}
-      </Canvas>
+          {/* 3D 모델 - 로딩 중 fallback 표시 */}
+          <Suspense fallback={null}>
+            {modelsToShow.map((modelName) => (
+              <Model
+                key={modelName}
+                model={modelName}
+                onClick={
+                  auth.isAuthenticated
+                    ? () => handleModelClick(modelName)
+                    : undefined
+                }
+                isSelected={auth.isAuthenticated ? active.active : undefined}
+                onDeviceClick={
+                  auth.isAuthenticated ? handleDeviceClick : undefined
+                }
+                selectedDevice={
+                  auth.isAuthenticated ? selectedDevice : undefined
+                }
+                ishover={auth.isAuthenticated ? true : false}
+              />
+            ))}
+          </Suspense>
+          {auth.isAuthenticated ? (
+            <>
+              {/* 컨트롤 - 반응형 설정 적용 */}
+              <OrbitControls
+                target={cameraSettings.target}
+                enableRotate={true}
+                enableZoom={true}
+                enablePan={true}
+                enableDamping={true}
+                dampingFactor={0.05}
+                minDistance={cameraSettings.minDistance}
+                maxDistance={cameraSettings.maxDistance}
+              />
+            </>
+          ) : (
+            <>
+              <OrbitControls
+                target={cameraSettings.target}
+                enableZoom={false}
+                enableRotate={false}
+                enablePan={false}
+                enableDamping={false}
+                minDistance={cameraSettings.minDistance}
+                maxDistance={cameraSettings.maxDistance}
+              />
+            </>
+          )}
+        </Canvas>
 
+        <BrandClock />
 
-      <BrandClock />
-
-      <Wing railOpen={railOpen} onClose={() => setRailOpen(false)} gasUsage={gasUsage.totalUsage} elecUsage={elecUsage.totalUsage} waterUsage={waterUsage.totalUsage} active={active} setActive={setActive} selectedDevice={selectedDevice} setSelectedDevice={setSelectedDevice} />
-
-    </Container>
+        <Wing
+          railOpen={railOpen}
+          onClose={() => setRailOpen(false)}
+          gasUsage={gasUsage.totalUsage}
+          elecUsage={elecUsage.totalUsage}
+          waterUsage={waterUsage.totalUsage}
+          active={active}
+          setActive={setActive}
+          selectedDevice={selectedDevice}
+          setSelectedDevice={setSelectedDevice}
+        />
+      </Container>
     </>
-
   );
 }
 

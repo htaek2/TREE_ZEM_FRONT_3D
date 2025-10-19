@@ -35,7 +35,7 @@ const getResponsiveCameraSettings = () => {
   }
 };
 
-function Login({ onLoginSuccess}) {
+function Login({ onLoginSuccess }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -52,8 +52,6 @@ function Login({ onLoginSuccess}) {
   const AnimationTriggerOn = () => {
     setIsFadeOut(true);
   };
-
-
 
   const validateForm = () => {
     // username 검증
@@ -96,7 +94,6 @@ function Login({ onLoginSuccess}) {
     setLoginText("로그인 중 입니다...");
 
     try {
-
       // const response = await fetch("/dummy_login/users.json");
 
       // if (!response.ok) {
@@ -135,15 +132,14 @@ function Login({ onLoginSuccess}) {
       //   "| Roles:",
       //   userWithToken.roles
       // );
-      
+
       // document.getElementById('loginForm').addEventListener('submit', function(event) {
- 
 
       let email = username;
       let userPassword = password;
       let userName = username;
 
-      if(autoMode) {
+      if (autoMode) {
         email = "ad";
         userPassword = "123";
         userName = "ad";
@@ -151,69 +147,71 @@ function Login({ onLoginSuccess}) {
 
       const credentials = {
         email: email,
-        password: userPassword
+        password: userPassword,
       };
 
-      fetch('/api/auth/login', {
-        method: 'POST',
+      fetch("/api/auth/login", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify(credentials)
+        body: JSON.stringify(credentials),
       })
-      .then(response => {
-        if (response.ok) {
-          const token = response.headers.get('Authorization');
-          if (token) {
-            localStorage.setItem('authToken', token);
+        .then((response) => {
+          if (response.ok) {
+            const token = response.headers.get("Authorization");
+            if (token) {
+              localStorage.setItem("authToken", token);
 
-            // 사용자 정보 생성
-            const userWithToken = {
-              username: userName,
-              email: email,
-              accessToken: token,
-            };
-            localStorage.setItem  ("user", JSON.stringify(userWithToken));
+              // 사용자 정보 생성
+              const userWithToken = {
+                username: userName,
+                email: email,
+                accessToken: token,
+              };
+              localStorage.setItem("user", JSON.stringify(userWithToken));
 
-            setTimeout(() => {
-              setLoginText("로그인 성공!");
-            }, 1000);
+              setTimeout(() => {
+                setLoginText("로그인 성공!");
+              }, 1000);
 
-            setTimeout(() => {
-              setLoading(false);
-              AnimationTriggerOn();
-            }, 2000);
+              setTimeout(() => {
+                setLoading(false);
+                AnimationTriggerOn();
+              }, 2000);
 
-            setTimeout(() => {
-              onLoginSuccess(userWithToken);
-            }, 3000);
-          } else {
-              setLoginText('로그인에 성공했지만 토큰을 받지 못했습니다.');
+              setTimeout(() => {
+                onLoginSuccess(userWithToken);
+              }, 3000);
+            } else {
+              setLoginText("로그인에 성공했지만 토큰을 받지 못했습니다.");
               setLoginTextSize(12);
+              setTimeout(() => {
+                setLoading(false);
+              }, 3000);
+            }
+          } else {
+            setLoginText(
+              "로그인 실패: 이메일 또는 비밀번호가 올바르지 않습니다."
+            );
+            setLoginTextSize(12);
+
             setTimeout(() => {
               setLoading(false);
             }, 3000);
           }
-        } else {
-          setLoginText('로그인 실패: 이메일 또는 비밀번호가 올바르지 않습니다.');
-              setLoginTextSize(12);
-
-          setTimeout(() => {
-            setLoading(false);
-          }, 3000);
-        }
-      })
-      .catch(error => {
-        console.error('Error during login:', error);
-        setLoginText('로그인 중 오류가 발생했습니다.');
-        setLoading(false);
-      });
+        })
+        .catch((error) => {
+          console.error("Error during login:", error);
+          setLoginText("로그인 중 오류가 발생했습니다.");
+          setLoading(false);
+        });
     } catch (error) {
-      console.error('Error during login:', error);
-      setLoginText('로그인 중 오류가 발생했습니다.');
+      console.error("Error during login:", error);
+      setLoginText("로그인 중 오류가 발생했습니다.");
       setLoading(false);
     }
-  }
+  };
 
   return (
     <Container>
@@ -398,7 +396,7 @@ const LoadingIcon = styled.img`
 `;
 
 const LodingText = styled.h2`
-  font-size: ${props => props.$LoginTextSize}px;
+  font-size: ${(props) => props.$LoginTextSize}px;
   color: white;
   margin-top: 10px;
   font-weight: 800;
