@@ -112,6 +112,13 @@ function App() {
     totalArea: 0, // 건물 총 면적
   });
 
+
+  const [billInfo, setBillInfo] = useState({
+    realTime: 0, // 실시간 요금
+    lastMonth: 0, // 전월 요금
+    thisMonth: 0, // 금월 요금
+  });
+
   const dataFormat = (data) => {
     let month = data.getMonth() + 1;
     let day = data.getDate();
@@ -215,6 +222,32 @@ function App() {
     };
   };
 
+  const billFetch = async () => {
+    try {
+      console.log("요금 Fetch 시작");
+
+
+      let now = new Date();
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+
+    const params = new URLSearchParams({
+    start: dataFormat(today),
+    end: '2024-12-31 23:59:59',
+    datetimeType: 2  // 0=시간, 1=일, 2=월, 3=년                                                                                                                                                                                    
+  });
+
+  fetch(`/api/energy/bill?${params}`)
+    .then(response => response.json())
+    .then(data => console.log("요금",data))
+    .catch(error => console.error('Error:', error));
+    } catch (error) {
+      console.error("Fetch error:", error);
+    }
+
+
+  };
   const getYesterdayUsage = async () => {
     try {
       console.log("어제 사용량 Fetch 시작");
@@ -544,6 +577,7 @@ function App() {
 
     // 최초 접속 시 즉시 실행
     fetchBuildingInfo();
+    billFetch();
     getYesterdayUsage().then(() => {});
     getLastMonthUsage().then(() => {});
     getHourlyUsageFecth().then(() => {

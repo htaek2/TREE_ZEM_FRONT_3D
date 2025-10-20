@@ -334,10 +334,10 @@ function Energy({
         <EnergyChargeFooter>
           <EnergyChargeFooterL>
             <div>
-              <img src={icons.circle} alt="⚪" /> 전월 사용량
+              <img src={icons.circle} alt="⚪" /> 금월 실시간 요금
             </div>
             <div>
-              <img src={icons.circle} alt="⚪" /> 1㎡ 당 사용량
+              <img src={icons.circle} alt="⚪" /> 전월 요금
             </div>
           </EnergyChargeFooterL>
           <EnergyChargeFooterR>
