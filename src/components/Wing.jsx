@@ -485,18 +485,6 @@ function Wing({
     }
   }, []);
 
-   const handleModelButtonClick = (modelName) => {
-    if (modelName === "top") {
-      return;
-    }
-
-    setActive({
-      active: true,
-      model: modelName,
-    });
-    setSelectedDevice(null); // 층 변경 시 기기 선택 해제
-  };
-  
   // 🍪
   const [activeModal, setActiveModal] = useState(null);
 

@@ -95,6 +95,8 @@ function Condition({
   monthGasUsage,
   lastMonthUsage,
   buildingInfo,
+  // 🍪 -백 10-20
+  billInfo,
 }) {
   const [ratio, setRatio] = useState(105);
 
@@ -137,6 +139,8 @@ function Condition({
               ? (monthElecUsage / buildingInfo.totalArea).toFixed(4)
               : 0
           }
+          // 🍪 -백 10-20
+          billInfo={billInfo.electricThisMonth}
         />
         <Energy
           type="gas"
@@ -158,6 +162,8 @@ function Condition({
               ? (monthGasUsage / buildingInfo.totalArea).toFixed(4)
               : 0
           }
+          // 🍪 -백 10-20
+          billInfo={billInfo.gasThisMonth}
         />
         <Energy
           type="water"
@@ -179,6 +185,8 @@ function Condition({
               ? (monthWaterUsage / buildingInfo.totalArea).toFixed(6)
               : 0
           }
+          // 🍪 -백 10-20
+          billInfo={billInfo.waterThisMonth}
         />
 
         <AverageAndEnergy>

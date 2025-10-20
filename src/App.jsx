@@ -14,7 +14,7 @@ import Login from "./components/Login";
 // 🍪
 import BrandClock from "./components/BrandClock";
 import Wing from "./components/Wing";
-import HiddenToggle from "./components/HiddenToggle";
+
 
 const Container = styled.div`
   position: fixed;
@@ -64,7 +64,7 @@ const getResponsiveCameraSettings = (isAuthenticated) => {
 function App() {
   const [auth, setAuthState] = useState({ isAuthenticated: false, user: null });
   const [active, setActive] = useState({ active: false, model: null });
-  const modelsToShow = active.active ? [active.model] : MODELS;
+  const modelsToShow = active.active ? [active.model] : MODELS; //  ["f1", "f2", "f3", "f4", "top"]
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [computers, setComputer] = useState([]);
   const [cameraSettings, setCameraSettings] = useState(
@@ -114,9 +114,15 @@ function App() {
 
 
   const [billInfo, setBillInfo] = useState({
-    realTime: 0, // 실시간 요금
-    lastMonth: 0, // 전월 요금
-    thisMonth: 0, // 금월 요금
+    electricRealTime: 0, // 전기 실시간 요금
+    gasRealTime: 0, // 가스 실시간 요금
+    waterRealTime: 0, // 수도 실시간 요금
+    electricLastMonth: 0, // 전월 요금
+    gasLastMonth: 0, // 가스 전월 요금
+    waterLastMonth: 0, // 수도 전월 요금
+    electricThisMonth: 0, // 금월 요금
+    gasThisMonth: 0, // 금월 요금
+    waterThisMonth: 0, // 금월 요금
   });
 
   const dataFormat = (data) => {
@@ -222,9 +228,67 @@ function App() {
     };
   };
 
-  const billFetch = async () => {
+  /* 🍪 - 백 25-10-20 -*/
+  const getLastMonthlyBill = async () => {
     try {
-      console.log("요금 Fetch 시작");
+      console.log("전월 요금 Fetch 시작");
+      let now = new Date();
+      const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+      const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      lastMonth.setHours(0, 0, 0, 0);
+      const params = new URLSearchParams({
+        start: dataFormat(lastMonth),
+        end: dataFormat(lastMonthEnd),
+        datetimeType: 2, // 0=시간, 1=일, 2=월, 3=년
+      });
+      fetch(`/api/energy/bill?${params}`)
+        .then((response) => response.json())
+        .then((data) =>
+          data.map((energy) => {
+            if (energy.energyType === "ELECTRICITY") {
+              const totalElecUsage = energy.datas.reduce(
+                (sum, el) => sum + el.usage,
+                0
+              );
+              console.log("전월 전기 요금 합계:", Math.trunc(totalElecUsage));
+              setBillInfo((prev) => ({
+                ...prev,
+                electricLastMonth: Math.trunc(totalElecUsage),
+              }));
+            } else if (energy.energyType === "GAS") {
+              const totalGasUsage = energy.datas.reduce(
+                (sum, el) => sum + el.usage,
+                0
+              );
+              console.log("전월 가스 요금 합계:", Math.trunc(totalGasUsage));  
+              setBillInfo((prev) => ({  
+                ...prev,
+                gasLastMonth: Math.trunc(totalGasUsage),
+              }));
+            } else if (energy.energyType === "WATER") {
+              const totalWaterUsage = energy.datas.reduce(
+                (sum, el) => sum + el.usage,
+                0 
+              );
+              console.log("전월 수도 요금 합계:", Math.trunc(totalWaterUsage));
+              setBillInfo((prev) => ({
+                ...prev,
+                waterLastMonth: Math.trunc(totalWaterUsage),
+              }));
+            }
+            return null;
+          })
+        )
+        .catch((error) => console.error("Error:", error));
+    } catch (error) {
+      console.error("Fetch error:", error);
+    }
+  };
+
+  /* 🍪 - 백 25-10-20 -*/
+  const getMonthlyBill = async () => {
+    try {
+      console.log("금월 요금 Fetch 시작");
 
 
       let now = new Date();
@@ -232,15 +296,40 @@ function App() {
       today.setHours(0, 0, 0, 0);
 
 
+    const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    thisMonth.setHours(0, 0, 0, 0);
+
     const params = new URLSearchParams({
-    start: dataFormat(today),
-    end: '2024-12-31 23:59:59',
-    datetimeType: 2  // 0=시간, 1=일, 2=월, 3=년                                                                                                                                                                                    
-  });
+      start: dataFormat(thisMonth),
+      end: dataFormat(now),
+      datetimeType: 0, // 0=시간, 1=일, 2=월, 3=년
+    });
+
+    
 
   fetch(`/api/energy/bill?${params}`)
     .then(response => response.json())
-    .then(data => console.log("요금",data))
+  .then(data => data.map(energy => {
+    if (energy.energyType === 'ELECTRICITY') {
+      const totalElecUsage = energy.datas.reduce((sum, el) => sum + el.usage, 0);
+      console.log("전기 요금 합계:", Math.trunc(totalElecUsage));
+    } else if (energy.energyType === 'GAS') {
+      const totalGasUsage = energy.datas.reduce((sum, el) => sum + el.usage, 0);
+      console.log("가스 요금 합계:", Math.trunc(totalGasUsage));
+    } else if (energy.energyType === 'WATER') {
+      const totalWaterUsage = energy.datas.reduce((sum, el) => sum + el.usage, 0);
+      console.log("수도 요금 합계:", Math.trunc(totalWaterUsage));
+    }
+    setBillInfo(prev => ({
+      ...prev,
+      electricThisMonth: energy.energyType === 'ELECTRICITY' ? Math.trunc(energy.datas.reduce((sum, el) => sum + el.usage, 0)) : prev.electricThisMonth,
+      gasThisMonth: energy.energyType === 'GAS' ? Math.trunc(energy.datas.reduce((sum, el) => sum + el.usage, 0)) : prev.gasThisMonth,
+      waterThisMonth: energy.energyType === 'WATER' ? Math.trunc(energy.datas.reduce((sum, el) => sum + el.usage, 0)) : prev.waterThisMonth,
+    }));
+
+
+    return null;
+  }))
     .catch(error => console.error('Error:', error));
     } catch (error) {
       console.error("Fetch error:", error);
@@ -413,9 +502,6 @@ function App() {
         waterResponse.json(),
       ]);
 
-      console.log("가스 전월 데이터:", gasJson);
-      console.log("전기 전월 데이터:", elecJson);
-      console.log("수도 전월 데이터:", waterJson);
 
       if (gasResponse.ok && elecResponse.ok && waterResponse.ok) {
         const maxGasUsage = Math.max(
@@ -577,7 +663,8 @@ function App() {
 
     // 최초 접속 시 즉시 실행
     fetchBuildingInfo();
-    billFetch();
+    getLastMonthlyBill();
+    getMonthlyBill();
     getYesterdayUsage().then(() => {});
     getLastMonthUsage().then(() => {});
     getHourlyUsageFecth().then(() => {
@@ -599,17 +686,7 @@ function App() {
     setSelectedDevice(null); // 층 변경 시 기기 선택 해제
   };
 
-  const handleModelButtonClick = (modelName) => {
-    if (modelName === "top") {
-      return;
-    }
-
-    setActive({
-      active: true,
-      model: modelName,
-    });
-    setSelectedDevice(null); // 층 변경 시 기기 선택 해제
-  };
+ 
 
   const handleDeviceClick = (device) => {
     console.log("🎯 handleDeviceClick 호출됨:", device);
@@ -657,7 +734,6 @@ function App() {
       <Container>
         <GlobalStyle />
 
-        <HiddenToggle railOpen={railOpen} setRailOpen={setRailOpen} />
 
         <Canvas
           camera={{
@@ -678,7 +754,7 @@ function App() {
           )}
 
           {/* 조명 */}
-          <ambientLight intensity={1.5} />
+          <ambientLight intensity={2.0} />
           <directionalLight position={[10, 10, 20]} intensity={1} />
           <pointLight position={[10, 10, 20]} intensity={5} distance={1} />
 
@@ -736,7 +812,7 @@ function App() {
         <BrandClock />
 
         <Wing
-          railOpen={railOpen}
+          railOpen={railOpen} setRailOpen={setRailOpen}
           onClose={() => setRailOpen(false)}
           active={active}
           setActive={setActive}
@@ -747,6 +823,7 @@ function App() {
           monthUsage={monthUsage}
           lastMonthUsage={lastMonthUsage}
           buildingInfo={buildingInfo}
+          billInfo={billInfo}
         />
       </Container>
     </>
