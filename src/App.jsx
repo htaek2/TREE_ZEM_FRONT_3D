@@ -1,4 +1,4 @@
-import { Suspense, use, useEffect, useState } from "react";
+import { Suspense, use, useEffect, useState, useMemo } from "react";
 import "./App.css";
 import { Canvas, useThree, useFrame } from "@react-three/fiber";
 import Model from "./Model";
@@ -14,6 +14,7 @@ import Login from "./components/Login";
 // 🍪
 import BrandClock from "./components/BrandClock";
 import Wing from "./components/Wing";
+import { now } from "three/examples/jsm/libs/tween.module.js";
 
 
 const Container = styled.div`
@@ -64,7 +65,7 @@ const getResponsiveCameraSettings = (isAuthenticated) => {
 function App() {
   const [auth, setAuthState] = useState({ isAuthenticated: false, user: null });
   const [active, setActive] = useState({ active: false, model: null });
-  const modelsToShow = active.active ? [active.model] : MODELS; //  ["f1", "f2", "f3", "f4", "top"]
+  const modelsToShow = active.active ? [active.model] : MODELS; 
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [computers, setComputer] = useState([]);
   const [cameraSettings, setCameraSettings] = useState(
@@ -75,6 +76,10 @@ function App() {
     gas: 0,
     elec: 0,
     water: 0,
+    nowtimegas : 0,
+    nowtimeelec : 0,
+    nowtimewater : 0,
+
   });
 
   const [yesterdayUsage, setYesterdayUsage] = useState({
@@ -84,6 +89,9 @@ function App() {
     maxGas: 0,
     maxElec: 0,
     maxWater: 0,
+    nowtimegas : 0,
+    nowtimeelec : 0,
+    nowtimewater : 0,
   });
 
   const [monthUsage, setMonthUsage] = useState({
@@ -171,10 +179,16 @@ function App() {
         const waterUsages = data.floors.map(
           (floor) => floor.waterUsage.datas[0].usage
         );
-        const totalWater = waterUsages.reduce((sum, usage) => sum + usage, 0);
+
+        let totalWater = waterUsages.reduce((sum, usage) => sum + usage, 0);
 
         console.log("수도 사용량:", waterUsages);
         console.log("수도 사용량 합계:", totalWater);
+        
+
+        if(totalWater < 0) {
+          totalWater = 0;
+        }
 
         setFloors((prevFloors) => {
           const newFloors = [...prevFloors];
@@ -186,8 +200,14 @@ function App() {
           return newFloors;
         });
 
+        if(data.floors.length === 0) {
+          console.log("층 데이터가 없습니다.");
+          return;
+        }
+
+
         // 모든 층의 디바이스 전력 사용량 합산하여 elecUsage 업데이트
-        const totalFloorElecUsage = data.floors.reduce((sum, floor) => {
+        let totalFloorElecUsage = data.floors.reduce((sum, floor) => {
           const floorTotal = floor.devices.reduce((deviceSum, device) => {
             const deviceUsage = device.electricityUsage?.datas?.[0]?.usage || 0;
             return deviceSum + deviceUsage;
@@ -195,18 +215,34 @@ function App() {
           return sum + floorTotal;
         }, 0);
 
-        console.log("1층 디바이스" + JSON.stringify(data.floors[0].devices));
         console.log("층별 전기 사용량 합계:", totalFloorElecUsage);
+
+        if (totalFloorElecUsage < 0) {
+          totalFloorElecUsage = 0;
+        }
+
+        
+        if(data.gasUsage.datas[0].usage < 0) {
+          data.gasUsage.datas[0].usage = 0;
+        }
+
+        let nowGasUsage = data.gasUsage.datas[0].usage;
+
+
+        if(nowGasUsage < 0){
+          nowGasUsage = 0;
+        }
 
         setTodayUsage((prev) => ({
           ...prev,
           water: Math.floor((prev.water + totalWater) * 100000) / 100000,
           gas:
-            Math.floor((prev.gas + data.gasUsage.datas[0].usage) * 10000) /
+            Math.floor((prev.gas + nowGasUsage) * 10000) /
             10000,
           elec: Math.floor((prev.elec + totalFloorElecUsage) * 10) / 10,
         }));
 
+        
         // 금월 사용량도 동일하게 누적
         setMonthUsage((prev) => ({
           ...prev,
@@ -294,8 +330,8 @@ function App() {
       let now = new Date();
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-
-
+      
+     
     const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     thisMonth.setHours(0, 0, 0, 0);
 
@@ -364,9 +400,18 @@ function App() {
         waterResponse.json(),
       ]);
 
-      console.log("가스 어제 데이터:", gasJson);
-      console.log("전기 어제 데이터:", elecJson);
-      console.log("수도 어제 데이터:", waterJson);
+      let nowtime = dataFormat(new Date()).slice(11,13);
+
+    
+      let yesterdayGasUsage = gasJson.datas[nowtime].usage;
+      console.log("가스 어제 이 시간 데이터:", yesterdayGasUsage);
+
+      let yesterdayElecUsage = elecJson.datas[nowtime].usage;
+      console.log("전기 어제 이 시간 데이터:", yesterdayElecUsage);
+
+      let yesterdayWaterUsage = waterJson.datas[nowtime].usage;
+      console.log("수도 어제 이 시간 데이터:", yesterdayWaterUsage);
+
 
       if (gasResponse.ok && elecResponse.ok && waterResponse.ok) {
         const maxGasUsage = Math.max(
@@ -400,6 +445,9 @@ function App() {
           maxGas: maxGasUsage,
           maxElec: maxElecUsage,
           maxWater: maxWaterUsage,
+          nowtimegas : yesterdayGasUsage,
+          nowtimeelec : yesterdayElecUsage,
+          nowtimewater : yesterdayWaterUsage,
         });
       } else {
         console.error(
@@ -424,7 +472,7 @@ function App() {
 
       let start = dataFormat(today);
       let end = dataFormat(now);
-
+      
       console.log("Fetch 시작 시간:", start, "끝 시간:", end);
       const [gasResponse, elecResponse, waterResponse] = await Promise.all([
         fetch(`/api/energy/gas?start=${start}&end=${end}&datetimeType=0`),
@@ -437,6 +485,19 @@ function App() {
         elecResponse.json(),
         waterResponse.json(),
       ]);
+
+      let nowtime = dataFormat(new Date()).slice(11,13);
+
+    
+      let todayGasUsage = gasJson.datas[nowtime].usage;
+      console.log("가스 오늘 이 시간 데이터:", todayGasUsage);
+
+      let todayElecUsage = elecJson.datas[nowtime].usage;
+      console.log("전기 오늘 이 시간 데이터:", todayElecUsage);
+
+      let todayWaterUsage = waterJson.datas[nowtime].usage;
+      console.log("수도 오늘 이 시간 데이터:", todayWaterUsage);
+
 
       if (gasResponse.ok && elecResponse.ok && waterResponse.ok) {
         // 모든 usage 합산
@@ -464,6 +525,10 @@ function App() {
           gas: Math.floor((prev.gas + totalGasUsage) * 10000) / 10000,
           elec: Math.floor((prev.elec + totalElecUsage) * 10) / 10,
           water: Math.floor((prev.water + totalWaterUsage) * 100000) / 100000,
+          nowtimegas : todayGasUsage,
+          nowtimeelec : todayElecUsage,
+          nowtimewater : todayWaterUsage,
+          
         }));
       } else {
         console.error(
@@ -534,9 +599,9 @@ function App() {
         console.log("전월 수도 사용량:", totalWaterUsage);
 
         setLastMonthUsage({
-          gas: Math.floor(totalGasUsage * 100) / 100000,
-          elec: Math.floor(totalElecUsage * 100000) / 100000,
-          water: Math.floor(totalWaterUsage * 100) / 100000,
+          gas: totalGasUsage,
+          elec: totalElecUsage,
+          water: totalWaterUsage,
           maxGas: maxGasUsage,
           maxElec: maxElecUsage,
           maxWater: maxWaterUsage,
@@ -712,6 +777,48 @@ function App() {
     setSelectedDevice(null);
   };
 
+  // 🍪 전일 동시간 대비 증감률 계산 (금일 사용량)
+  const todayComparisonRatio = useMemo(() => {
+    const calculateRatio = (today, yesterday) => {
+      if (!yesterday || yesterday === 0) return 0;
+      return Math.round(((today - yesterday) / yesterday) * 100);
+    };
+
+    return {
+      gas: calculateRatio(todayUsage.nowtimegas, yesterdayUsage.nowtimegas),
+      elec: calculateRatio(todayUsage.nowtimeelec, yesterdayUsage.nowtimeelec),
+      water: calculateRatio(todayUsage.nowtimewater, yesterdayUsage.nowtimewater),
+    };
+  }, [
+    todayUsage.nowtimegas,
+    todayUsage.nowtimeelec,
+    todayUsage.nowtimewater,
+    yesterdayUsage.nowtimegas,
+    yesterdayUsage.nowtimeelec,
+    yesterdayUsage.nowtimewater,
+  ]);
+
+  // 🍪 전월 동시간 대비 증감률 계산 (금월 사용량)
+  const monthComparisonRatio = useMemo(() => {
+    const calculateRatio = (thisMonth, lastMonth) => {
+      if (!lastMonth || lastMonth === 0) return 0;
+      return Math.round(((thisMonth - lastMonth) / lastMonth) * 100);
+    };
+
+    return {
+      gas: calculateRatio(monthUsage.gas, lastMonthUsage.gas),
+      elec: calculateRatio(monthUsage.elec, lastMonthUsage.elec),
+      water: calculateRatio(monthUsage.water, lastMonthUsage.water),
+    };
+  }, [
+    monthUsage.gas,
+    monthUsage.elec,
+    monthUsage.water,
+    lastMonthUsage.gas,
+    lastMonthUsage.elec,
+    lastMonthUsage.water,
+  ]);
+
   // 좌측 층 버튼 패널 접힘/펼침 상태
   const [railOpen, setRailOpen] = useState(() => {
     try {
@@ -824,6 +931,8 @@ function App() {
           lastMonthUsage={lastMonthUsage}
           buildingInfo={buildingInfo}
           billInfo={billInfo}
+          todayComparisonRatio={todayComparisonRatio}
+          monthComparisonRatio={monthComparisonRatio}
         />
       </Container>
     </>

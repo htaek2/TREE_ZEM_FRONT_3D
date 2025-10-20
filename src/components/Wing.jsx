@@ -457,6 +457,8 @@ function Wing({
   setSelectedDevice,
   setRailOpen,
   billInfo = { billInfo },
+  todayComparisonRatio = { gas: 0, elec: 0, water: 0 },
+  monthComparisonRatio = { gas: 0, elec: 0, water: 0 },
 }) {
   // 우측 패널 값들
   const [managerName] = useState("이**"); // TODO: 실제 데이터 연결하면 교체
@@ -650,6 +652,8 @@ function Wing({
           lastMonthUsage={lastMonthUsage}
           buildingInfo={buildingInfo}
           billInfo={billInfo}
+          todayComparisonRatio={todayComparisonRatio}
+          monthComparisonRatio={monthComparisonRatio}
         >
           현황
         </Condition>

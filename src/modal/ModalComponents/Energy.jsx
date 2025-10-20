@@ -100,6 +100,9 @@ function Energy({
   // 🍪 -백 10-20
   ThisMonthBillInfo,
   LastMonthBillInfo,
+  // 🍪 전일/전월 동시간 대비 비율
+  todayComparisonRatio = 0,
+  monthComparisonRatio = 0,
   /* ------------------------------- */
 }) {
   /* ---  2025-10-18 🍪 백민기 수정 ---- */
@@ -109,11 +112,12 @@ function Energy({
     water: [toDayWaterUsage, toMonthWaterUsage],
   });
   /* ------------------------------- */
-  const [ratio, setRatio] = useState({
-    elect: [10, 20],
-    gas: [22, -100],
-    water: [-333, -20],
-  });
+  // 🍪 전일/전월 비율은 props에서 받아서 직접 사용 (상태 불필요)
+  const ratio = {
+    elect: [todayComparisonRatio, monthComparisonRatio],
+    gas: [todayComparisonRatio, monthComparisonRatio],
+    water: [todayComparisonRatio, monthComparisonRatio],
+  };
 
   /* ---  2025-10-18 🍪 백민기 추가 ---- */
   useEffect(() => {
@@ -215,7 +219,7 @@ function Energy({
               <img src={icons.circle} alt="⚪" /> 전일 사용량
             </div>
             <div>
-              <img src={icons.circle} alt="⚪" /> 1㎡ 당 사용량
+              <img src={icons.circle} alt="⚪" /> 1㎥ 당 사용량
             </div>
             <div>
               <img src={icons.circle} alt="⚪" /> {explainFilter}
@@ -303,7 +307,7 @@ function Energy({
               <img src={icons.circle} alt="⚪" /> 전월 사용량
             </div>
             <div>
-              <img src={icons.circle} alt="⚪" /> 1㎡ 당 사용량
+              <img src={icons.circle} alt="⚪" /> 1㎥ 당 사용량
             </div>
             <div>
               <img src={icons.circle} alt="⚪" /> {explainFilter}

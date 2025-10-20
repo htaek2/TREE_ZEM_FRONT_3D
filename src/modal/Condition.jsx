@@ -97,6 +97,8 @@ function Condition({
   buildingInfo,
   // 🍪 -백 10-20
   billInfo,
+  todayComparisonRatio = { gas: 0, elec: 0, water: 0 },
+  monthComparisonRatio = { gas: 0, elec: 0, water: 0 },
 }) {
   const [ratio, setRatio] = useState(105);
 
@@ -142,7 +144,9 @@ function Condition({
           // 🍪 -백 10-20
           ThisMonthBillInfo={billInfo.electricThisMonth}
           LastMonthBillInfo={billInfo.electricLastMonth}
-          
+          // 🍪 전일/전월 동시간 대비
+          todayComparisonRatio={todayComparisonRatio.elec}
+          monthComparisonRatio={monthComparisonRatio.elec}
         />
         <Energy
           type="gas"
@@ -167,6 +171,9 @@ function Condition({
           // 🍪 -백 10-20
           ThisMonthBillInfo={billInfo.gasThisMonth}
           LastMonthBillInfo={billInfo.gasLastMonth}
+          // 🍪 전일/전월 동시간 대비
+          todayComparisonRatio={todayComparisonRatio.gas}
+          monthComparisonRatio={monthComparisonRatio.gas}
         />
         <Energy
           type="water"
@@ -191,19 +198,22 @@ function Condition({
           // 🍪 -백 10-20
           ThisMonthBillInfo={billInfo.waterThisMonth}
           LastMonthBillInfo={billInfo.waterLastMonth}
+          // 🍪 전일/전월 동시간 대비
+          todayComparisonRatio={todayComparisonRatio.water}
+          monthComparisonRatio={monthComparisonRatio.water}
         />
 
         <AverageAndEnergy>
           <AverageCharge>
             <AverageChargeHeader>
-              <img src="/Icon/building_icon.svg" alt="빌딩"></img>동 업종 일평균
+              <img src="/Icon/building_icon.svg" alt="빌딩"></img>동 업종 월평균
               대비 사용량
             </AverageChargeHeader>
           </AverageCharge>
 
           <AverageChargeMain>
             <AverageChargeMainL>
-              <TodayTitle>일평균 대비 요금</TodayTitle>
+              <TodayTitle>월 평균 대비 요금</TodayTitle>
               <TodayValue type="ave">{ratio} %</TodayValue>
               <TodayRatio ratio={ratio}>
                 <UpDownIcon ratio={ratio}>
@@ -240,7 +250,7 @@ function Condition({
             <AverageChargeFooterR>
               <div>325,000 원</div>
               <div>250,000 원</div>
-              <div>296,250 원</div>
+              <div>{billInfo.electricThisMonth + billInfo.gasThisMonth + billInfo.waterThisMonth} 원</div>
             </AverageChargeFooterR>
           </AverageChargeFooter>
           <Liner />
