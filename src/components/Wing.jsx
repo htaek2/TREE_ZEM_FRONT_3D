@@ -55,13 +55,12 @@ const HeaderText = styled.span`
 // 🏢 층 버튼 컨테이너
 const FloorButtons = styled.div`
   position: absolute;
-  /* 열림이면 패널 옆, 닫힘이면 토글 옆 */
   left: ${({ $open }) =>
     $open
-      ? "calc(var(--edge-left) + var(--toggle-width) + var(--toggle-gap) + var(--wing-width) + var(--panel-gap))"
-      : "calc(var(--edge-left) + var(--toggle-width) + var(--toggle-gap))"};
+      ? "calc(230px)"
+      : "calc(16px)"};
   z-index: 10;
-  top: 50%;
+  top: calc(30% - 4px);
   width: var(--rail-width);
   transform: translateY(-50%);
   transition: left 340ms cubic-bezier(0.22, 0.61, 0.36, 1);
@@ -77,7 +76,7 @@ const FloorButtons = styled.div`
 
 // 🔘 층 버튼
 const FloorButton = styled.button`
-  padding: 14px 12px;
+  padding: 8px 8px;
   background-color: rgba(45, 45, 45, 0.85);
   color: white;
   border: 2px solid transparent;
@@ -87,20 +86,28 @@ const FloorButton = styled.button`
   font-size: 14px;
   transition: all 0.3s ease;
   white-space: nowrap;
+  width: 50px;
+  height: 50px;
 
-  &:hover {
-    transform: translateX(4px);
-    background-color: rgba(60, 60, 60, 0.95);
-    border-color: rgba(255, 255, 255, 0.3);
-  }
+  // &:hover:not(.floor-rail):not(.ToggleBtn) {
+  //   transform: translateX(4px);
+  //   background-color: rgba(60, 60, 60, 0.95);
+  //   border-color: rgba(255, 255, 255, 0.3);
+  // }
 
   &.active {
     background-color: rgba(100, 100, 100, 0.95);
     border-color: rgba(255, 215, 0, 0.8);
-    box-shadow: 0 0 12px rgba(255, 215, 0, 0.4);
-    transform: translateX(8px);
+    box-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+    // transform: translateX(8px);
+  }
+
+  > img.ToggleBtn {
+    width: 20px;
+    height: 20px;
   }
 `;
+
 
 // 🔄 리셋 버튼
 const ResetButton = styled.button`
@@ -133,8 +140,8 @@ const LeftWing = styled.aside`
   position: absolute;
   left: ${({ $open }) =>
     $open
-      ? "20px" /* 🔧 고정 여백 */
-      : "calc(-1 * (20px + 232px + 40px))"}; /* 🔧 20(여백)+232(폭)+40(추가오프셋) */
+      ? "16px" /* 🔧 고정 여백 */
+      : "calc(-1 * (16px + 232px + 40px))"}; /* 🔧 16(여백)+232(폭)+40(추가오프셋) */
   top: 56px; /* 상단 기준 */
   bottom: 20px; /* 하단에도 붙여서 전체 높이 확보 */
   width: 232px; /* 🔧 날개 폭 고정 */
@@ -160,7 +167,7 @@ const WingCard = styled.div`
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 10px; /* 더 둥글게 */
   color: #fff;
-  padding: 10px 12px;
+  padding: 10px 8px;
   overflow: hidden;
   /* ⬇️ 카드 외곽(패딩/보더 포함) 기준으로 200×208 딱 맞추기 */
   width: 200px; /* 🔧 카드 폭 고정 */
@@ -179,8 +186,8 @@ const CardTitle = styled.div`
   flex: 0 0 34px; /* 🔒 flex 컨테이너(ChartCard)에서 높이 딱 고정 */
   line-height: 14px; /* ⬅️ 텍스트 자체 높이 고정 */
   box-sizing: border-box;
-  border-radius: 9999px;
-  padding: 9px 14px; /* ⬅️ 위/아래 9px 고정 (테두리 포함 총 34px 정확히) */
+  border-radius: 9999px 0 0 9999px;
+  padding: 8px 14px; /* ⬅️ 위/아래 8px 고정 (테두리 포함 총 34px 정확히) */
   display: flex;
   align-items: center;
   justify-content: flex-start;
@@ -266,7 +273,6 @@ const StatUnit = styled.span``;
 
 /* 차트 카드(틀만; 실제 그래프는 이후 연결) */
 const ChartCard = styled(WingCard)`
-  padding: 10px 12px; // 🔧 실시간 카드와 동일(위/아래 10px)
   display: flex; /* 내부를 세로로 채우게 */
   flex-direction: column;
 `;
@@ -352,7 +358,7 @@ const DockIcon = styled.img`
 const RightInfo = styled.div`
   position: absolute;
   top: 56px;
-  right: 20px;
+  right: 16px;
   display: grid;
   gap: 8px;
   z-index: 120;
@@ -381,7 +387,7 @@ const InfoItem = styled.div`
   /* 페이드 폭(마지막부터 몇 px를 서서히 없앨지) */
   --fade: 26px;
   padding-right: calc(14px + var(--fade)); /* 🔧 좌우 14px 통일 */
-  border-radius: 9999px; /* 🔧 완전한 알약 */
+  border-radius: 9999px 0 0 9999px; /* 🔧 완전한 알약 */
   background: rgba(45, 45, 45, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.12);
   color: #fff;
@@ -449,6 +455,8 @@ function Wing({
   setActive = { setActive },
   selectedDevice,
   setSelectedDevice,
+  setRailOpen,
+  billInfo = { billInfo },
 }) {
   // 우측 패널 값들
   const [managerName] = useState("이**"); // TODO: 실제 데이터 연결하면 교체
@@ -485,6 +493,18 @@ function Wing({
     }
   }, []);
 
+   const handleModelButtonClick = (modelName) => {
+    if (modelName === "top") {
+      return;
+    }
+
+    setActive({
+      active: true,
+      model: modelName,
+    });
+    setSelectedDevice(null); // 층 변경 시 기기 선택 해제
+  };
+  
   // 🍪
   const [activeModal, setActiveModal] = useState(null);
 
@@ -629,6 +649,7 @@ function Wing({
           monthGasUsage={monthUsage.gas}
           lastMonthUsage={lastMonthUsage}
           buildingInfo={buildingInfo}
+          billInfo={billInfo}
         >
           현황
         </Condition>
@@ -710,7 +731,7 @@ function Wing({
         </HeaderBox>
 
         {/* 층 버튼 */}
-        <FloorButtons>
+        <FloorButtons $open={railOpen}>
           <FloorButton
             $open={railOpen}
             className="floor-rail"
@@ -727,6 +748,15 @@ function Wing({
               {MODEL_TO_FLOOR[modelName] + 1}F
             </FloorButton>
           ))}
+          <FloorButton
+            className="ToggleBtn" 
+            onClick={() => setRailOpen((prev) => !prev)}
+          >
+            <img 
+              src={railOpen ? "Icon/toggle_on.svg" : "Icon/toggle_off.svg"}
+              alt={railOpen ? "패널 닫기" : "패널 열기"}
+            />
+          </FloorButton>
         </FloorButtons>
 
         {/* 기기 정보 카드 */}
