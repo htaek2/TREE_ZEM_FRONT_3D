@@ -140,7 +140,9 @@ function Condition({
               : 0
           }
           // 🍪 -백 10-20
-          billInfo={billInfo.electricThisMonth}
+          ThisMonthBillInfo={billInfo.electricThisMonth}
+          LastMonthBillInfo={billInfo.electricLastMonth}
+          
         />
         <Energy
           type="gas"
@@ -163,7 +165,8 @@ function Condition({
               : 0
           }
           // 🍪 -백 10-20
-          billInfo={billInfo.gasThisMonth}
+          ThisMonthBillInfo={billInfo.gasThisMonth}
+          LastMonthBillInfo={billInfo.gasLastMonth}
         />
         <Energy
           type="water"
@@ -186,7 +189,8 @@ function Condition({
               : 0
           }
           // 🍪 -백 10-20
-          billInfo={billInfo.waterThisMonth}
+          ThisMonthBillInfo={billInfo.waterThisMonth}
+          LastMonthBillInfo={billInfo.waterLastMonth}
         />
 
         <AverageAndEnergy>

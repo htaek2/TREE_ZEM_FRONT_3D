@@ -98,7 +98,8 @@ function Energy({
   lastMonthMaxUsage,
   monthUsagePerArea,
   // 🍪 -백 10-20
-  billInfo,
+  ThisMonthBillInfo,
+  LastMonthBillInfo,
   /* ------------------------------- */
 }) {
   /* ---  2025-10-18 🍪 백민기 수정 ---- */
@@ -344,8 +345,8 @@ function Energy({
           </EnergyChargeFooterL>
           <EnergyChargeFooterR>
             {/* 🍪 -백 10-20 */}
-            <div>{billInfo} 원</div>
-            <div>0,000 원</div>
+            <div>{ThisMonthBillInfo} 원</div>
+            <div>{LastMonthBillInfo} 원</div>
           </EnergyChargeFooterR>
         </EnergyChargeFooter>
       </EnergyCharge>
