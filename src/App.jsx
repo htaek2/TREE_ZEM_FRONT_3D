@@ -953,7 +953,10 @@ function App() {
                 selectedDevice={
                   auth.isAuthenticated ? selectedDevice : undefined
                 }
-                ishover={auth.isAuthenticated ? true : false}
+                ishover={
+                  
+                  auth.isAuthenticated ? true : false
+                }
               />
             ))}
           </Suspense>

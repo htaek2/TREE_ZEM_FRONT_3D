@@ -5,7 +5,7 @@
  */
 
 // GLTF 모델 이름 배열
-export const MODELS = ["f1", "f2", "f3", "f4", "top"];
+export const MODELS = ["f1", "f2", "f3", "f4", "top", "landscape"];
 
 // 모델 이름 -> 층 번호 매핑
 export const MODEL_TO_FLOOR = {
