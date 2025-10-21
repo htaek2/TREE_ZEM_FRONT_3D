@@ -988,7 +988,7 @@ function App() {
 
         <BrandClock />
 
-        <Wing2
+        <Wing
           railOpen={railOpen} setRailOpen={setRailOpen}
           onClose={() => setRailOpen(false)}
           active={active}

@@ -356,7 +356,7 @@ const InfoPanelBase = styled.div`
   padding: ${({ open }) => (open ? "8px 8px 40px" : "0 8px 0")};
   margin-top: ${({ open }) => (open ? "6px" : "0")};
   background: var(--panel-bg);
-  border: none;
+  border: 1px solid var(--panel-bd);
   border-radius: 8px;
   color: #fff;
   line-height: 1.5;
