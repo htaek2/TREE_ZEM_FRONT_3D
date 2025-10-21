@@ -301,38 +301,98 @@ const DetailSelectItem = styled.li`
 
 function Detail({ onClose }) {
 
-    // ✅ 날짜 선택기
+    // ✅ 버튼 분류기
+    // 분류 1 / 대 분류 선택기
+    const [DetailSelected, setDetailSelected] = useState("전력");
+    // 분류 2 / 날짜 선택기
     const [startValue, setStartValue] = useState(dayjs());
     const [endValue, setEndValue] = useState(dayjs());
-    
+    // 분류 3 / 실시간 버튼 상태 관리
+    const [isRealtimeClick, setIsRealtimeClick] = useState(false);
+    // 분류 4 /  선택 층 상태
+    const [SelectedFloor, setSelectedFloor] = useState([""]);
+    // 분류 5 / 요금 보기 상태
+    const [IsChargeClick, setIsChargeClick] = useState(false);
+
+
+
+    // useEffect(() => {
+        // const startStr = startValue.format("YYYY-MM-DD HH:mm:ss");
+        // const endStr = endValue.format("YYYY-MM-DD HH:mm:ss");
+        // console.log("시작 날짜:", startStr);
+        // console.log("종료 날짜:", endStr);
+    //     const testapi = async () => {
+
+    //         const response = await fetch(`/api/energy/elec?start=${startStr}&end=${endStr}&datetimeType=0`);
+    //         console.log("TEST API 응답 상태:", response.status);
+    //         const data = await response.json();
+    //         console.log("TEST API 응답 데이터:", data);
+    //     };
+    //     testapi();
+    // }, [startValue, endValue]);
+
+    const fetchData = async () => {
+        try {
+            const myurl = [
+                "/api/energy/elec?", // 전력 사용량 조회
+                "/api/energy/gas", // 가스 사용량 조회
+                "/api/energy/water", // 수도 사용량 조회
+                "/api/energy/elec/{floor}", // 층별 전력
+                "/api/energy/water/{floor}", // 층별 수도
+                "/api/energy/sse/all", // 실시간 에너지 사용량 조회
+                "/api/energy/bill/elec/{floor}", // 전력 층별 사용금액 조회
+                "/api/energy/bill/water/{floor}", // 수도 층별 사용금액 조회
+            ];
+            const response = await Promise.all(myurl.map(myurl => fetch(myurl)));
+            // 응답 검사
+            response.forEach((res, index) => {
+                if (!res.ok) throw new Error(`${myurl[index]} 응답이 올바르지 않습니다.`);
+            });
+
+            const data = await Promise.all(response.map(res => res.json()));
+            console.log("MAIN 데이터 가져오기 성공:", data);
+        } catch (error) {
+            console.error("MAIN 데이터 가져오기 실패:", error);
+        }
+    };
 
     useEffect(() => {
-        
         const startStr = startValue.format("YYYY-MM-DD HH:mm:ss");
         const endStr = endValue.format("YYYY-MM-DD HH:mm:ss");
-
         console.log("시작 날짜:", startStr);
         console.log("종료 날짜:", endStr);
 
-        const testapi = async () => {
+        let url = "";
 
-            const response = await fetch(`/api/energy/elec?start=${startStr}&end=${endStr}&datetimeType=0`);
-            console.log("API 응답 상태:", response.status);
-            const data = await response.json();
-            console.log("API 응답 데이터:", data);
-        };
-        testapi();
-    }, [startValue, endValue]);
+        // 실시간 보기일 때 (날짜 무시)
+        if (isRealtimeClick) {
+            url = "/api/energy/sse/all";
+        }
+
+        // 요금 보기일 때
+        else if (IsChargeClick) {
+            if (DetailSelected === "가스") {
+                url = "/api/energy/bill";
+            }
+            else {
+                url = `/api/energy/bill/${DetailSelected === "전력" ? "elec" : "water"}`;
+                if (SelectedFloor[0] === "전체 층") {
+                    url += "/";
+                }
+            }
+        }
+        
+        // 일반 전체 선택
+        else if (SelectedFloor.length === 0) {}
+
+        // 일반 층별 선택
+        else {}
+
+    }, []);
 
 
 
 
-
-        // 실시간 버튼 상태 관리
-    const [isRealtimeClick, setIsRealtimeClick] = useState(false);
-
-    // ✅ 대 분류 선택기
-    const [DetailSelected, setDetailSelected] = useState("전력");
     const [DetailIsOpen, setDetailIsOpen] = useState(false);
     const ref = useRef(null);
     const ToggleDetail = () => setDetailIsOpen((prev) => !prev);
@@ -354,8 +414,7 @@ function Detail({ onClose }) {
 
     // ✅ 층 버튼 활성화 관리
     const [EveryFloor, setEveryFloor] = useState(["전체 층", "F1", "F2", "F3", "F4"]);
-    // ✅ 선택 층 상태
-    const [SelectedFloor, setSelectedFloor] = useState([""]);
+
 
     const FloorClick = (floor) => {
         if (floor === "전체 층") {
@@ -379,34 +438,11 @@ function Detail({ onClose }) {
         
     };
 
-    // ✅ 실시간, 요금보기 상태관리
-    const [IsChargeClick, setIsChargeClick] = useState(false);
+
     
 
 
-    const fetchData = async () => {
-        try {
-            const urls = [
-                "/api/energy/elec?", // 전력 사용량 조회
-                "/api/energy/gas", // 가스 사용량 조회
-                "/api/energy/water", // 수도 사용량 조회
-                "/api/energy/elec/{floor}", // 층별 전력
-                "/api/energy/water/{floor}", // 층별 수도
-                "/api/energy/sse/all", // 실시간 에너지 사용량 조회
-                "/api/energy/bill/{floor}", // 전력, 수도 층별 사용금액 조회
-            ];
-            const response = await Promise.all(urls.map(url => fetch(url)));
-            // 응답 검사
-            response.forEach(res => {
-                if (!res.ok) throw new Error(`${res.url} 응답이 올바르지 않습니다.`);
-            });
 
-            const data = await Promise.all(response.map(res => res.json()));
-            console.log("데이터 가져오기 성공:", data);
-        } catch (error) {
-            console.error("데이터 가져오기 실패:", error);
-        }
-    };
 
     return (        
 

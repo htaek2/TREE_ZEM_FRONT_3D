@@ -14,7 +14,7 @@ import Login from "./components/Login";
 import BrandClock from "./components/BrandClock";
 
 
-import Wing2 from "./components/Wing2";
+import Wing from "./components/Wing";
 
 
 
