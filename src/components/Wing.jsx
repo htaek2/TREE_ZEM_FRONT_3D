@@ -831,7 +831,7 @@ function Wing({
             <p>경고 알림 내용</p>
             <p>
               <button>메모 보기</button>
-              <button>메모 보기</button>
+              <button>메모 쓰기</button>
             </p>
           </InfoAlert>
 
