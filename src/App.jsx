@@ -133,6 +133,13 @@ function App() {
     waterThisMonth: 0, // 금월 요금
   });
 
+
+  const [AvgFee, setAvgFee] = useState({
+    national : 0,
+    location : 0,
+  });
+
+  
   const dataFormat = (data) => {
     let month = data.getMonth() + 1;
     let day = data.getDate();
@@ -174,8 +181,17 @@ function App() {
     // 데이터 수신 시
     eventSource.onmessage = function (event) {
       try {
-        const data = JSON.parse(event.data);
+        const data = JSON.parse(event.data);  
 
+        console.log("SSE 데이터 수신:", data.elecPrice);
+
+        // 실시간 요금 업데이트
+        setBillInfo((prev) => ({
+          ...prev,
+          electricThisMonth: prev.electricThisMonth + data.elecPrice,
+          gasThisMonth: prev.gasThisMonth + data.gasPrice,
+          waterThisMonth: prev.waterThisMonth + data.waterPrice,
+        }));
         const waterUsages = data.floors.map(
           (floor) => floor.waterUsage.datas[0].usage
         );
@@ -264,6 +280,54 @@ function App() {
     };
   };
 
+
+  const getBillStat = async () => {
+    try {
+      console.log("12개월 월 평균 사용금액 조회 Fetch 시작");
+      fetch(`/api/bill/stat`)
+        .then((response) => response.json())
+        .then((data) => {
+          console.log("12개월 통계 API 응답 데이터:", data);
+
+          // data.avgAll이 존재하고 배열인지 확인
+          if (data?.avgAll && Array.isArray(data.avgAll) && data.avgAll.length > 0) {
+            const total = data.avgAll.reduce((sum, item) => {
+              const amount = Number(item) || 0;
+              return sum + amount;
+            }, 0);
+            const average = total / data.avgAll.length;
+            console.log("12개월 월 평균 사용금액:", average, "원");
+            
+
+            setAvgFee((prev) => ({
+              ...prev,
+              national: Math.trunc(average),
+            }));  
+          } else {
+            console.warn("avgAll 데이터가 없거나 비어있습니다:", data);
+          }
+
+          if (data?.avgLocal && Array.isArray(data.avgLocal) && data.avgLocal.length > 0) {
+            const totalLocal = data.avgLocal.reduce((sum, item) => {
+              const amount = Number(item) || 0;
+              return sum + amount;
+            }, 0);
+            const averageLocal = totalLocal / data.avgLocal.length;
+            console.log("12개월 지역 월 평균 사용금액:", averageLocal, "원");
+            setAvgFee((prev) => ({
+              ...prev,
+              location: Math.trunc(averageLocal),
+            }));
+          } else {
+            console.warn("avgLocal 데이터가 없거나 비어있습니다:", data);
+          }
+        });
+        
+    } catch (error) {
+      console.error("Fetch error:", error);
+    }
+  };
+  
   /* 🍪 - 백 25-10-20 -*/
   const getLastMonthlyBill = async () => {
     try {
@@ -346,6 +410,7 @@ function App() {
   fetch(`/api/energy/bill?${params}`)
     .then(response => response.json())
   .then(data => data.map(energy => {
+    console.log("금월 요금 데이터:", data);
     if (energy.energyType === 'ELECTRICITY') {
       const totalElecUsage = energy.datas.reduce((sum, el) => sum + el.usage, 0);
       console.log("전기 요금 합계:", Math.trunc(totalElecUsage));
@@ -486,6 +551,7 @@ function App() {
         waterResponse.json(),
       ]);
 
+      
       let nowtime = dataFormat(new Date()).slice(11,13);
 
     
@@ -528,7 +594,6 @@ function App() {
           nowtimegas : todayGasUsage,
           nowtimeelec : todayElecUsage,
           nowtimewater : todayWaterUsage,
-          
         }));
       } else {
         console.error(
@@ -567,6 +632,7 @@ function App() {
         waterResponse.json(),
       ]);
 
+     
 
       if (gasResponse.ok && elecResponse.ok && waterResponse.ok) {
         const maxGasUsage = Math.max(
@@ -729,6 +795,7 @@ function App() {
     // 최초 접속 시 즉시 실행
     fetchBuildingInfo();
     getLastMonthlyBill();
+    getBillStat();
     getMonthlyBill();
     getYesterdayUsage().then(() => {});
     getLastMonthUsage().then(() => {});
@@ -824,7 +891,9 @@ function App() {
     try {
       const s = localStorage.getItem("floor-rail-open");
       if (s != null) return s === "1";
-    } catch {}
+    } catch {
+      console.log("로컬스토리지 접근 불가");
+    }
     return window.innerWidth > 900; // 데스크탑=열림, 모바일=닫힘
   });
 
@@ -931,8 +1000,10 @@ function App() {
           lastMonthUsage={lastMonthUsage}
           buildingInfo={buildingInfo}
           billInfo={billInfo}
+          // 3개 추가
           todayComparisonRatio={todayComparisonRatio}
           monthComparisonRatio={monthComparisonRatio}
+          AvgFee={AvgFee}
         />
       </Container>
     </>

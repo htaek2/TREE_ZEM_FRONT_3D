@@ -99,6 +99,7 @@ function Condition({
   billInfo,
   todayComparisonRatio = { gas: 0, elec: 0, water: 0 },
   monthComparisonRatio = { gas: 0, elec: 0, water: 0 },
+  AvgFee ={ national: 0, location: 0 },
 }) {
   const [ratio, setRatio] = useState(105);
 
@@ -248,8 +249,8 @@ function Condition({
               </div>
             </AverageChargeFooterL>
             <AverageChargeFooterR>
-              <div>325,000 원</div>
-              <div>250,000 원</div>
+              <div>{AvgFee.national} 원</div>
+              <div>{AvgFee.location} 원</div>
               <div>{billInfo.electricThisMonth + billInfo.gasThisMonth + billInfo.waterThisMonth} 원</div>
             </AverageChargeFooterR>
           </AverageChargeFooter>

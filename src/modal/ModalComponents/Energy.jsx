@@ -119,6 +119,8 @@ function Energy({
     water: [todayComparisonRatio, monthComparisonRatio],
   };
 
+
+
   /* ---  2025-10-18 🍪 백민기 추가 ---- */
   useEffect(() => {
     setUsage({

@@ -132,3 +132,180 @@
   ]);
   // 총 3초 (가장 오래 걸리는 것 기준)
   
+
+# 2025-10-21 깃관련 문제해결
+# Git Pull 충돌 해결 기록
+
+## 문제 발견
+**날짜**: 2025-10-21
+**상황**: `git pull` 실행 시 에러 발생
+
+### 에러 메시지
+```
+error: Your local changes to the following files would be overwritten by merge:
+	src/components/Wing.jsx
+	vite.config.js
+Please commit your changes or stash them before you merge.
+Aborting
+```
+
+## 문제 진단
+
+### 1단계: 현재 상태 확인
+```bash
+git status
+```
+
+**결과**:
+- 로컬 브랜치가 원격(origin/main)보다 2개 커밋 뒤처짐
+- 로컬에서 7개 파일 수정됨:
+  - README.md
+  - src/App.jsx
+  - src/components/Wing.jsx
+  - src/components/Wing2.jsx
+  - src/modal/Condition.jsx
+  - src/modal/ModalComponents/Energy.jsx
+  - vite.config.js
+
+### 2단계: 원격 변경사항 확인
+```bash
+git fetch
+git diff HEAD..origin/main --name-status
+```
+
+**결과**:
+- 원격에서 변경된 파일:
+  - `Wing.jsx` (603줄 수정)
+  - `vite.config.js` (3줄 수정)
+
+### 충돌 원인
+**동일한 파일이 로컬과 원격 양쪽에서 수정됨**:
+- ⚠️ `Wing.jsx` - 로컬 수정 + 원격 수정
+- ⚠️ `vite.config.js` - 로컬 수정 + 원격 수정
+
+나머지 5개 파일은 로컬에서만 수정되어 충돌 없음:
+- ✅ README.md
+- ✅ App.jsx
+- ✅ Wing2.jsx
+- ✅ Condition.jsx
+- ✅ Energy.jsx
+
+## 해결 과정
+
+### 상황 판단
+- Wing.jsx의 로컬 변경사항은 별도 메모장에 백업되어 있음
+- 일단 GitHub 최신 코드를 받아오는 것이 우선
+
+### 해결 방법 선택
+**옵션 1**: 로컬 변경사항 커밋 후 병합 (충돌 수동 해결 필요)
+**옵션 2**: Stash 사용 (충돌 수동 해결 필요)
+**옵션 3**: 충돌 파일만 원격 버전으로 복원 후 pull ✅ **선택됨**
+
+### 실행 단계
+
+#### 1. 충돌 파일을 원격 버전으로 복원
+```bash
+git restore src/components/Wing.jsx vite.config.js
+```
+- Wing.jsx와 vite.config.js의 로컬 변경사항을 버림
+- 나머지 5개 파일의 로컬 변경사항은 유지
+
+#### 2. 최신 코드 받아오기
+```bash
+git pull
+```
+
+**결과**:
+```
+Updating fd608ef..84920f1
+Fast-forward
+ src/components/Wing.jsx | 603 +++++++++++++++++++++---------------------------
+ vite.config.js          |   3 +-
+ 2 files changed, 267 insertions(+), 339 deletions(-)
+```
+
+#### 3. 최종 상태 확인
+```bash
+git status
+```
+
+**결과**:
+```
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+	modified:   README.md
+	modified:   src/App.jsx
+	modified:   src/components/Wing2.jsx
+	modified:   src/modal/Condition.jsx
+	modified:   src/modal/ModalComponents/Energy.jsx
+```
+
+## 해결 결과
+
+### 성공적으로 업데이트된 파일
+- ✅ `Wing.jsx` - GitHub 최신 버전으로 업데이트
+- ✅ `vite.config.js` - GitHub 최신 버전으로 업데이트
+
+### 로컬 변경사항이 유지된 파일
+- ✅ `README.md`
+- ✅ `App.jsx`
+- ✅ `Wing2.jsx`
+- ✅ `Condition.jsx`
+- ✅ `Energy.jsx`
+
+### 현재 상태
+- 브랜치: main
+- 원격과의 동기화: 완료
+- 다음 작업: 백업된 Wing.jsx 내용을 최신 코드에 적용
+
+## 교훈
+
+### 이런 상황을 예방하려면
+1. **작업 전 항상 최신 코드 받아오기**
+   ```bash
+   git pull
+   ```
+
+2. **작업 시 Feature 브랜치 사용**
+   ```bash
+   git checkout -b feature/wing-update
+   ```
+
+3. **자주 커밋하고 푸시하기**
+   ```bash
+   git add .
+   git commit -m "작업 내용"
+   git push
+   ```
+
+### 충돌 해결 방법 3가지
+1. **로컬 변경사항이 중요한 경우**: Commit → Pull → 충돌 수동 해결
+2. **일시적으로 보관**: Stash → Pull → Stash pop → 충돌 수동 해결
+3. **로컬 변경사항 백업 있음**: Restore → Pull ✅ (가장 깔끔)
+
+## 참고 명령어
+
+### 상태 확인
+```bash
+git status                        # 현재 상태
+git branch                        # 현재 브랜치
+git log --oneline -5              # 최근 커밋 5개
+git diff HEAD..origin/main        # 원격과의 차이점
+```
+
+### 충돌 해결
+```bash
+git restore <file>                # 특정 파일 원격 버전으로 복원
+git restore .                     # 모든 파일 원격 버전으로 복원
+git stash                         # 변경사항 임시 저장
+git stash pop                     # 임시 저장 내용 다시 적용
+```
+
+### 안전한 작업 흐름
+```bash
+git fetch                         # 원격 정보 가져오기 (적용X)
+git diff HEAD..origin/main        # 차이점 미리 확인
+git pull                          # 원격 코드 받아오기
+```
