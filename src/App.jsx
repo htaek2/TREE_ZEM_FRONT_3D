@@ -15,6 +15,7 @@ import Login from "./components/Login";
 import BrandClock from "./components/BrandClock";
 import Wing from "./components/Wing";
 import { now } from "three/examples/jsm/libs/tween.module.js";
+import Wing2 from "./components/Wing2";
 
 
 const Container = styled.div`
@@ -987,7 +988,7 @@ function App() {
 
         <BrandClock />
 
-        <Wing
+        <Wing2
           railOpen={railOpen} setRailOpen={setRailOpen}
           onClose={() => setRailOpen(false)}
           active={active}

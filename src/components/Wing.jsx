@@ -330,6 +330,7 @@ const RightInfo = styled.div`
      transform 360ms cubic-bezier(0.22,0.61,0.36,1),
      opacity 260ms ease-out;
   overflow: visible;
+  --right-panel-bg: rgba(45,45,45,0.15);
 `;
 
 const InfoGroup = styled.div`
@@ -343,8 +344,9 @@ const InfoGroup = styled.div`
 const InfoPanelBase = styled.div`
   --tail: 8px;
   /* 탄소배출 토글 시 좌측 박스와 동일 톤 */
-  --panel-bg: ${({IsEmissionBtn}) => IsEmissionBtn ? "rgba(0,170,111,0.15)" : "rgba(45,45,45,0.50)"};
-  --panel-bd: ${({IsEmissionBtn}) => IsEmissionBtn ? "rgba(0,170,111,0)"    : "#2D2D2D"};
+  --panel-bg: ${({IsEmissionBtn}) =>
+    IsEmissionBtn ? "rgba(0,170,111,0.15)" : "var(--right-panel-bg, rgba(45,45,45,0.15))"};
+  --panel-bd: transparent;
 
 
   overflow: hidden;
@@ -354,7 +356,7 @@ const InfoPanelBase = styled.div`
   padding: ${({ open }) => (open ? "8px 8px 40px" : "0 8px 0")};
   margin-top: ${({ open }) => (open ? "6px" : "0")};
   background: var(--panel-bg);
-  border: 1px solid var(--panel-bd);
+  border: none;
   border-radius: 8px;
   color: #fff;
   line-height: 1.5;
@@ -444,8 +446,8 @@ const InfoValue = styled.span`
 /* 우측 하단 고정 액션 영역 */
 const PanelActions = styled.div`
   position: absolute;
-  right: 8px;
-  bottom: 8px;
+  right: 5px;
+  bottom: 5px;
   display: flex;
   gap: 5px;
 `;
