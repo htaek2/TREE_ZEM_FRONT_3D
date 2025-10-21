@@ -17,6 +17,7 @@ import "dayjs/locale/ko";
 
 
 
+
 // 애니메이션
 const rotateDown = keyframes`
   from { transform: rotate(0deg); }
@@ -134,7 +135,7 @@ const DetailRealTime = styled.div`
     cursor: pointer;
     margin-top: -4px;
     color: #FAFAFA;
-    background-color: ${({ active }) => (active ? 'rgba(255, 255, 255, 0.2)' : 'transparent')};
+    background-color: ${({ $active }) => ($active ? 'rgba(255, 255, 255, 0.2)' : 'transparent')};
 
 
     > span {
@@ -211,7 +212,7 @@ const DetailCharge = styled.div`
     font: 400 18px "나눔고딕";
     cursor: pointer;
     color: #FAFAFA;
-    background-color: ${({ active }) => (active ? 'rgba(255, 255, 255, 0.2)' : 'transparent')};
+    background-color: ${({ $active }) => ($active ? 'rgba(255, 255, 255, 0.2)' : 'transparent')};
 `;
 
 
@@ -303,6 +304,30 @@ function Detail({ onClose }) {
     // ✅ 날짜 선택기
     const [startValue, setStartValue] = useState(dayjs());
     const [endValue, setEndValue] = useState(dayjs());
+    
+
+    useEffect(() => {
+        
+        const startStr = startValue.format("YYYY-MM-DD HH:mm:ss");
+        const endStr = endValue.format("YYYY-MM-DD HH:mm:ss");
+
+        console.log("시작 날짜:", startStr);
+        console.log("종료 날짜:", endStr);
+
+        const testapi = async () => {
+
+            const response = await fetch(`/api/energy/elec?start=${startStr}&end=${endStr}&datetimeType=0`);
+            console.log("API 응답 상태:", response.status);
+            const data = await response.json();
+            console.log("API 응답 데이터:", data);
+        };
+        testapi();
+    }, [startValue, endValue]);
+
+
+
+
+
         // 실시간 버튼 상태 관리
     const [isRealtimeClick, setIsRealtimeClick] = useState(false);
 
@@ -359,6 +384,30 @@ function Detail({ onClose }) {
     
 
 
+    const fetchData = async () => {
+        try {
+            const urls = [
+                "/api/energy/elec?", // 전력 사용량 조회
+                "/api/energy/gas", // 가스 사용량 조회
+                "/api/energy/water", // 수도 사용량 조회
+                "/api/energy/elec/{floor}", // 층별 전력
+                "/api/energy/water/{floor}", // 층별 수도
+                "/api/energy/sse/all", // 실시간 에너지 사용량 조회
+                "/api/energy/bill/{floor}", // 전력, 수도 층별 사용금액 조회
+            ];
+            const response = await Promise.all(urls.map(url => fetch(url)));
+            // 응답 검사
+            response.forEach(res => {
+                if (!res.ok) throw new Error(`${res.url} 응답이 올바르지 않습니다.`);
+            });
+
+            const data = await Promise.all(response.map(res => res.json()));
+            console.log("데이터 가져오기 성공:", data);
+        } catch (error) {
+            console.error("데이터 가져오기 실패:", error);
+        }
+    };
+
     return (        
 
         <Overlay>
@@ -371,7 +420,7 @@ function Detail({ onClose }) {
                 {/* 좌측 리모컨 */}
                 <DetailMain>
                     <DetailTop>
-                        <DetailHeader ref={ref} DetailIsOpen={DetailIsOpen} onClick={ToggleDetail}>
+                        <DetailHeader $ref={ref} DetailIsOpen={DetailIsOpen} onClick={ToggleDetail}>
                             <div>상세 정보</div>
                             <span>
                                 {DetailSelected} <img src="/Icon/dropdown.svg" alt="드롭" />
@@ -424,7 +473,7 @@ function Detail({ onClose }) {
                         </DetailDate>
 
                         <DetailRealTime 
-                            active={isRealtimeClick}
+                            $active={isRealtimeClick}
                             onClick={() => setIsRealtimeClick(prev => !prev)}>
                             실시간 보기<span>(오늘 기준)</span>
                         </DetailRealTime>
@@ -446,7 +495,7 @@ function Detail({ onClose }) {
                             </DetailFloorSelect>
                         </DetailFloor>
 
-                        <DetailCharge active={IsChargeClick} onClick={() => setIsChargeClick(prev => !prev)}>
+                        <DetailCharge $active={IsChargeClick} onClick={() => setIsChargeClick(prev => !prev)}>
                             요금 보기
                         </DetailCharge>
                     </DetailBottom>
