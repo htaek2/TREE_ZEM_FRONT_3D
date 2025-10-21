@@ -490,37 +490,15 @@ function Wing({
   setSelectedDevice = () => {},
   setRailOpen = () => {},
   billInfo = {},
+  weatherNow = null,
+  
 }) {
   const [managerName] = useState("이**");
   const [alertCount, setAlertCount] = useState(0);
-  const [outerTemp, setOuterTemp] = useState(null);
-
-  useEffect(() => {
-    const API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY;
-    const fetchWeather = async (lat = 37.5665, lon = 126.978) => {
-      try {
-        if (!API_KEY) {
-          setOuterTemp(26);
-          return;
-        }
-        const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&lang=kr&appid=${API_KEY}`;
-        const res = await fetch(url);
-        const data = await res.json();
-        setOuterTemp(data?.main?.temp ?? 26);
-      } catch {
-        setOuterTemp(26);
-      }
-    };
-
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => fetchWeather(pos.coords.latitude, pos.coords.longitude),
-        () => fetchWeather()
-      );
-    } else {
-      fetchWeather();
-    }
-  }, []);
+  
+  const outerTemp = weatherNow?.nowTemperature ?? null;
+  const outerHumidity = weatherNow?.humidity ?? null;
+  const outerWind = weatherNow?.windSpeed ?? null;
 
   const handleModelButtonClick = (modelName) => {
     if (modelName === "top") return;
@@ -752,9 +730,9 @@ function Wing({
             <InfoValue>{outerTemp == null ? "—" : `${Math.round(outerTemp)}°C`}</InfoValue>
           </InfoItem>
           <InfoWeather open={openWeather} IsEmissionBtn={IsEmissionBtn}>
-            <p>외부 날씨</p>
-            <p>외부 습도</p>
-            <p>외부 풍속</p>
+            <p>외부 날씨: {weatherNow?.weatherStatus ?? "—"}</p>
+            <p>외부 습도: {outerHumidity == null ? "—" : `${Math.round(outerHumidity)}%`}</p>
+            <p>외부 풍속: {outerWind == null ? "—" : `${outerWind} m/s`}</p>
           </InfoWeather>
         </InfoGroup>
 

@@ -18,6 +18,7 @@ import { now } from "three/examples/jsm/libs/tween.module.js";
 import Wing2 from "./components/Wing2";
 
 
+
 const Container = styled.div`
   position: fixed;
   top: 0;
@@ -71,8 +72,17 @@ function App() {
   const [computers, setComputer] = useState([]);
   const [cameraSettings, setCameraSettings] = useState(
     getResponsiveCameraSettings(auth.isAuthenticated)
+    
   );
-
+  /*세구 1021 17:00*/
+  const [weatherNow, setWeatherNow] = useState({
+    humidity : 0,
+    nowTemperature : 0,
+    weatherStatus : 0,
+    windSpeed :0
+  });
+  
+  
   const [todayUsage, setTodayUsage] = useState({
     gas: 0,
     elec: 0,
@@ -168,7 +178,7 @@ function App() {
       second
     );
   };
-
+ 
   const ElectFetch = () => {
     console.log("SSE 연결 시작...");
     // sse 연결 - 프록시를 통해 상대 경로 사용
@@ -280,6 +290,40 @@ function App() {
       eventSource.close();
     };
   };
+
+
+
+/*세구 1021 17:00*/
+// 현재 날씨 가져오기 (5분마다 갱신)
+const fetchWeatherNow = async () => {
+  console.log("날짜요청이야아아아아아아아아아아아아앙아")
+  fetch('/api/weather/now') // GET 요청 (기본값)
+  .then(response => {
+    // 응답 헤더를 확인하거나, 응답이 성공적이지 않다면 여기서 처리할 수 있습니다.
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    return response.json(); // 응답 본문을 JSON으로 파싱
+  })
+  .then(data => {
+    console.log("받은날짜아아아아아아아아아아아",data); // 파싱된 JSON 데이터를 사용
+      setWeatherNow({
+        ...prev,
+        humidity : data.humidity,
+        nowTemperature : data.nowTemperature,
+        weatherStatus : data.weatherStatus,
+        windSpeed : data.windSpeed
+      });
+  })
+  .catch(error => {
+    console.error('Fetch error:', error); // 오류 처리
+  });
+
+    
+  };
+
+
+
 
 
   const getBillStat = async () => {
@@ -781,7 +825,6 @@ function App() {
       console.log("[Auth] 로그인된 사용자가 없습니다.");
       setAuthState({ isAuthenticated: false, user: null });
     }
-
     return null;
   };
 
@@ -794,15 +837,15 @@ function App() {
     if (!auth.isAuthenticated) return;
 
     // 최초 접속 시 즉시 실행
+    fetchWeatherNow();
+
     fetchBuildingInfo();
     getLastMonthlyBill();
     getBillStat();
     getMonthlyBill();
     getYesterdayUsage().then(() => {});
     getLastMonthUsage().then(() => {});
-    getHourlyUsageFecth().then(() => {
-      ElectFetch();
-    });
+    getHourlyUsageFecth().then(() => { ElectFetch(); });
     getMonthlyUsageFetch().then(() => {});
   }, [auth.isAuthenticated]);
 
@@ -1005,6 +1048,7 @@ function App() {
           todayComparisonRatio={todayComparisonRatio}
           monthComparisonRatio={monthComparisonRatio}
           AvgFee={AvgFee}
+          weatherNow = {weatherNow}
         />
       </Container>
     </>
