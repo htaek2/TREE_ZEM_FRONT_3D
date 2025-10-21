@@ -1,13 +1,10 @@
 import { Suspense, use, useEffect, useState, useMemo } from "react";
 import "./App.css";
 import { Canvas, useThree, useFrame } from "@react-three/fiber";
-import Model from "./Model";
-import { OrbitControls } from "@react-three/drei";
 import styled from "styled-components";
 import { CAMERA_CONFIG, MODEL_TO_FLOOR, MODELS } from "./constants";
 import GlobalStyle from "./GlobalStyle";
 
-import CameraController from "./components/CameraController";
 import Login from "./components/Login";
 
 // 🍪
@@ -15,6 +12,7 @@ import BrandClock from "./components/BrandClock";
 
 
 import Wing from "./components/Wing";
+import SceneContainer from "./three/SceneContainer";
 
 
 
@@ -849,45 +847,6 @@ const fetchWeatherNow = async () => {
     getMonthlyUsageFetch().then(() => {});
   }, [auth.isAuthenticated]);
 
-  const handleModelClick = (modelName) => {
-    // top은 클릭해도 확대하지 않음
-    if (modelName === "top") {
-      return;
-    }
-
-    setActive({
-      active: !active.active,
-      model: active.model === modelName ? null : modelName,
-    });
-    setSelectedDevice(null); // 층 변경 시 기기 선택 해제
-  };
-
- 
-
-  const handleDeviceClick = (device) => {
-    console.log("🎯 handleDeviceClick 호출됨:", device);
-    setSelectedDevice((prev) => {
-      const newDevice = prev?.id === device.id ? null : device;
-      console.log("📱 selectedDevice 변경:", prev, "→", newDevice);
-      return newDevice;
-    });
-  };
-
-  const handleCloseDeviceCard = () => {
-    setSelectedDevice(null);
-  };
-
-  const handleDeviceControl = (device, isOn) => {
-    // TODO: 실제 IOT 제어 API 호출
-    console.log(`${device.name} 제어: ${isOn ? "ON" : "OFF"}`);
-
-    // 임시로 알림 표시
-    alert(`${device.name}을(를) ${isOn ? "켰습니다" : "껐습니다"}.`);
-
-    // 카드 닫기
-    setSelectedDevice(null);
-  };
-
   // 🍪 전일 동시간 대비 증감률 계산 (금일 사용량)
   const todayComparisonRatio = useMemo(() => {
     const calculateRatio = (today, yesterday) => {
@@ -963,73 +922,14 @@ const fetchWeatherNow = async () => {
             far: 1000,
           }}
         >
-          {auth.isAuthenticated && (
-            <>
-              {/* 🎥 카메라 컨트롤러 추가 */}
-              <CameraController
-                active={active}
-                cameraSettings={cameraSettings}
-              />
-            </>
-          )}
-
-          {/* 조명 */}
-          <ambientLight intensity={2.0} />
-          <directionalLight position={[10, 10, 20]} intensity={1} />
-          <pointLight position={[10, 10, 20]} intensity={5} distance={1} />
-
-          {/* 3D 모델 - 로딩 중 fallback 표시 */}
-          <Suspense fallback={null}>
-            {modelsToShow.map((modelName) => (
-              <Model
-                key={modelName}
-                model={modelName}
-                onClick={
-                  auth.isAuthenticated
-                    ? () => handleModelClick(modelName)
-                    : undefined
-                }
-                isSelected={auth.isAuthenticated ? active.active : undefined}
-                onDeviceClick={
-                  auth.isAuthenticated ? handleDeviceClick : undefined
-                }
-                selectedDevice={
-                  auth.isAuthenticated ? selectedDevice : undefined
-                }
-                ishover={
-                  
-                  auth.isAuthenticated ? true : false
-                }
-              />
-            ))}
-          </Suspense>
-          {auth.isAuthenticated ? (
-            <>
-              {/* 컨트롤 - 반응형 설정 적용 */}
-              <OrbitControls
-                target={cameraSettings.target}
-                enableRotate={true}
-                enableZoom={true}
-                enablePan={true}
-                enableDamping={true}
-                dampingFactor={0.05}
-                minDistance={cameraSettings.minDistance}
-                maxDistance={cameraSettings.maxDistance}
-              />
-            </>
-          ) : (
-            <>
-              <OrbitControls
-                target={cameraSettings.target}
-                enableZoom={false}
-                enableRotate={false}
-                enablePan={false}
-                enableDamping={false}
-                minDistance={cameraSettings.minDistance}
-                maxDistance={cameraSettings.maxDistance}
-              />
-            </>
-          )}
+          <SceneContainer 
+            active={active} 
+            cameraSettings={cameraSettings} 
+            isAuthenticated={auth.isAuthenticated} 
+            modelsToShow={modelsToShow} 
+            selectedDevice={selectedDevice} 
+            setSelectedDevice={setSelectedDevice}
+            setActive={setActive}/>
         </Canvas>
 
         <BrandClock />

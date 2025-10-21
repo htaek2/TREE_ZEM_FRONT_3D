@@ -1,4 +1,4 @@
-import { useGLTF } from "@react-three/drei";
+import { useGLTF, TransformControls } from "@react-three/drei";
 import { useState, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { useSpring } from "@react-spring/three";
@@ -16,7 +16,7 @@ function Model({ model, onClick, isSelected }) {
     config: { tension: 400, friction: 40 },
   });
 
-  // 매 프레임마다 호버 효과 적용
+  // 매 프레임마다 호버 효과 적용 -> 성능개선?
   useFrame(() => {
     const currentProgress = progress.get();
 
@@ -50,7 +50,7 @@ function Model({ model, onClick, isSelected }) {
           child.material.emissive || new THREE.Color();
         child.material.emissive.lerpColors(
           original.emissive,
-          new THREE.Color(0xff0000),
+          new THREE.Color(0x0000ff),
           currentProgress
         );
         child.material.emissiveIntensity =

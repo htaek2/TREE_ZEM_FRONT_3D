@@ -1,8 +1,8 @@
 import { Canvas } from "@react-three/fiber";
 import { Suspense, useState } from "react";
 import styled, { keyframes } from "styled-components";
-import CameraController from "./CameraController";
-import Model from "../Model";
+import CameraController from "../three/CameraController";
+import Model from "../three/Model";
 import { CAMERA_CONFIG, MODELS } from "../constants";
 import { OrbitControls } from "@react-three/drei";
 

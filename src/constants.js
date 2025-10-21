@@ -5,7 +5,7 @@
  */
 
 // GLTF 모델 이름 배열
-export const MODELS = ["f1", "f2", "f3", "f4", "top", "landscape"];
+export const MODELS = ["f1", "f2", "f3", "f4", "top"];
 
 // 모델 이름 -> 층 번호 매핑
 export const MODEL_TO_FLOOR = {
@@ -72,3 +72,9 @@ export const ANIMATION_CONFIG = {
   },
 };
 
+export const SKY_COLOR = {
+  SKY_BLUE: "#87CEEB",
+  LIGHT_SKY_BLUE: "#87CEFA",
+  DEEP_SKY_BLUE: "#00BFFF",
+  ALICE_BLUE: "#F0F8FF"
+}
