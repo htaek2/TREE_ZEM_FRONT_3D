@@ -624,7 +624,7 @@ function Wing2({
               <StatLabel>전력</StatLabel>
               <StatValue>
                 <span>{todayUsage.elec}</span>
-                <StatUnit>kWh</StatUnit>
+                <StatUnit>Wh</StatUnit>
               </StatValue>
             </StatRow>
 

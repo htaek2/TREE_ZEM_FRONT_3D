@@ -8,13 +8,12 @@ import { CAMERA_CONFIG, MODEL_TO_FLOOR, MODELS } from "./constants";
 import GlobalStyle from "./GlobalStyle";
 
 import CameraController from "./components/CameraController";
-import DeviceInfoCard from "./components/DeviceInfoCard";
 import Login from "./components/Login";
 
 // 🍪
 import BrandClock from "./components/BrandClock";
-import Wing from "./components/Wing";
-import { now } from "three/examples/jsm/libs/tween.module.js";
+
+
 import Wing2 from "./components/Wing2";
 
 
@@ -116,6 +115,7 @@ function App() {
     { devices: [] },
     { devices: [] },
   ]);
+
 
   const [buildingInfo, setBuildingInfo] = useState({
     totalArea: 0, // 건물 총 면적
@@ -256,7 +256,7 @@ function App() {
           gas:
             Math.floor((prev.gas + nowGasUsage) * 10000) /
             10000,
-          elec: Math.floor((prev.elec + totalFloorElecUsage) * 10) / 10,
+          elec: Math.floor((prev.elec + totalFloorElecUsage) * 100) / 100,
         }));
 
         
@@ -590,7 +590,7 @@ function App() {
         setTodayUsage((prev) => ({
           ...prev,
           gas: Math.floor((prev.gas + totalGasUsage) * 10000) / 10000,
-          elec: Math.floor((prev.elec + totalElecUsage) * 10) / 10,
+          elec: Math.floor((prev.elec + totalElecUsage) * 100) / 100,
           water: Math.floor((prev.water + totalWaterUsage) * 100000) / 100000,
           nowtimegas : todayGasUsage,
           nowtimeelec : todayElecUsage,
