@@ -101,7 +101,7 @@ function Condition({
   monthComparisonRatio = { gas: 0, elec: 0, water: 0 },
   AvgFee ={ national: 0, location: 0 },
 }) {
-  const [ratio, setRatio] = useState(105);
+const [ratio, setRatio] = useState(Math.trunc(((billInfo.electricThisMonth + billInfo.gasThisMonth + billInfo.waterThisMonth) / AvgFee.location) * 100 - 100));
 
   console.log("Condition - buildingInfo:", buildingInfo);
   console.log("Condition - elecUsage:", elecUsage);
@@ -256,12 +256,13 @@ function Condition({
           </AverageChargeFooter>
           <Liner />
           <AverageCountry>
-            <div>전국 일평균 대비</div>
+               <div>우리지역(대전) 일평균 대비</div>
             <div className="average_chart">표</div>
+           
           </AverageCountry>
           <Liner />
           <AverageLocation>
-            <div>우리지역(대전) 일평균 대비</div>
+          <div>전국 일평균 대비</div>
             <div className="average_chart">표</div>
           </AverageLocation>
         </AverageAndEnergy>
