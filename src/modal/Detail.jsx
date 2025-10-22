@@ -1,5 +1,5 @@
 import styled, { css, keyframes } from "styled-components";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import {
   Overlay,
   ModalHeader
@@ -310,7 +310,7 @@ function Detail({ onClose }) {
     // 분류 3 / 실시간 버튼 상태 관리
     const [isRealtimeClick, setIsRealtimeClick] = useState(false);
     // 분류 4 /  선택 층 상태
-    const [SelectedFloor, setSelectedFloor] = useState([""]);
+    const [SelectedFloor, setSelectedFloor] = useState([]);
     // 분류 5 / 요금 보기 상태
     const [IsChargeClick, setIsChargeClick] = useState(false);
 
@@ -331,64 +331,113 @@ function Detail({ onClose }) {
     //     testapi();
     // }, [startValue, endValue]);
 
-    const fetchData = async () => {
+    const myurl = [
+        "/api/energy/elec?", // 전력 사용량 조회
+        "/api/energy/gas", // 가스 사용량 조회
+        "/api/energy/water", // 수도 사용량 조회
+        "/api/energy/elec/{floor}", // 층별 전력
+        "/api/energy/water/{floor}", // 층별 수도
+        "/api/energy/sse/all", // 실시간 에너지 사용량 조회
+        "/api/energy/bill/elec/{floor}", // 전력 층별 사용금액 조회
+        "/api/energy/bill/water/{floor}", // 수도 층별 사용금액 조회
+    ];
+
+
+    const fetchData =  useCallback(async (urls) => {
         try {
-            const myurl = [
-                "/api/energy/elec?", // 전력 사용량 조회
-                "/api/energy/gas", // 가스 사용량 조회
-                "/api/energy/water", // 수도 사용량 조회
-                "/api/energy/elec/{floor}", // 층별 전력
-                "/api/energy/water/{floor}", // 층별 수도
-                "/api/energy/sse/all", // 실시간 에너지 사용량 조회
-                "/api/energy/bill/elec/{floor}", // 전력 층별 사용금액 조회
-                "/api/energy/bill/water/{floor}", // 수도 층별 사용금액 조회
-            ];
-            const response = await Promise.all(myurl.map(myurl => fetch(myurl)));
+            const response = await Promise.all(urls.map(url => fetch(url)));
             // 응답 검사
             response.forEach((res, index) => {
-                if (!res.ok) throw new Error(`${myurl[index]} 응답이 올바르지 않습니다.`);
+                if (!res.ok) throw new Error(`${urls[index]} 응답이 올바르지 않습니다.`);
             });
 
             const data = await Promise.all(response.map(res => res.json()));
-            console.log("MAIN 데이터 가져오기 성공:", data);
+            console.log("⭐ MAIN 데이터 가져오기 성공:", data);
         } catch (error) {
-            console.error("MAIN 데이터 가져오기 실패:", error);
+            console.error("⭐ MAIN 데이터 가져오기 실패:", error);
         }
-    };
+    }, []);
+
+    // 실시간 보기일 때 (날짜 무시)
+    useEffect(() => {
+        if (!isRealtimeClick) return;
+
+        const eventSource = new EventSource("/api/energy/sse/all");
+        eventSource.onmessage = (event) => {
+            console.log("📡 실시간 데이터:", JSON.parse(event.data));
+        };
+        eventSource.onerror = (err) => {
+            console.error("❌ SSE 연결 오류:", err);
+            eventSource.close();
+        };
+
+        return () => {
+            console.log("🔌 SSE 연결 종료");
+            eventSource.close();
+        };
+    }, [isRealtimeClick]);
 
     useEffect(() => {
+        if (isRealtimeClick) return;
+        
         const startStr = startValue.format("YYYY-MM-DD HH:mm:ss");
         const endStr = endValue.format("YYYY-MM-DD HH:mm:ss");
-        console.log("시작 날짜:", startStr);
-        console.log("종료 날짜:", endStr);
+
+        // 시간 따지기
+        const diffDays = endValue.diff(startValue, "day");
+        const diffMonths = endValue.diff(startValue, "month");   
+        const diffYears = endValue.diff(startValue, "year");     
+
+        let datetimeType = 0;
+        if (diffDays < 2) datetimeType = 0; // 시간 단위
+        else if (diffDays < 60) datetimeType = 1; // 일 단위
+        else if (diffMonths < 24) datetimeType = 2; // 월 단위
+        else datetimeType = 3; // 연 단위
+
+
 
         let url = "";
-
-        // 실시간 보기일 때 (날짜 무시)
-        if (isRealtimeClick) {
-            url = "/api/energy/sse/all";
-        }
+        let urls = [];
 
         // 요금 보기일 때
-        else if (IsChargeClick) {
+        if (IsChargeClick) {
             if (DetailSelected === "가스") {
-                url = "/api/energy/bill";
+                url = `/api/energy/bill?start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`;
+                console.log("🍪", url);
             }
             else {
-                url = `/api/energy/bill/${DetailSelected === "전력" ? "elec" : "water"}`;
-                if (SelectedFloor[0] === "전체 층") {
-                    url += "/";
+                if (SelectedFloor.includes("전체 층") || SelectedFloor.length === 4) {
+                    url = `/api/energy/bill?start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`;
+                    console.log("🍪🍪", url);
+                } else {
+                    SelectedFloor.map(
+                        (floor) => urls.push(`/api/energy/bill?floor=${floor}&start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`)
+                    );
+                    console.log("🍪🍪🍪");
                 }
             }
         }
         
         // 일반 전체 선택
-        else if (SelectedFloor.length === 0) {}
+        else if (SelectedFloor.includes("전체 층")|| SelectedFloor.length === 4) {
+            url = `/api/energy/${DetailSelected === "전력" ? "elec" : DetailSelected === "가스" ? "gas" : "water"}?start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`;
+        }
 
         // 일반 층별 선택
-        else {}
+        else {
+            SelectedFloor.map(
+                (floor) =>
+                    urls.push(`/api/energy/${DetailSelected === "전력" ? "elec" : "water"}?floor=${floor}&start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`)
+            );
+        }
 
-    }, []);
+        if (urls.length > 0) {
+            fetchData(urls);
+            urls = [];
+        } else if (url) fetchData(url);
+        else console.warn("URL이 정의되지 않았습니다.");
+
+    }, [DetailSelected, startValue, endValue, SelectedFloor, IsChargeClick, isRealtimeClick, fetchData]);
 
 
 
@@ -413,16 +462,16 @@ function Detail({ onClose }) {
         }, []);
 
     // ✅ 층 버튼 활성화 관리
-    const [EveryFloor, setEveryFloor] = useState(["전체 층", "F1", "F2", "F3", "F4"]);
+    const [EveryFloor] = useState(["전체 층", "1", "2", "3", "4"]);
 
 
     const FloorClick = (floor) => {
         if (floor === "전체 층") {
-            if (SelectedFloor.includes("전체 층")) {
-                setSelectedFloor([]);
-            } else {
-                setSelectedFloor(["전체 층"]);
-            }
+            setSelectedFloor((prev) =>
+            prev.includes("전체 층") ? [] : ["전체 층"]
+            );
+            return;
+        
         } else {
             setSelectedFloor((prev) => {
                 let updatedFloors = prev.filter((f) => f !== "전체 층");
@@ -435,7 +484,6 @@ function Detail({ onClose }) {
                 return updatedFloors;
             });
         }
-        
     };
 
 
@@ -525,7 +573,7 @@ function Detail({ onClose }) {
                                     onClick={() => FloorClick(floor)}
                                     className={SelectedFloor.includes(floor) ? "active" : ""}
                                     >
-                                        {floor}
+                                        {floor === "전체 층" ? "전체 층" : `${floor} 층`}
                                     </div>
                                 ))}
                             </DetailFloorSelect>
