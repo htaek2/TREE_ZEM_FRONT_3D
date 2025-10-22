@@ -1,10 +1,120 @@
 import { Suspense, useEffect, useState } from "react";
-import styled from "styled-components";
+import styled, { css } from "styled-components";
 
 import Condition from "../modal/Condition";
 import Detail from "../modal/Detail";
 import Analysis from "../modal/Analysis";
 import { MODEL_TO_FLOOR, MODELS } from "../constants";
+
+/* ===========================
+   Utils (표시 문자열 / 아이콘 키 / 이미지 fallback)
+=========================== */
+const WEATHER_KO = {
+  0: "맑음",
+  1: "비",
+  2: "눈",
+  3: "흐림",
+  sunny: "맑음",
+  rainy: "비",
+  snowy: "눈",
+  cloudy: "흐림",
+};
+
+const toLabel = (raw) => {
+  if (raw === null || raw === undefined || raw === "") return "—";
+  const s = String(raw).trim().toLowerCase();
+  const n = Number(s);
+  if (Number.isFinite(n)) return WEATHER_KO[n] ?? `코드 ${n}`;
+  return WEATHER_KO[s] ?? s;
+};
+
+const toIconKey = (raw) => {
+  if (raw == null || raw === "") return "cloudy";
+  const s = String(raw).trim().toLowerCase();
+  const n = Number(s);
+  if (Number.isFinite(n)) return ({ 0: "sunny", 1: "rainy", 2: "snowy", 3: "cloudy" })[n] ?? "cloudy";
+  return s;
+};
+
+// 공통 이미지 fallback 핸들러: 첫 실패에만 fallback 적용
+const imgFallback = (fallback) => (e) => {
+  const img = e.currentTarget;
+  if (!img.dataset.fbk) {
+    img.dataset.fbk = 1;
+    img.src = fallback;
+  }
+};
+
+/* ===========================
+   공통 스타일 helpers
+=========================== */
+// === 공통 스타일 토큰 (한 곳에서 일괄 조절) ===
+const PANEL_ALPHA_OFF = 0.5;   // 탄소배출 OFF일 때 패널 불투명도
+const PANEL_ALPHA_ON  = 0.3;   // 탄소배출 ON(초록)일 때 패널 불투명도
+const PANEL_BORDER_ALPHA = 0.12;
+const PANEL_SHADOW = "2px 3px 5px 0 rgba(0,0,0,.5)";
+
+// OFF/ON에 따라 동일 로직으로 배경 생성
+const panelBg = ({ IsEmissionBtn }) =>
+  IsEmissionBtn
+    ? `rgba(0,170,111, ${PANEL_ALPHA_ON})`
+    : `rgba(45,45,45, ${PANEL_ALPHA_OFF})`;
+
+// 탄소배출 토글에 따른 소프트 배경 색상(카드, 패널용)
+const bgSoft = (IsEmissionBtn, alphaOff = 0.28, alphaOn = 0.22) =>
+  IsEmissionBtn ? `rgba(0,170,111, ${alphaOn})` : `rgba(0,0,0, ${alphaOff})`;
+
+// 탄소배출 토글에 따른 알약 배경 색상(타이틀, 라벨 버튼류)
+const bgPill = (IsEmissionBtn, alphaOff = 0.85, alphaOn = 1) =>
+  IsEmissionBtn ? `rgba(0,170,111, ${alphaOn})` : `rgba(45,45,45, ${alphaOff})`;
+
+// 알약형 공통 베이스(타이틀/라벨)
+const pillBase = css`
+  width: 184px;
+  min-width: 184px;
+  height: 34px;
+  min-height: 34px;
+  flex: 0 0 34px;
+  line-height: 14px;
+  box-sizing: border-box;
+  border-radius: 9999px 0 0 9999px;
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  font-family: "Nanum Gothic", system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 14px;
+  color: #fff;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+  --fade: 36px;
+  --cut: 60%;
+  padding-right: calc(14px + var(--fade));
+  -webkit-mask-image: linear-gradient(
+    to right,
+    #000 0,
+    #000 calc(var(--cut, 60%) - var(--fade)),
+    rgba(0, 0, 0, 0.9) var(--cut, 60%),
+    rgba(0, 0, 0, 0) 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    #000 0,
+    #000 calc(var(--cut, 60%) - var(--fade)),
+    rgba(0, 0, 0, 0.9) var(--cut, 60%),
+    rgba(0, 0, 0, 0) 100%
+  );
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  &::before,
+  &::after {
+    content: none !important;
+  }
+`;
 
 /* ===========================
    헤더 박스
@@ -27,25 +137,27 @@ const HeaderBox = styled.div`
   font-size: 24px;
   font-weight: 800;
   letter-spacing: 0.5px;
-  background: ${({ IsEmissionBtn }) => IsEmissionBtn
-   ? `linear-gradient(90deg,
+  --hdrA: 0.92; /* 가운데 진한 구간 알파(필요시만 조절) */
+  background: ${({ IsEmissionBtn }) =>
+    IsEmissionBtn
+      ? `linear-gradient(90deg,
         rgba(0,170,111,0) 0%,
         rgba(0,170,111,.22) 20%,
         rgba(0,170,111,.65) 45%,
-        rgba(0,170,111,1) 55%,
+        rgba(0,170,111,var(--hdrA)) 55%,
         rgba(0,170,111,.65) 68%,
         rgba(0,170,111,.22) 80%,
         rgba(0,170,111,0) 100%)`
-   : `linear-gradient(90deg,
+      : `linear-gradient(90deg,
         rgba(0,0,0,0) 0%,
         rgba(20,20,20,.12) 20%,
         rgba(20,20,20,.55) 40%,
-        rgba(20,20,20,.92) 55%,
+        rgba(20,20,20,var(--hdrA)) 55%,
         rgba(20,20,20,.55) 68%,
         rgba(20,20,20,.12) 80%,
         rgba(0,0,0,0) 100%)`};
- box-shadow: none;
- transition: background .24s ease;  /* 부드럽게 전환 */
+  box-shadow: none;
+  transition: background 0.24s ease;
 `;
 
 const HeaderIcon = styled.img`
@@ -79,8 +191,7 @@ const FloorButtons = styled.div`
 
 const FloorButton = styled.button`
   padding: 8px 8px;
-  background: ${({ IsEmissionBtn }) =>
-    IsEmissionBtn ? "rgba(0, 170, 111, 1)" : "rgba(45, 45, 45, 0.85)"};
+  background: ${({ IsEmissionBtn }) => bgPill(IsEmissionBtn)};
   color: white;
   border: 2px solid transparent;
   border-radius: 8px;
@@ -91,13 +202,11 @@ const FloorButton = styled.button`
   white-space: nowrap;
   width: 50px;
   height: 50px;
-
   &.active {
     background-color: rgba(100, 100, 100, 0.95);
     border-color: rgba(255, 215, 0, 0.8);
     box-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
   }
-
   > img.ToggleBtn {
     width: 20px;
     height: 20px;
@@ -124,71 +233,24 @@ const LeftWing = styled.aside`
 
 const WingCard = styled.div`
   position: relative;
-  background: ${({ IsEmissionBtn }) =>
-    IsEmissionBtn ? "rgba(0, 170, 111, 0.15)" : "rgba(0, 0, 0, 0.15)"};
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: ${panelBg};                               /* ✅ 배경 통일 */
+  border: 1px solid rgba(255,255,255, ${PANEL_BORDER_ALPHA});
+
   border-radius: 10px;
   color: #fff;
-  padding: 10px 8px;
+  padding: 8px 6px;
   overflow: hidden;
   width: 200px;
   height: 208px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  /* ✅ 항상 동일한 그림자 (탄소배출 모드 전/후 동일) */
-  box-shadow: 2px 3px 5px 0 rgba(0,0,0,.25);
+  box-shadow: ${PANEL_SHADOW};
 `;
 
 const CardTitle = styled.div`
-  width: 184px;
-  min-width: 184px;
-  height: 34px;
-  min-height: 34px;
-  flex: 0 0 34px;
-  line-height: 14px;
-  box-sizing: border-box;
-  border-radius: 9999px 0 0 9999px;
-  padding: 8px 14px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  font-family: "Nanum Gothic", system-ui, sans-serif;
-  font-weight: 800;
-  font-size: 14px;
-  color: #fff;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  position: relative;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: ${({ IsEmissionBtn }) =>
-    IsEmissionBtn ? "rgba(0, 170, 111, 1)" : "rgba(45, 45, 45, 0.85)"};
-  overflow: hidden;
-  margin-bottom: 8px;
-  --fade: 36px;
-  --cut: 60%;
-  padding-right: calc(14px + var(--fade));
-  -webkit-mask-image: linear-gradient(
-    to right,
-    #000 0,
-    #000 calc(var(--cut, 60%) - var(--fade)),
-    rgba(0, 0, 0, 0.9) var(--cut, 60%),
-    rgba(0, 0, 0, 0) 100%
-  );
-  mask-image: linear-gradient(
-    to right,
-    #000 0,
-    #000 calc(var(--cut, 60%) - var(--fade)),
-    rgba(0, 0, 0, 0.9) var(--cut, 60%),
-    rgba(0, 0, 0, 0) 100%
-  );
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-
-  &::before,
-  &::after {
-    content: none !important;
-  }
+  ${pillBase}
+  background: ${({ IsEmissionBtn }) => bgPill(IsEmissionBtn)};
 `;
 
 const StatList = styled.div`
@@ -196,7 +258,6 @@ const StatList = styled.div`
   display: grid;
   grid-template-rows: ${({ IsEmissionBtn }) => (IsEmissionBtn ? "repeat(4, 1fr)" : "repeat(3, 1fr)")};
   height: 100%;
-
   > .TotalEmission {
     display: ${({ IsEmissionBtn }) => (IsEmissionBtn ? "flex" : "none")};
     align-items: center;
@@ -206,10 +267,10 @@ const StatList = styled.div`
 
 const StatRow = styled.div`
   display: grid;
-  grid-template-columns: 20px 1fr auto;
+  grid-template-columns: 20px auto 1fr;
   align-items: center;
-  column-gap: 10px;
-  padding: 0 10px;
+  column-gap: 15px;
+  padding: 0.5 8px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   &:last-child {
     border-bottom: 0;
@@ -217,25 +278,28 @@ const StatRow = styled.div`
 `;
 
 const StatIcon = styled.img`
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   display: block;
   filter: brightness(0) invert(1);
 `;
 
 const StatLabel = styled.span`
   font-family: "Nanum Gothic", system-ui, sans-serif;
-  font-weight: 800;
-  font-size: 16px;
+  font-weight: 700;
+  font-size: 17px;
   letter-spacing: -0.2px;
+  white-space: nowrap;
 `;
+
 const StatValue = styled.div`
   display: flex;
+  justify-content: flex-end;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   font-family: "Nanum Gothic", system-ui, sans-serif;
-  font-weight: 800;
-  font-size: 16px;
+  font-weight: 700;
+  font-size: 17px;
 `;
 
 const StatUnit = styled.span``;
@@ -269,13 +333,12 @@ const DockActions = styled.div`
 `;
 
 const DockBtn = styled.button`
-  background: ${({ IsEmissionBtn }) =>
-    IsEmissionBtn ? "rgba(0, 170, 111, 1)" : "rgba(45, 45, 45, 0.85)"};
+  background: ${({ IsEmissionBtn }) => bgPill(IsEmissionBtn)};
   border: 1px solid rgba(255, 255, 255, 0.18);
   color: #fff;
   border-radius: 12px;
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 400;
   width: 60px;
   height: 40px;
   box-sizing: border-box;
@@ -326,11 +389,9 @@ const RightInfo = styled.div`
   z-index: 120;
   opacity: ${({ $open }) => ($open ? 1 : 0)};
   pointer-events: ${({ $open }) => ($open ? "auto" : "none")};
-  transition:
-     transform 360ms cubic-bezier(0.22,0.61,0.36,1),
-     opacity 260ms ease-out;
+  transition: transform 360ms cubic-bezier(0.22, 0.61, 0.36, 1), opacity 260ms ease-out;
   overflow: visible;
-  --right-panel-bg: rgba(45,45,45,0.15);
+  --right-panel-bg: rgba(45, 45, 45, 0.15);
 `;
 
 const InfoGroup = styled.div`
@@ -343,11 +404,8 @@ const InfoGroup = styled.div`
 /* 말풍선 꼬리: 보더+채움 이중 처리로 상단에 딱 붙게 */
 const InfoPanelBase = styled.div`
   --tail: 8px;
-  /* 탄소배출 토글 시 좌측 박스와 동일 톤 */
-  --panel-bg: ${({IsEmissionBtn}) =>
-    IsEmissionBtn ? "rgba(0,170,111,0.15)" : "var(--right-panel-bg, rgba(45,45,45,0.15))"};
-  --panel-bd: transparent;
 
+  --panel-bd: transparent;
 
   overflow: hidden;
   max-height: ${({ open }) => (open ? "120px" : "0")};
@@ -355,22 +413,90 @@ const InfoPanelBase = styled.div`
   transition: max-height 220ms ease, opacity 150ms ease;
   padding: ${({ open }) => (open ? "8px 8px 40px" : "0 8px 0")};
   margin-top: ${({ open }) => (open ? "6px" : "0")};
-  background: var(--panel-bg);
-  border: 1px solid var(--panel-bd);
+
+  background: ${panelBg}; 
+  border: 1px solid rgba(255,255,255, ${PANEL_BORDER_ALPHA});
   border-radius: 8px;
   color: #fff;
   line-height: 1.5;
   position: relative;
   z-index: 1000;
-  box-shadow: 2px 3px 5px 0 rgba(0,0,0,.25);
+  box-shadow: ${PANEL_SHADOW};
 
-  & p { margin: 0; font-weight: 400; }
-  & p + p { margin-top: 4px; }
+  & p {
+    margin: 0;
+    font-weight: 400;
+  }
+  & p + p {
+    margin-top: 4px;
+  }
 `;
 
 const InfoManager = styled(InfoPanelBase)``;
-const InfoWeather = styled(InfoPanelBase)``;
-const InfoAlert = styled(InfoPanelBase)``;
+
+const InfoWeather = styled(InfoPanelBase)`
+  /* 아래 여분 줄여서 내용이 바닥까지 차게 */
+  padding: ${({ open }) => (open ? "12px" : "0 12px")};
+
+  /* 세 줄을 위→아래로 꽉 채움(좌우 폭 유지) */
+  display: grid;
+  grid-template-rows: repeat(3, 1fr);
+  align-items: stretch;
+  --icon-dy: 0px;
+
+  /* 각 행 공통: 왼쪽 아이콘 공간 확보 */
+  & p {
+    position: relative;
+    padding-left: 28px;
+    display: flex;
+    align-items: center;
+    line-height: 1.8;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* 좌측 아이콘: 공통 베이스 */
+  & p::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(calc(-50% + var(--icon-dy)));
+    width: 23px;
+    height: 23px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    filter: brightness(0) invert(1);
+  }
+
+  /* 1행(날씨): data-wicon 값으로 동적 아이콘 */
+  &[data-wicon="sunny"] p:nth-child(1)::before {
+    background-image: url("/Icon/sunny_icon.svg");
+  }
+  &[data-wicon="rainy"] p:nth-child(1)::before {
+    background-image: url("/Icon/rainy_icon.svg");
+  }
+  &[data-wicon="snowy"] p:nth-child(1)::before {
+    background-image: url("/Icon/snowy_icon.svg");
+  }
+  &[data-wicon="cloudy"] p:nth-child(1)::before {
+    background-image: url("/Icon/cloudy_icon.svg");
+  }
+
+  /* 2행/3행: 고정 아이콘 */
+  & p:nth-child(2)::before {
+    background-image: url("/Icon/humidity_icon.svg");
+  }
+  & p:nth-child(3)::before {
+    background-image: url("/Icon/wind_icon.svg");
+  }
+`;
+
+const InfoAlert = styled(InfoPanelBase)`
+  max-height: ${({ open }) => (open ? "1000px" : "0")};
+  --panel-pad-b: 8px;
+  display: flex;
+  flex-direction: column;
+`;
 
 const InfoItem = styled.div`
   position: relative;
@@ -388,11 +514,10 @@ const InfoItem = styled.div`
   --fade: 26px;
   padding-right: calc(14px + var(--fade));
   border-radius: 9999px 0 0 9999px;
-  background: ${({ IsEmissionBtn }) =>
-    IsEmissionBtn ? "rgba(0, 170, 111, 1)" : "rgba(45, 45, 45, 0.85)"};
+  background: ${({ IsEmissionBtn }) => bgPill(IsEmissionBtn)};
   border: 1px solid rgba(255, 255, 255, 0.12);
   color: #fff;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   overflow: hidden;
   white-space: nowrap;
@@ -416,7 +541,7 @@ const InfoItem = styled.div`
   mask-repeat: no-repeat;
 
   cursor: pointer;
-  box-shadow: 2px 3px 5px 0 rgba(0,0,0,.25);
+  box-shadow: ${PANEL_SHADOW};
 `;
 
 const InfoIcon = styled.img`
@@ -458,20 +583,18 @@ const PanelBtn = styled.button`
   height: 20px;
   padding: 0 10px;
   border-radius: 999px;
-  background: ${({IsEmissionBtn}) => IsEmissionBtn ? "rgba(0,170,111,1)" : "rgba(45,45,45,0.50)"};
-  border: 1px solid ${({IsEmissionBtn}) => IsEmissionBtn ? "rgba(0,170,111,1)" : "#2D2D2D"};
+  background: ${({ IsEmissionBtn }) => (IsEmissionBtn ? "rgba(0,170,111,1)" : "rgba(45,45,45,0.50)")};
+  border: 1px solid ${({ IsEmissionBtn }) => (IsEmissionBtn ? "rgba(0,170,111,1)" : "#2D2D2D")};
   color: #fff;
-  font-size: 12px;
-  font-weight: 400;
-  line-height: 20px;     /* 텍스트 수직 가운데 */
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 20px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   white-space: nowrap;
   cursor: pointer;
-
 `;
-
 
 /* ===========================
    컴포넌트 본문
@@ -489,13 +612,15 @@ function Wing({
   selectedDevice,
   setSelectedDevice = () => {},
   setRailOpen = () => {},
-  billInfo = {},
+  billInfo = { billInfo},
   weatherNow = null,
-  
+  todayComparisonRatio = { gas: 0, elec: 0, water: 0 },
+  monthComparisonRatio = { gas: 0, elec: 0, water: 0 },
+  AvgFee = { national: 0, location: 0 }
 }) {
   const [managerName] = useState("이**");
   const [alertCount, setAlertCount] = useState(0);
-  
+
   const outerTemp = weatherNow?.nowTemperature ?? null;
   const outerHumidity = weatherNow?.humidity ?? null;
   const outerWind = weatherNow?.windSpeed ?? null;
@@ -540,13 +665,7 @@ function Wing({
               <StatIcon
                 src="Icon/elect_icon.svg"
                 alt="전력"
-                onError={(e) => {
-                  const img = e.currentTarget;
-                  if (!img.dataset.fbk) {
-                    img.dataset.fbk = 1;
-                    img.src = "/Icon/elect_icon.svg";
-                  }
-                }}
+                onError={imgFallback("/Icon/elect_icon.svg")}
               />
               <StatLabel>전력</StatLabel>
               <StatValue>
@@ -559,13 +678,7 @@ function Wing({
               <StatIcon
                 src="/Icon/gas_icon.svg"
                 alt="가스"
-                onError={(e) => {
-                  const img = e.currentTarget;
-                  if (!img.dataset.fbk) {
-                    img.dataset.fbk = 1;
-                    img.src = "/Icon/gas_icon.svg";
-                  }
-                }}
+                onError={imgFallback("/Icon/gas_icon.svg")}
               />
               <StatLabel>가스</StatLabel>
               <StatValue>
@@ -578,13 +691,7 @@ function Wing({
               <StatIcon
                 src="/Icon/water_icon.svg"
                 alt="수도"
-                onError={(e) => {
-                  const img = e.currentTarget;
-                  if (!img.dataset.fbk) {
-                    img.dataset.fbk = 1;
-                    img.src = "/Icon/water_icon.svg";
-                  }
-                }}
+                onError={imgFallback("/Icon/water_icon.svg")}
               />
               <StatLabel>수도</StatLabel>
               <StatValue>
@@ -622,13 +729,7 @@ function Wing({
               src="public/Icon/analysis_icon.svg"
               alt=""
               aria-hidden="true"
-              onError={(e) => {
-                const img = e.currentTarget;
-                if (!img.dataset.fbk) {
-                  img.dataset.fbk = 1;
-                  img.src = "/Icon/analysis_icon.svg";
-                }
-              }}
+              onError={imgFallback("/Icon/analysis_icon.svg")}
             />
             <DockLabel>통합분석</DockLabel>
           </DockBtn>
@@ -637,13 +738,7 @@ function Wing({
               src="public/Icon/detail_icon.svg"
               alt=""
               aria-hidden="true"
-              onError={(e) => {
-                const img = e.currentTarget;
-                if (!img.dataset.fbk) {
-                  img.dataset.fbk = 1;
-                  img.src = "/Icon/detail_icon.svg";
-                }
-              }}
+              onError={imgFallback("/Icon/detail_icon.svg")}
             />
             <DockLabel>상세분석</DockLabel>
           </DockBtn>
@@ -652,13 +747,7 @@ function Wing({
               src="public/Icon/emission_icon.svg"
               alt=""
               aria-hidden="true"
-              onError={(e) => {
-                const img = e.currentTarget;
-                if (!img.dataset.fbk) {
-                  img.dataset.fbk = 1;
-                  img.src = "/Icon/analysis_icon.svg";
-                }
-              }}
+              onError={imgFallback("/Icon/analysis_icon.svg")}
             />
             <DockLabel>탄소배출</DockLabel>
           </DockBtn>
@@ -679,6 +768,9 @@ function Wing({
           lastMonthUsage={lastMonthUsage}
           buildingInfo={buildingInfo}
           billInfo={billInfo}
+          todayComparisonRatio={todayComparisonRatio}
+          monthComparisonRatio={monthComparisonRatio}
+          AvgFee={AvgFee}
         >
           현황
         </Condition>
@@ -690,17 +782,12 @@ function Wing({
       <RightInfo $open={railOpen}>
         {/* 1) 책임자 */}
         <InfoGroup>
-          <InfoItem IsEmissionBtn={IsEmissionBtn} onClick={() => setOpenManager((v)=>!v)} aria-expanded={openManager}>
+          <InfoItem IsEmissionBtn={IsEmissionBtn} onClick={() => setOpenManager((v) => !v)} aria-expanded={openManager}>
             <InfoIcon
               $white
               src="/Icon/manager_icon.svg"
               alt="책임자"
-              onError={(e) => {
-                if (!e.currentTarget.dataset.fbk) {
-                  e.currentTarget.dataset.fbk = 1;
-                  e.currentTarget.src = "/icon/manager_icon.svg";
-                }
-              }}
+              onError={imgFallback("/icon/manager_icon.svg")}
             />
             <InfoLabel>책임자</InfoLabel>
             <InfoValue>{managerName}</InfoValue>
@@ -714,23 +801,18 @@ function Wing({
 
         {/* 2) 외부날씨 */}
         <InfoGroup>
-          <InfoItem IsEmissionBtn={IsEmissionBtn} onClick={() => setOpenWeather((v)=>!v)} aria-expanded={openWeather}>
+          <InfoItem IsEmissionBtn={IsEmissionBtn} onClick={() => setOpenWeather((v) => !v)} aria-expanded={openWeather}>
             <InfoIcon
               $white
-              src="/Icon/weather_icon.svg"
+              src="/Icon/temperature_icon.svg"
               alt="외부온도"
-              onError={(e) => {
-                if (!e.currentTarget.dataset.fbk) {
-                  e.currentTarget.dataset.fbk = 1;
-                  e.currentTarget.src = "/icon/weather_icon.svg";
-                }
-              }}
+              onError={imgFallback("/icon/temperature_icon.svg")}
             />
             <InfoLabel>외부온도</InfoLabel>
             <InfoValue>{outerTemp == null ? "—" : `${Math.round(outerTemp)}°C`}</InfoValue>
           </InfoItem>
-          <InfoWeather open={openWeather} IsEmissionBtn={IsEmissionBtn}>
-            <p>외부 날씨: {weatherNow?.weatherStatus ?? "—"}</p>
+          <InfoWeather open={openWeather} IsEmissionBtn={IsEmissionBtn} data-wicon={toIconKey(weatherNow?.weatherStatus)}>
+            <p>외부 날씨: {toLabel(weatherNow?.weatherStatus)}</p>
             <p>외부 습도: {outerHumidity == null ? "—" : `${Math.round(outerHumidity)}%`}</p>
             <p>외부 풍속: {outerWind == null ? "—" : `${outerWind} m/s`}</p>
           </InfoWeather>
@@ -738,22 +820,20 @@ function Wing({
 
         {/* 3) 경고/알림 */}
         <InfoGroup>
-          <InfoItem IsEmissionBtn={IsEmissionBtn} onClick={() => setOpenAlert((v)=>!v)} aria-expanded={openAlert}>
-            <InfoIcon
-              src="/Icon/warning_icon.svg"
-              alt="경고/알림"
-              onError={(e) => {
-                if (!e.currentTarget.dataset.fbk) {
-                  e.currentTarget.dataset.fbk = 1;
-                  e.currentTarget.src = "/icon/warning_icon.svg";
-                }
-              }}
-            />
+          <InfoItem IsEmissionBtn={IsEmissionBtn} onClick={() => setOpenAlert((v) => !v)} aria-expanded={openAlert}>
+            <InfoIcon src="/Icon/warning_icon.svg" alt="경고/알림" onError={imgFallback("/icon/warning_icon.svg")} />
             <InfoLabel>경고/알림</InfoLabel>
             <InfoValue>{alertCount}</InfoValue>
           </InfoItem>
           <InfoAlert open={openAlert} IsEmissionBtn={IsEmissionBtn}>
             <p>경고 알림 제목</p>
+            <p>경고 알림 내용</p>
+            <p>경고 알림 내용</p>
+            <p>경고 알림 내용</p>
+            <p>경고 알림 내용</p>
+            <p>경고 알림 내용</p>
+            <p>경고 알림 내ㅁㄴㅇㅁㄴㅇㅁㄴㅇㅁㄴ용</p>
+            <p>경고 알림 내용</p>
             <p>경고 알림 내용</p>
             <PanelActions>
               <PanelBtn IsEmissionBtn={IsEmissionBtn}>메모 보기</PanelBtn>
@@ -766,7 +846,7 @@ function Wing({
       <>
         {/* 헤더 */}
         <HeaderBox IsEmissionBtn={IsEmissionBtn}>
-          <HeaderIcon src="public/Icon/header_title_logo.svg" alt="토리 빌딩" />
+          <HeaderIcon src="public/Icon/header_title_logo.svg" alt="토리 빌딩" onError={imgFallback("/Icon/header_title_logo.svg")} />
           <HeaderText>
             {active.active ? `토리 빌딩 - ${MODEL_TO_FLOOR[active.model] + 1}층` : "토리 빌딩"}
           </HeaderText>
@@ -780,7 +860,7 @@ function Wing({
             onClick={() => setActive({ active: false, model: null })}
             IsEmissionBtn={IsEmissionBtn}
           >
-            <img src="public/Icon/Home_logo.svg" alt="전체보기" width={24} />
+            <img src="public/Icon/Home_logo.svg" alt="전체보기" width={24} onError={imgFallback("/Icon/Home_logo.svg")} />
           </FloorButton>
           {MODELS.filter((model) => model !== "top").map((modelName) => (
             <FloorButton
@@ -793,7 +873,11 @@ function Wing({
             </FloorButton>
           ))}
           <FloorButton className="ToggleBtn" onClick={() => setRailOpen((prev) => !prev)} IsEmissionBtn={IsEmissionBtn}>
-            <img src={railOpen ? "Icon/toggle_on.svg" : "Icon/toggle_off.svg"} alt={railOpen ? "패널 닫기" : "패널 열기"} />
+            <img
+              src={railOpen ? "Icon/toggle_on.svg" : "Icon/toggle_off.svg"}
+              alt={railOpen ? "패널 닫기" : "패널 열기"}
+              onError={imgFallback(railOpen ? "/Icon/toggle_on.svg" : "/Icon/toggle_off.svg")}
+            />
           </FloorButton>
         </FloorButtons>
       </>

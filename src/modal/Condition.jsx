@@ -101,7 +101,7 @@ function Condition({
   monthComparisonRatio = { gas: 0, elec: 0, water: 0 },
   AvgFee ={ national: 0, location: 0 },
 }) {
-const [ratio, setRatio] = useState(Math.trunc(((billInfo.electricThisMonth + billInfo.gasThisMonth + billInfo.waterThisMonth) / AvgFee.location) * 100 - 100) === Infinity ? Math.trunc(((billInfo.electricThisMonth + billInfo.gasThisMonth + billInfo.waterThisMonth) / AvgFee.location) * 100 - 100) : 0);
+const [ratio, setRatio] = useState(Math.trunc(((billInfo.electricThisMonth + billInfo.gasThisMonth + billInfo.waterThisMonth) / AvgFee.location) * 100 - 100) === Infinity ? 0 : Math.trunc(((billInfo.electricThisMonth + billInfo.gasThisMonth + billInfo.waterThisMonth) / AvgFee.location) * 100 - 100));
 
   console.log("Condition - buildingInfo:", buildingInfo);
   console.log("Condition - elecUsage:", elecUsage);
