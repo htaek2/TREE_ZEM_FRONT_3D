@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
+import * as constants from "../constants";
 
 export default function BackgroundManager() {
     const { scene } = useGLTF(`../public/landscape.gltf`);
@@ -21,6 +22,9 @@ export default function BackgroundManager() {
     }, [scene])
 
     return (
+        <>
+        <color attach="background" args={[constants.SKY_COLOR.SKY_BLUE]}/>
         <primitive object={scene} />
+        </>
     )
 }

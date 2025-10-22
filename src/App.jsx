@@ -30,11 +30,11 @@ const Container = styled.div`
 // 🎯 반응형 카메라 설정 함수
 const getResponsiveCameraSettings = (isAuthenticated) => {
   const width = window.innerWidth;
-  console.log(
-    isAuthenticated ? "로그인된 사용자" : "비로그인 사용자",
-    "화면 너비:",
-    width
-  );
+  // console.log(
+  //   isAuthenticated ? "로그인된 사용자" : "비로그인 사용자",
+  //   "화면 너비:",
+  //   width
+  // );
   // 모바일 (768px 미만)
   if (width < 768) {
     return {
@@ -192,7 +192,7 @@ function App() {
       try {
         const data = JSON.parse(event.data);  
 
-        console.log("SSE 데이터 수신:", data.elecPrice);
+        // console.log("SSE 데이터 수신:", data.elecPrice);
 
         // 실시간 요금 업데이트
         setBillInfo((prev) => ({
@@ -207,8 +207,8 @@ function App() {
 
         let totalWater = waterUsages.reduce((sum, usage) => sum + usage, 0);
 
-        console.log("수도 사용량:", waterUsages);
-        console.log("수도 사용량 합계:", totalWater);
+        // console.log("수도 사용량:", waterUsages);
+        // console.log("수도 사용량 합계:", totalWater);
         
 
         if(totalWater < 0) {
@@ -240,7 +240,7 @@ function App() {
           return sum + floorTotal;
         }, 0);
 
-        console.log("층별 전기 사용량 합계:", totalFloorElecUsage);
+        // console.log("층별 전기 사용량 합계:", totalFloorElecUsage);
 
         if (totalFloorElecUsage < 0) {
           totalFloorElecUsage = 0;
@@ -294,7 +294,7 @@ function App() {
 /*세구 1021 17:00*/
 // 현재 날씨 가져오기 (5분마다 갱신)
 const fetchWeatherNow = async () => {
-  console.log("날짜요청이야아아아아아아아아아아아아앙아")
+  // console.log("날짜요청이야아아아아아아아아아아아아앙아")
   fetch('/api/weather/now') // GET 요청 (기본값)
   .then(response => {
     // 응답 헤더를 확인하거나, 응답이 성공적이지 않다면 여기서 처리할 수 있습니다.
@@ -304,7 +304,7 @@ const fetchWeatherNow = async () => {
     return response.json(); // 응답 본문을 JSON으로 파싱
   })
   .then(data => {
-    console.log("받은날짜아아아아아아아아아아아",data); // 파싱된 JSON 데이터를 사용
+    // console.log("받은날짜아아아아아아아아아아아",data); // 파싱된 JSON 데이터를 사용
       setWeatherNow({
         ...prev,
         humidity : data.humidity,
@@ -795,8 +795,8 @@ const fetchWeatherNow = async () => {
       const response = await fetch("/api/buildings");
       if (response.ok) {
         const data = await response.json();
-        console.log("빌딩 정보 API 응답:", data);
-        console.log("totalArea 값:", data[0]?.totalArea);
+        // console.log("빌딩 정보 API 응답:", data);
+        // console.log("totalArea 값:", data[0]?.totalArea);
         setBuildingInfo({
           totalArea: data[0]?.totalArea || 0,
         });

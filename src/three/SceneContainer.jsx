@@ -6,6 +6,8 @@ import CameraController from "./CameraController";
 import * as constants from "../constants";
 import BackgroundManager from "./BackgroundManager";
 import * as THREE from "three";
+import { nodeData } from "../data/nodeInfo";
+import { SortUtils } from "three/examples/jsm/Addons.js";
 
 export default function SceneContainer({ isAuthenticated, active, cameraSettings, modelsToShow, selectedDevice, setSelectedDevice, setActive }) {
     const controlsRef = useRef();
@@ -51,10 +53,8 @@ export default function SceneContainer({ isAuthenticated, active, cameraSettings
         setSelectedDevice(null);
     };
     
-
     return (
         <>
-        <color attach="background" args={[constants.SKY_COLOR.SKY_BLUE]}/>
         <BackgroundManager/>
         {isAuthenticated && ( 
             <CameraController active={active} cameraSettings={cameraSettings} />
@@ -67,7 +67,12 @@ export default function SceneContainer({ isAuthenticated, active, cameraSettings
 
         {/* 3D 모델 - 로딩 중 fallback 표시 */}
         <Suspense fallback={null}>
-            {modelsToShow.map((modelName) => (
+            {modelsToShow.map((modelName) => {
+                const floorNumber = modelName.replace('f', '');
+                // 해당 층의 노드 정보를 가져옵니다.
+                const floorNodeInfo = nodeData[floorNumber] || [];
+
+                return (
                 <Model
                     key={modelName}
                     model={modelName}
@@ -76,8 +81,10 @@ export default function SceneContainer({ isAuthenticated, active, cameraSettings
                     onDeviceClick={ isAuthenticated ? handleDeviceClick : undefined }
                     selectedDevice={ isAuthenticated ? selectedDevice : undefined }
                     ishover={ isAuthenticated ? true : false }
+                    nodeInfo={floorNodeInfo}
                 />
-            ))}
+                );
+            })}
         </Suspense>
         {isAuthenticated ? (
         <>
