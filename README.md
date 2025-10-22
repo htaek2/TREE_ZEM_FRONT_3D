@@ -16,3 +16,7 @@
 
 - [x] 숫자 모션 아직 적용 안됨
 - npm i react-animated-numbers
+
+
+
+npm install react-router-dom styled-components @mui/x-date-pickers @mui/material @emotion/react @emotion/styled dayjs dayjs react-animated-numbers
