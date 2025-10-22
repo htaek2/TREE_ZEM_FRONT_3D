@@ -15,4 +15,7 @@
 > npm install dayjs
 
 - [x] 숫자 모션 아직 적용 안됨
-- npm i react-animated-numbers
+> npm i react-animated-numbers
+
+- [o] chart.js 연결
+> npm install chart.js react-chartjs-2
