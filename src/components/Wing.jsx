@@ -442,8 +442,8 @@ const InfoWeather = styled(InfoPanelBase)`
   display: grid;
   grid-template-rows: repeat(3, 1fr);
   align-items: stretch;
-  --icon-dy: 4px;
-
+  --icon-dy: 0px;
+  --icon-gap: 8px;
   /* 각 행 공통: 왼쪽 아이콘 공간 확보 */
   & p {
     position: relative;
