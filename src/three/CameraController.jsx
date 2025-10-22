@@ -7,8 +7,14 @@ function CameraController({ active, cameraSettings }) {
 
   useEffect(() => {
     // active 상태에 따라 카메라 위치 변경
-    const targetPosition = active.active
-      ? cameraSettings.activePosition
+    const targetPosition = active.active && active.model === 'f1'
+      ? cameraSettings.f1activePosition
+      : active.active && active.model === 'f2'
+      ? cameraSettings.f2activePosition
+      : active.active && active.model === 'f3'
+      ? cameraSettings.f3activePosition
+      : active.active && active.model === 'f4'
+      ? cameraSettings.f4activePosition
       : cameraSettings.defaultPosition;
 
     // FOV 업데이트 (클릭 여부에 따라 다른 FOV)

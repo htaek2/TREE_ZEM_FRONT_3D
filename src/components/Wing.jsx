@@ -612,8 +612,11 @@ function Wing({
   selectedDevice,
   setSelectedDevice = () => {},
   setRailOpen = () => {},
-  billInfo = {},
+  billInfo = { billInfo},
   weatherNow = null,
+  todayComparisonRatio = { gas: 0, elec: 0, water: 0 },
+  monthComparisonRatio = { gas: 0, elec: 0, water: 0 },
+  AvgFee = { national: 0, location: 0 }
 }) {
   const [managerName] = useState("이**");
   const [alertCount, setAlertCount] = useState(0);
@@ -765,6 +768,9 @@ function Wing({
           lastMonthUsage={lastMonthUsage}
           buildingInfo={buildingInfo}
           billInfo={billInfo}
+          todayComparisonRatio={todayComparisonRatio}
+          monthComparisonRatio={monthComparisonRatio}
+          AvgFee={AvgFee}
         >
           현황
         </Condition>
