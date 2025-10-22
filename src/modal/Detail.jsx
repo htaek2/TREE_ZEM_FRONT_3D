@@ -14,30 +14,6 @@ import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import "dayjs/locale/ko";
-//
-import { Line } from "react-chartjs-2";
-import {
-  Chart as ChartJS,
-  Title,
-  Tooltip,
-  Legend,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-} from "chart.js";
-import { a } from "@react-spring/three";
-
-ChartJS.register(
-  Title,
-  Tooltip,
-  Legend,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement
-);
-
 
 
 
@@ -77,7 +53,7 @@ const DetailChart = styled.div`
     flex-direction: column;
     align-items: center;
     width: 70%;
-    height: 720px;
+    height: 100%;
     background-color: #2B2D30;
     border: 1px solid rgba(166, 166, 166, 0.2);
     border-radius: 10px;
@@ -338,11 +314,6 @@ function Detail({ onClose }) {
     // 분류 5 / 요금 보기 상태
     const [IsChargeClick, setIsChargeClick] = useState(false);
 
-    // ✅ 차트 그릴 꺼
-    const [chartData, setChartData] = useState({
-        labels: [], // X축 (날짜 , 시간)
-        datasets: [], // Y축 (사용량, 요금)
-    });
 
 
     // useEffect(() => {
@@ -382,55 +353,10 @@ function Detail({ onClose }) {
 
             const data = await Promise.all(response.map(res => res.json()));
             console.log("⭐ MAIN 데이터 가져오기 성공:", data);
-        
-            
-            // 차트 데이터 가공쓰
-            const energyTypes = {
-                '전력': 'ELECTRICITY',
-                '가스': 'GAS',
-                '수도': 'WATER'
-            };
-            const selectedEnergy = energyTypes[DetailSelected];
-            console.log("선택된 에너지 타입:", selectedEnergy); //
-
-            const filteredData = data.filter(item => item.energyType === selectedEnergy);
-            console.log("필터링된 데이터:", filteredData);
-
-            if (filteredData.length > 0) {
-                // X축 라벨은 첫 번째 데이터 기준
-                const labels = filteredData[0].datas.map(d => d.timestamp.split(' ')[0]);
-
-                // 각 데이터 항목을 dataset으로 변환
-                const colors = ['red', 'yellow', 'blue', 'green', 'orange', 'purple']; // 색상 배열
-                const datasets = filteredData.map((item, index) => {
-
-                    return {
-                        label: `${DetailSelected} - ${SelectedFloor[index]}층`,
-                        data: item.datas.map(d => d.usage),
-                        borderColor: colors[index % colors.length],
-                        backgroundColor: 'transparent',
-                        fill: false,
-                        tension: 0,             // 직선 연결
-                        pointRadius: 5,
-                        pointHoverRadius: 8,
-                        pointBackgroundColor: "#FAFAFA",
-                        pointBorderColor: colors[index % colors.length],
-                    };
-                });
-
-            // 차트 데이터 업데이트
-            setChartData({
-                labels,
-                datasets
-            });
-
-            console.log("가공된 차트 데이터:", { labels, datasets });
-        }
-        
         } catch (error) {
             console.error("⭐ MAIN 데이터 가져오기 실패:", error);
         }
-    }, [SelectedFloor, DetailSelected]);
+    }, []);
 
     // 실시간 보기일 때 (날짜 무시)
     useEffect(() => {
@@ -480,22 +406,20 @@ function Detail({ onClose }) {
                 console.log("🍪", url);
             }
             else {
-                if (SelectedFloor.includes("전체") || SelectedFloor.length === 4) {
+                if (SelectedFloor.includes("전체 층") || SelectedFloor.length === 4) {
                     url = `/api/energy/bill?start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`;
                     console.log("🍪🍪", url);
                 } else {
                     SelectedFloor.map(
-                        (floor) => urls.push(`/api/energy/bill/${DetailSelected === "전력" ? "elec" : "water"}/${floor}?start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`)
+                        (floor) => urls.push(`/api/energy/bill?floor=${floor}&start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`)
                     );
                     console.log("🍪🍪🍪");
-                    console.log("🍪🍪🍪", SelectedFloor);
-                    console.log("🍪🍪🍪", urls);
                 }
             }
         }
         
         // 일반 전체 선택
-        else if (SelectedFloor.includes("전체")|| SelectedFloor.length === 4) {
+        else if (SelectedFloor.includes("전체 층")|| SelectedFloor.length === 4) {
             url = `/api/energy/${DetailSelected === "전력" ? "elec" : DetailSelected === "가스" ? "gas" : "water"}?start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`;
         }
 
@@ -503,16 +427,14 @@ function Detail({ onClose }) {
         else {
             SelectedFloor.map(
                 (floor) =>
-                    urls.push(`/api/energy/${DetailSelected === "전력" ? "elec" : "water"}/${floor}?start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`)
+                    urls.push(`/api/energy/${DetailSelected === "전력" ? "elec" : "water"}?floor=${floor}&start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`)
             );
-            console.log("🍪🍪🍪🍪", SelectedFloor);
-            console.log("🍪🍪🍪🍪", urls);
         }
 
         if (urls.length > 0) {
             fetchData(urls);
             urls = [];
-        } else if (url) fetchData([url]);
+        } else if (url) fetchData(url);
         else console.warn("URL이 정의되지 않았습니다.");
 
     }, [DetailSelected, startValue, endValue, SelectedFloor, IsChargeClick, isRealtimeClick, fetchData]);
@@ -540,57 +462,29 @@ function Detail({ onClose }) {
         }, []);
 
     // ✅ 층 버튼 활성화 관리
-    const [EveryFloor] = useState(["전체", "1", "2", "3", "4"]);
+    const [EveryFloor] = useState(["전체 층", "1", "2", "3", "4"]);
 
 
     const FloorClick = (floor) => {
-    setSelectedFloor((prev) => {
-        if (floor === "전체") {
-            return prev.includes("전체") ? [] : ["전체"];
+        if (floor === "전체 층") {
+            setSelectedFloor((prev) =>
+            prev.includes("전체 층") ? [] : ["전체 층"]
+            );
+            return;
+        
+        } else {
+            setSelectedFloor((prev) => {
+                let updatedFloors = prev.filter((f) => f !== "전체 층");
+
+                if (updatedFloors.includes(floor)) {
+                    updatedFloors = updatedFloors.filter((f) => f !== floor);
+                } else {
+                    updatedFloors.push(floor);
+                }
+                return updatedFloors;
+            });
         }
-
-        // 전체 층 제거
-        let updated = prev.filter(f => f !== "전체");
-
-        // 이미 선택된 층이면 제거, 아니면 추가
-        updated = updated.includes(floor)
-            ? updated.filter(f => f !== floor)
-            : [...updated, floor];
-
-        return updated;
-    });
     };
-
-
-    const options = {
-        width: '100%',
-        height: '100%',
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-            labels: {
-                color: "white", // 레전드 글씨 색상
-                font: {
-                size: 14,
-                weight: "bold",
-                },
-            },
-            },
-        },
-        scales: {
-            x: {
-            ticks: { color: "yellow" }, // X축 글씨 색상
-            grid: { color: "gray" },     // X축 그리드 색상
-            },
-            y: {
-                ticks: { color: "yellow" },
-                grid: { color: "gray" },
-            },
-        },
-    };
-
-
 
 
     
@@ -679,7 +573,7 @@ function Detail({ onClose }) {
                                     onClick={() => FloorClick(floor)}
                                     className={SelectedFloor.includes(floor) ? "active" : ""}
                                     >
-                                        {floor} 층
+                                        {floor === "전체 층" ? "전체 층" : `${floor} 층`}
                                     </div>
                                 ))}
                             </DetailFloorSelect>
@@ -695,7 +589,7 @@ function Detail({ onClose }) {
                     <DetailShare>
                         <div><img src="/Icon/share_icon.svg" alt="공유" />공유하기</div>
                     </DetailShare>
-                    <div><Line data={chartData} options={options} /></div>
+                    <div>표</div>
                 </DetailChart>
             </DetailBody>
 
