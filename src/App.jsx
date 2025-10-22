@@ -71,12 +71,12 @@ function App() {
     getResponsiveCameraSettings(auth.isAuthenticated)
     
   );
-  /*세구 1021 17:00*/
+  /*세구 1022 11:00*/
   const [weatherNow, setWeatherNow] = useState({
-    humidity : 0,
-    nowTemperature : 0,
-    weatherStatus : 0,
-    windSpeed :0
+    humidity : null,
+    nowTemperature : null,
+    weatherStatus : null,
+    windSpeed :null
   });
   
   
@@ -303,18 +303,39 @@ const fetchWeatherNow = async () => {
     }
     return response.json(); // 응답 본문을 JSON으로 파싱
   })
-  .then(data => {
-    console.log("받은날짜아아아아아아아아아아아",data); // 파싱된 JSON 데이터를 사용
-      setWeatherNow({
-        ...prev,
-        humidity : data.humidity,
-        nowTemperature : data.nowTemperature,
-        weatherStatus : data.weatherStatus,
-        windSpeed : data.windSpeed
-      });
-  })
+   .then(data => {
+   console.log("받은날씨:", data);
+   setWeatherNow(prev => {
+     const toNumber = (v) => {
+       if (v === null || v === undefined) return null;
+       if (typeof v === "string") {
+         const m = v.match(/-?\d+(\.\d+)?/);
+         return m ? Number(m[0]) : null;
+       }
+       return Number.isFinite(v) ? v : null;
+     };
+
+     // 값 정규화
+     let temp = toNumber(data?.nowTemperature);
+     // Kelvin → Celsius 추정 변환
+     if (temp != null && temp > 170 && temp < 400) temp = temp - 273.15;
+
+     let hum = toNumber(data?.humidity);
+     // 0~1로 오는 습도라면 %로 변환
+     if (hum != null && hum <= 1) hum = hum * 100;
+
+     return {
+       ...prev,
+       nowTemperature: temp,
+       humidity: hum,
+       windSpeed: toNumber(data?.windSpeed),
+       weatherStatus: data?.weatherStatus ?? data?.weather ?? null,
+     };
+   });
+ })
   .catch(error => {
     console.error('Fetch error:', error); // 오류 처리
+    setWeatherNow(prev => prev);  //세구1022 11:00 실패시 재시도
   });
 
     
