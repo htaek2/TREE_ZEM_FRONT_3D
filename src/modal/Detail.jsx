@@ -399,15 +399,21 @@ function Detail({ onClose, todayUsage }) {
             console.log("선택된 에너지 타입:", selectedEnergy); //
 
             let filteredData = [];
+            let FloorCache = SelectedFloor;
 
             if (data.length > 0) {
-                if (selectedEnergy === "GAS" || SelectedFloor.includes("전체") || SelectedFloor.length === 4) {
+                if (selectedEnergy === "GAS" || FloorCache.includes("전체")) {
                     filteredData = (Array.isArray(data[0]) ? data[0] : data).filter(item => item.energyType === selectedEnergy);
-                } else {
+                    FloorCache = FloorCache.filter(floor => floor !== "전체");
+                    if (FloorCache.length !== 0) {
+                        filteredData = data.filter(item => item.energyType === selectedEnergy);    
+                    }
+                } else if (FloorCache.includes("전체") === false) {
                     filteredData = data.filter(item => item.energyType === selectedEnergy);
                 }
                 console.log("필터링된 데이터:", filteredData);
             }
+
 
             if (filteredData.length > 0) {
                 // X축 라벨은 첫 번째 데이터 기준
@@ -418,7 +424,7 @@ function Detail({ onClose, todayUsage }) {
                 const datasets = filteredData.map((item, index) => {
 
                     return {
-                        label: `${DetailSelected} - ${SelectedFloor.length === 0 ? "전체 " : SelectedFloor[index]}층`,
+                        label: `${DetailSelected} - ${SelectedFloor[index]}층`,
                         data: item.datas.map(d => d.usage),
                         borderColor: colors[index % colors.length],
                         backgroundColor: 'transparent',
@@ -492,21 +498,25 @@ function Detail({ onClose, todayUsage }) {
 
         let url = "";
         let urls = [];
+        let FloorCache = SelectedFloor;
 
         // 요금 보기일 때
         if (IsChargeClick) {
             if (DetailSelected === "가스") {
-                url = `/api/energy/bill?start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`;
-                console.log("🍪", url);
+                urls.push(`/api/energy/bill?start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`);
+                console.log("🍪", urls);
             }
             else {
-                if (SelectedFloor.includes("전체") || SelectedFloor.length === 4) {
-                    url = `/api/energy/bill?start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`;
-                    console.log("🍪🍪", url);
-                } else {
-                    SelectedFloor.map(
-                        (floor) => urls.push(`/api/energy/bill/${DetailSelected === "전력" ? "elec" : "water"}/${floor}?start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`)
-                    );
+                if (SelectedFloor.includes("전체")) {
+                    urls.push(`/api/energy/bill?start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`);
+                    console.log("🍪🍪", urls);
+                } 
+                if (SelectedFloor.length > 0) {
+                    SelectedFloor
+                        .filter(floor => floor !== "전체")
+                        .forEach(
+                            (floor) => urls.push(`/api/energy/bill/${DetailSelected === "전력" ? "elec" : "water"}/${floor}?start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`)
+                        );
                     console.log("🍪🍪🍪");
                     console.log("🍪🍪🍪", SelectedFloor);
                     console.log("🍪🍪🍪", urls);
@@ -514,22 +524,33 @@ function Detail({ onClose, todayUsage }) {
             }
         }
         else if (DetailSelected === "가스") {
-        url = `/api/energy/gas?start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`;
-        console.log("🍪", url);
+        urls.push(`/api/energy/gas?start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`);
+        console.log("🍪", urls);
         }
 
 
-        // 일반 전체 선택
-        else if (SelectedFloor.includes("전체")|| SelectedFloor.length === 4) {
-            url = `/api/energy/${DetailSelected === "전력" ? "elec" : DetailSelected === "가스" ? "gas" : "water"}?start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`;
-        }
+        // // 일반 전체 선택
+        // else if (SelectedFloor.includes("전체")) {
+        //     url = `/api/energy/${DetailSelected === "전력" ? "elec" : DetailSelected === "가스" ? "gas" : "water"}?start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`;
+        // }
 
-        // 일반 층별 선택
+        // 층별 선택
         else {
-            SelectedFloor.map(
-                (floor) =>
-                    urls.push(`/api/energy/${DetailSelected === "전력" ? "elec" : "water"}/${floor}?start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`)
-            );
+            if (SelectedFloor.includes("전체")) {
+                urls.push(`/api/energy/${DetailSelected === "전력" ? "elec" : DetailSelected === "가스" ? "gas" : "water"}?start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`);
+                FloorCache = FloorCache.filter(floor => floor !== "전체");
+                if (FloorCache.length !== 0) {
+                    FloorCache
+                    .forEach(
+                        (floor) => urls.push(`/api/energy/${DetailSelected === "전력" ? "elec" : "water"}/${floor}?start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`)
+                    );
+                }
+            } else {
+                    FloorCache
+                    .forEach(
+                        (floor) => urls.push(`/api/energy/${DetailSelected === "전력" ? "elec" : "water"}/${floor}?start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`)
+                    );
+            }
             console.log("🍪🍪🍪🍪", SelectedFloor);
             console.log("🍪🍪🍪🍪", urls);
         }
@@ -537,8 +558,7 @@ function Detail({ onClose, todayUsage }) {
         if (urls.length > 0) {
             fetchData(urls);
             urls = [];
-        } else if (url) fetchData([url]);
-        else console.warn("URL이 정의되지 않았습니다.");
+        } else {console.warn("URL이 정의되지 않았습니다.");}
 
     }, [DetailSelected, startValue, endValue, SelectedFloor, IsChargeClick, isRealtimeClick, fetchData]);
 
@@ -570,12 +590,12 @@ function Detail({ onClose, todayUsage }) {
 
     const FloorClick = (floor) => {
     setSelectedFloor((prev) => {
-        if (floor === "전체") {
-            return prev.includes("전체") ? [] : ["전체"];
-        }
+        // if (floor === "전체") {
+        //     return prev.includes("전체") ? [] : ["전체"];
+        // }
 
         // 전체 층 제거
-        let updated = prev.filter(f => f !== "전체");
+        let updated = prev;
 
         // 이미 선택된 층이면 제거, 아니면 추가
         updated = updated.includes(floor)

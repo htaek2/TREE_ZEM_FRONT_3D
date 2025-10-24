@@ -28,13 +28,10 @@ const Container = styled.div`
 `;
 
 // 🎯 반응형 카메라 설정 함수
-const getResponsiveCameraSettings = (isAuthenticated) => {
+const getResponsiveCameraSettings = (isAuthenticated, active) => {
   const width = window.innerWidth;
-  // console.log(
-  //   isAuthenticated ? "로그인된 사용자" : "비로그인 사용자",
-  //   "화면 너비:",
-  //   width
-  // );
+ 
+  console.log("active!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",active);
   // 모바일 (768px 미만)
   if (width < 768) {
     return {
@@ -51,10 +48,10 @@ const getResponsiveCameraSettings = (isAuthenticated) => {
   else if (width >= 768) {
     return {
       defaultPosition: [-60, 32, 22],
-      activePosition: [-15, 80, 30],
+      activePosition: active.model === 'f1' ? [-15, 80, 30] : active.model === 'f2' ? [-15, 150, 30] : active.model === 'f3' ? [-15, 140, 30] : active.model === 'f4' ? [-15, 210, 30] : [15, 5, 0],
       defaultFov: 40,
-      activeFov: 30,
-      minDistance: 35,
+      activeFov: 35,
+      minDistance: 0,
       maxDistance: 55,
       target: [13, 5, -8],
     };
@@ -67,9 +64,9 @@ function App() {
   const modelsToShow = active.active ? [active.model] : MODELS; 
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [computers, setComputer] = useState([]);
-  const [cameraSettings, setCameraSettings] = useState(
-    getResponsiveCameraSettings(auth.isAuthenticated)
-    
+  const cameraSettings = useMemo(
+    () => getResponsiveCameraSettings(auth.isAuthenticated, active),
+    [auth.isAuthenticated, active]
   );
   /*세구 1022 11:00*/
   const [weatherNow, setWeatherNow] = useState({
@@ -124,6 +121,12 @@ function App() {
     { devices: [] },
   ]);
 
+  const [deviceInfo, setDeviceInfo] = useState([
+    { floorNum: 1, devices: [] },
+    { floorNum: 2, devices: [] },
+    { floorNum: 3, devices: [] },
+    { floorNum: 4, devices: [] },
+  ]);
 
   const [buildingInfo, setBuildingInfo] = useState({
     totalArea: 0, // 건물 총 면적
@@ -149,6 +152,41 @@ function App() {
   });
 
   
+  const exFetch = () => {
+    console.log("전체 장비 호출 시작...")
+    fetch(`/api/devices`)
+      .then((response) => response.json())
+      .then((data) => {
+        // console.log("전체 장비 데이터:", data);
+
+        // 새로운 deviceInfo 객체 생성
+        const newDeviceInfo = [
+          { floorNum: 1, devices: [] },
+          { floorNum: 2, devices: [] },
+          { floorNum: 3, devices: [] },
+          { floorNum: 4, devices: [] },
+        ];
+
+        // 층별로 장비 분류
+        data.forEach((device) => {
+          // console.log(device.floorNum + "층 장비 데이터:", device);
+
+          
+          const floorIndex = parseInt(device.floorNum) - 1;
+          if (floorIndex >= 0 && floorIndex < 4) {
+            newDeviceInfo[floorIndex].devices.push(device);
+          }
+        });
+
+        console.log("층별 장비 정보 최종:", newDeviceInfo);
+
+        // state 업데이트
+        setDeviceInfo(newDeviceInfo);
+
+      }).catch((error) => {console.error("Fetch error:", error);});
+  }
+
+
   const dataFormat = (data) => {
     let month = data.getMonth() + 1;
     let day = data.getDate();
@@ -529,6 +567,7 @@ const fetchWeatherNow = async () => {
         waterResponse.json(),
       ]);
       console.log("🍪 가스 어제 데이터:", gasJson);
+      
       console.log("🍪 전기 어제 데이터:", elecJson);
       console.log("🍪 수도 어제 데이터:", waterJson);
 
@@ -869,6 +908,9 @@ const fetchWeatherNow = async () => {
     if (!auth.isAuthenticated) return;
 
     // 최초 접속 시 즉시 실행
+    exFetch();
+      
+
     fetchWeatherNow();
 
     fetchBuildingInfo();
