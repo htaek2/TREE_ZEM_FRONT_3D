@@ -206,6 +206,8 @@ const DetailFloorSelect = styled.div`
     width: 100%;
     height: calc(90% - 8px);
     gap: 8px;
+    pointer-events: ${({ $disabled }) => ($disabled ? "none" : "auto")};
+    opacity: ${({ $disabled }) => ($disabled ? 0.5 : 1)};
 
     > div {
         width: 100%;
@@ -218,11 +220,14 @@ const DetailFloorSelect = styled.div`
         padding: 4px;
         font: 400 18px "나눔고딕";
         color: #FAFAFA;
-        cursor: pointer;
+        cursor: ${({ $disabled }) => ($disabled ? "not-allowed" : "pointer")};
     }
     > div.active {
         background: rgba(255, 255, 255, 0.2);
         color: #FAFAFA;
+    }
+
+
     }
 `;
 const DetailCharge = styled.div`
@@ -323,7 +328,7 @@ const DetailSelectItem = styled.li`
 `;
 
 
-function Detail({ onClose }) {
+function Detail({ onClose, todayUsage }) {
 
     // ✅ 버튼 분류기
     // 분류 1 / 대 분류 선택기
@@ -393,8 +398,16 @@ function Detail({ onClose }) {
             const selectedEnergy = energyTypes[DetailSelected];
             console.log("선택된 에너지 타입:", selectedEnergy); //
 
-            const filteredData = data.filter(item => item.energyType === selectedEnergy);
-            console.log("필터링된 데이터:", filteredData);
+            let filteredData = [];
+
+            if (data.length > 0) {
+                if (selectedEnergy === "GAS" || SelectedFloor.includes("전체") || SelectedFloor.length === 4) {
+                    filteredData = (Array.isArray(data[0]) ? data[0] : data).filter(item => item.energyType === selectedEnergy);
+                } else {
+                    filteredData = data.filter(item => item.energyType === selectedEnergy);
+                }
+                console.log("필터링된 데이터:", filteredData);
+            }
 
             if (filteredData.length > 0) {
                 // X축 라벨은 첫 번째 데이터 기준
@@ -405,7 +418,7 @@ function Detail({ onClose }) {
                 const datasets = filteredData.map((item, index) => {
 
                     return {
-                        label: `${DetailSelected} - ${SelectedFloor[index]}층`,
+                        label: `${DetailSelected} - ${SelectedFloor.length === 0 ? "전체 " : SelectedFloor[index]}층`,
                         data: item.datas.map(d => d.usage),
                         borderColor: colors[index % colors.length],
                         backgroundColor: 'transparent',
@@ -432,25 +445,32 @@ function Detail({ onClose }) {
         }
     }, [SelectedFloor, DetailSelected]);
 
-    // 실시간 보기일 때 (날짜 무시)
+
+
+// 실시간 보기일 때 (날짜 무시)
     useEffect(() => {
         if (!isRealtimeClick) return;
 
-        const eventSource = new EventSource("/api/energy/sse/all");
-        eventSource.onmessage = (event) => {
-            console.log("📡 실시간 데이터:", JSON.parse(event.data));
-        };
-        eventSource.onerror = (err) => {
-            console.error("❌ SSE 연결 오류:", err);
-            eventSource.close();
-        };
+        // const eventSource = new EventSource("/api/energy/sse/all");
+        // eventSource.onmessage = (event) => {
+        //     console.log("📡 실시간 데이터:", JSON.parse(event.data));
+        // };
+        // eventSource.onerror = (err) => {
+        //     console.error("❌ SSE 연결 오류:", err);
+        //     eventSource.close();
+        // };
 
-        return () => {
-            console.log("🔌 SSE 연결 종료");
-            eventSource.close();
-        };
-    }, [isRealtimeClick]);
+        // return () => {
+        //     console.log("🔌 SSE 연결 종료");
+        //     eventSource.close();
+        // };
+        console.log("💡오늘 사용량 데이터:", todayUsage);
 
+
+    }, [isRealtimeClick, todayUsage]);
+
+
+// 버튼 입력 받아 데이터 가져오기
     useEffect(() => {
         if (isRealtimeClick) return;
         
@@ -493,7 +513,12 @@ function Detail({ onClose }) {
                 }
             }
         }
-        
+        else if (DetailSelected === "가스") {
+        url = `/api/energy/gas?start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`;
+        console.log("🍪", url);
+        }
+
+
         // 일반 전체 선택
         else if (SelectedFloor.includes("전체")|| SelectedFloor.length === 4) {
             url = `/api/energy/${DetailSelected === "전력" ? "elec" : DetailSelected === "가스" ? "gas" : "water"}?start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`;
@@ -672,11 +697,14 @@ function Detail({ onClose }) {
                     <DetailBottom>
                         <DetailFloor>
                             <div className="DetailTitle">건물 / 층별</div>
-                            <DetailFloorSelect>
+                            <DetailFloorSelect $disabled={DetailSelected === "가스"}>
                                 {EveryFloor.map((floor) => (
                                     <div
                                     key={floor}
-                                    onClick={() => FloorClick(floor)}
+                                    onClick={() => {
+                                        if (DetailSelected === "가스") return; // 클릭 차단
+                                        FloorClick(floor);
+                                    }}
                                     className={SelectedFloor.includes(floor) ? "active" : ""}
                                     >
                                         {floor} 층

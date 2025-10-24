@@ -55,18 +55,18 @@ const PANEL_BORDER_ALPHA = 0.12;
 const PANEL_SHADOW = "2px 3px 5px 0 rgba(0,0,0,.5)";
 
 // OFF/ON에 따라 동일 로직으로 배경 생성
-const panelBg = ({ IsEmissionBtn }) =>
-  IsEmissionBtn
+const panelBg = ({ $IsEmissionBtn }) =>
+  $IsEmissionBtn
     ? `rgba(0,170,111, ${PANEL_ALPHA_ON})`
     : `rgba(45,45,45, ${PANEL_ALPHA_OFF})`;
 
 // 탄소배출 토글에 따른 소프트 배경 색상(카드, 패널용)
-const bgSoft = (IsEmissionBtn, alphaOff = 0.28, alphaOn = 0.22) =>
-  IsEmissionBtn ? `rgba(0,170,111, ${alphaOn})` : `rgba(0,0,0, ${alphaOff})`;
+const bgSoft = ($IsEmissionBtn, alphaOff = 0.28, alphaOn = 0.22) =>
+  $IsEmissionBtn ? `rgba(0,170,111, ${alphaOn})` : `rgba(0,0,0, ${alphaOff})`;
 
 // 탄소배출 토글에 따른 알약 배경 색상(타이틀, 라벨 버튼류)
-const bgPill = (IsEmissionBtn, alphaOff = 0.85, alphaOn = 1) =>
-  IsEmissionBtn ? `rgba(0,170,111, ${alphaOn})` : `rgba(45,45,45, ${alphaOff})`;
+const bgPill = ($IsEmissionBtn, alphaOff = 0.85, alphaOn = 1) =>
+  $IsEmissionBtn ? `rgba(0,170,111, ${alphaOn})` : `rgba(45,45,45, ${alphaOff})`;
 
 // 알약형 공통 베이스(타이틀/라벨)
 const pillBase = css`
@@ -138,8 +138,8 @@ const HeaderBox = styled.div`
   font-weight: 800;
   letter-spacing: 0.5px;
   --hdrA: 0.92; /* 가운데 진한 구간 알파(필요시만 조절) */
-  background: ${({ IsEmissionBtn }) =>
-    IsEmissionBtn
+  background: ${({ $IsEmissionBtn }) =>
+    $IsEmissionBtn
       ? `linear-gradient(90deg,
         rgba(0,170,111,0) 0%,
         rgba(0,170,111,.22) 20%,
@@ -191,7 +191,7 @@ const FloorButtons = styled.div`
 
 const FloorButton = styled.button`
   padding: 8px 8px;
-  background: ${({ IsEmissionBtn }) => bgPill(IsEmissionBtn)};
+  background: ${({ $IsEmissionBtn }) => bgPill($IsEmissionBtn)};
   color: white;
   border: 2px solid transparent;
   border-radius: 8px;
@@ -250,16 +250,16 @@ const WingCard = styled.div`
 
 const CardTitle = styled.div`
   ${pillBase}
-  background: ${({ IsEmissionBtn }) => bgPill(IsEmissionBtn)};
+  background: ${({ $IsEmissionBtn }) => bgPill($IsEmissionBtn)};
 `;
 
 const StatList = styled.div`
   flex: 1;
   display: grid;
-  grid-template-rows: ${({ IsEmissionBtn }) => (IsEmissionBtn ? "repeat(4, 1fr)" : "repeat(3, 1fr)")};
+  grid-template-rows: ${({ $IsEmissionBtn }) => ($IsEmissionBtn ? "repeat(4, 1fr)" : "repeat(3, 1fr)")};
   height: 100%;
   > .TotalEmission {
-    display: ${({ IsEmissionBtn }) => (IsEmissionBtn ? "flex" : "none")};
+    display: ${({ $IsEmissionBtn }) => ($IsEmissionBtn ? "flex" : "none")};
     align-items: center;
     justify-content: space-between;
   }
@@ -333,7 +333,7 @@ const DockActions = styled.div`
 `;
 
 const DockBtn = styled.button`
-  background: ${({ IsEmissionBtn }) => bgPill(IsEmissionBtn)};
+  background: ${({ $IsEmissionBtn }) => bgPill($IsEmissionBtn)};
   border: 1px solid rgba(255, 255, 255, 0.18);
   color: #fff;
   border-radius: 12px;
@@ -514,7 +514,7 @@ const InfoItem = styled.div`
   --fade: 26px;
   padding-right: calc(14px + var(--fade));
   border-radius: 9999px 0 0 9999px;
-  background: ${({ IsEmissionBtn }) => bgPill(IsEmissionBtn)};
+  background: ${({ $IsEmissionBtn }) => bgPill($IsEmissionBtn)};
   border: 1px solid rgba(255, 255, 255, 0.12);
   color: #fff;
   font-size: 16px;
@@ -583,8 +583,8 @@ const PanelBtn = styled.button`
   height: 20px;
   padding: 0 10px;
   border-radius: 999px;
-  background: ${({ IsEmissionBtn }) => (IsEmissionBtn ? "rgba(0,170,111,1)" : "rgba(45,45,45,0.50)")};
-  border: 1px solid ${({ IsEmissionBtn }) => (IsEmissionBtn ? "rgba(0,170,111,1)" : "#2D2D2D")};
+  background: ${({ $IsEmissionBtn }) => ($IsEmissionBtn ? "rgba(0,170,111,1)" : "rgba(45,45,45,0.50)")};
+  border: 1px solid ${({ $IsEmissionBtn }) => ($IsEmissionBtn ? "rgba(0,170,111,1)" : "#2D2D2D")};
   color: #fff;
   font-size: 13px;
   font-weight: 700;
@@ -614,6 +614,9 @@ function Wing({
   setRailOpen = () => {},
   billInfo = {},
   weatherNow = null,
+  todayComparisonRatio={todayComparisonRatio},
+  monthComparisonRatio={monthComparisonRatio},
+  AvgFee={AvgFee},
 }) {
   const [managerName] = useState("이**");
   const [alertCount, setAlertCount] = useState(0);
@@ -655,10 +658,10 @@ function Wing({
       {/* 좌측 날개 */}
       <LeftWing $open={railOpen}>
         {/* 실시간 사용량 */}
-        <WingCard onClick={() => setActiveModal("condition")} IsEmissionBtn={IsEmissionBtn}>
-          <CardTitle IsEmissionBtn={IsEmissionBtn}>{EmissionNaming("실시간 사용량")}</CardTitle>
-          <StatList IsEmissionBtn={IsEmissionBtn}>
-            <StatRow IsEmissionBtn={IsEmissionBtn}>
+        <WingCard onClick={() => setActiveModal("condition")} $IsEmissionBtn={IsEmissionBtn}>
+          <CardTitle $IsEmissionBtn={IsEmissionBtn}>{EmissionNaming("실시간 사용량")}</CardTitle>
+          <StatList $IsEmissionBtn={IsEmissionBtn}>
+            <StatRow $IsEmissionBtn={IsEmissionBtn}>
               <StatIcon
                 src="Icon/elect_icon.svg"
                 alt="전력"
@@ -671,7 +674,7 @@ function Wing({
               </StatValue>
             </StatRow>
 
-            <StatRow IsEmissionBtn={IsEmissionBtn}>
+            <StatRow $IsEmissionBtn={IsEmissionBtn}>
               <StatIcon
                 src="/Icon/gas_icon.svg"
                 alt="가스"
@@ -684,7 +687,7 @@ function Wing({
               </StatValue>
             </StatRow>
 
-            <StatRow IsEmissionBtn={IsEmissionBtn}>
+            <StatRow $IsEmissionBtn={IsEmissionBtn}>
               <StatIcon
                 src="/Icon/water_icon.svg"
                 alt="수도"
@@ -697,7 +700,7 @@ function Wing({
               </StatValue>
             </StatRow>
 
-            <StatRow IsEmissionBtn={IsEmissionBtn} className="TotalEmission">
+            <StatRow $IsEmissionBtn={IsEmissionBtn} className="TotalEmission">
               <StatLabel>총 배출량</StatLabel>
               <StatValue>
                 <span>{0}</span>
@@ -708,14 +711,14 @@ function Wing({
         </WingCard>
 
         {/* 전일 대비 전력 사용량 */}
-        <ChartCard IsEmissionBtn={IsEmissionBtn}>
-          <CardTitle IsEmissionBtn={IsEmissionBtn}>{EmissionNaming("전일 대비 전력 사용량")}</CardTitle>
+        <ChartCard $IsEmissionBtn={IsEmissionBtn}>
+          <CardTitle $IsEmissionBtn={IsEmissionBtn}>{EmissionNaming("전일 대비 전력 사용량")}</CardTitle>
           <ChartCanvas aria-label="전일 대비 전력 사용량 차트(placeholder)" />
         </ChartCard>
 
         {/* 전년 대비 전력 사용량 */}
-        <ChartCard IsEmissionBtn={IsEmissionBtn}>
-          <CardTitle IsEmissionBtn={IsEmissionBtn}>{EmissionNaming("전년 대비 전력 사용량")}</CardTitle>
+        <ChartCard $IsEmissionBtn={IsEmissionBtn}>
+          <CardTitle $IsEmissionBtn={IsEmissionBtn}>{EmissionNaming("전년 대비 전력 사용량")}</CardTitle>
           <ChartCanvas aria-label="전년 대비 전력 사용량 차트(placeholder)" />
         </ChartCard>
 
@@ -765,18 +768,21 @@ function Wing({
           lastMonthUsage={lastMonthUsage}
           buildingInfo={buildingInfo}
           billInfo={billInfo}
+          todayComparisonRatio={todayComparisonRatio}
+          monthComparisonRatio={monthComparisonRatio} 
+          AvgFee={AvgFee}
         >
           현황
         </Condition>
       )}
       {activeModal === "analysis" && <Analysis onClose={() => setActiveModal(null)}>통합분석</Analysis>}
-      {activeModal === "detail" && <Detail onClose={() => setActiveModal(null)}>상세분석</Detail>}
+      {activeModal === "detail" && <Detail onClose={() => setActiveModal(null)} todayUsage={todayUsage}>상세분석</Detail>}
 
       {/* 우측 정보 스택 */}
       <RightInfo $open={railOpen}>
         {/* 1) 책임자 */}
         <InfoGroup>
-          <InfoItem IsEmissionBtn={IsEmissionBtn} onClick={() => setOpenManager((v) => !v)} aria-expanded={openManager}>
+          <InfoItem $IsEmissionBtn={IsEmissionBtn} onClick={() => setOpenManager((v) => !v)} aria-expanded={openManager}>
             <InfoIcon
               $white
               src="/Icon/manager_icon.svg"
@@ -786,16 +792,16 @@ function Wing({
             <InfoLabel>책임자</InfoLabel>
             <InfoValue>{managerName}</InfoValue>
           </InfoItem>
-          <InfoManager open={openManager} IsEmissionBtn={IsEmissionBtn}>
+          <InfoManager open={openManager} $IsEmissionBtn={IsEmissionBtn}>
             <PanelActions>
-              <PanelBtn IsEmissionBtn={IsEmissionBtn}>로그아웃</PanelBtn>
+              <PanelBtn $IsEmissionBtn={IsEmissionBtn}>로그아웃</PanelBtn>
             </PanelActions>
           </InfoManager>
         </InfoGroup>
 
         {/* 2) 외부날씨 */}
         <InfoGroup>
-          <InfoItem IsEmissionBtn={IsEmissionBtn} onClick={() => setOpenWeather((v) => !v)} aria-expanded={openWeather}>
+          <InfoItem $IsEmissionBtn={IsEmissionBtn} onClick={() => setOpenWeather((v) => !v)} aria-expanded={openWeather}>
             <InfoIcon
               $white
               src="/Icon/temperature_icon.svg"
@@ -805,7 +811,7 @@ function Wing({
             <InfoLabel>외부온도</InfoLabel>
             <InfoValue>{outerTemp == null ? "—" : `${Math.round(outerTemp)}°C`}</InfoValue>
           </InfoItem>
-          <InfoWeather open={openWeather} IsEmissionBtn={IsEmissionBtn} data-wicon={toIconKey(weatherNow?.weatherStatus)}>
+          <InfoWeather open={openWeather} $IsEmissionBtn={IsEmissionBtn} data-wicon={toIconKey(weatherNow?.weatherStatus)}>
             <p>외부 날씨: {toLabel(weatherNow?.weatherStatus)}</p>
             <p>외부 습도: {outerHumidity == null ? "—" : `${Math.round(outerHumidity)}%`}</p>
             <p>외부 풍속: {outerWind == null ? "—" : `${outerWind} m/s`}</p>
@@ -814,24 +820,23 @@ function Wing({
 
         {/* 3) 경고/알림 */}
         <InfoGroup>
-          <InfoItem IsEmissionBtn={IsEmissionBtn} onClick={() => setOpenAlert((v) => !v)} aria-expanded={openAlert}>
+          <InfoItem $IsEmissionBtn={IsEmissionBtn} onClick={() => setOpenAlert((v) => !v)} aria-expanded={openAlert}>
             <InfoIcon src="/Icon/warning_icon.svg" alt="경고/알림" onError={imgFallback("/icon/warning_icon.svg")} />
             <InfoLabel>경고/알림</InfoLabel>
             <InfoValue>{alertCount}</InfoValue>
           </InfoItem>
-          <InfoAlert open={openAlert} IsEmissionBtn={IsEmissionBtn}>
+          <InfoAlert open={openAlert} $IsEmissionBtn={IsEmissionBtn}>
             <p>경고 알림 제목</p>
             <p>경고 알림 내용</p>
             <p>경고 알림 내용</p>
             <p>경고 알림 내용</p>
             <p>경고 알림 내용</p>
             <p>경고 알림 내용</p>
-            <p>경고 알림 내ㅁㄴㅇㅁㄴㅇㅁㄴㅇㅁㄴ용</p>
             <p>경고 알림 내용</p>
             <p>경고 알림 내용</p>
             <PanelActions>
-              <PanelBtn IsEmissionBtn={IsEmissionBtn}>메모 보기</PanelBtn>
-              <PanelBtn IsEmissionBtn={IsEmissionBtn}>메모 쓰기</PanelBtn>
+              <PanelBtn $IsEmissionBtn={IsEmissionBtn}>메모 보기</PanelBtn>
+              <PanelBtn $IsEmissionBtn={IsEmissionBtn}>메모 쓰기</PanelBtn>
             </PanelActions>
           </InfoAlert>
         </InfoGroup>
@@ -852,7 +857,7 @@ function Wing({
             $open={railOpen}
             className="floor-rail"
             onClick={() => setActive({ active: false, model: null })}
-            IsEmissionBtn={IsEmissionBtn}
+            $IsEmissionBtn={IsEmissionBtn}
           >
             <img src="public/Icon/Home_logo.svg" alt="전체보기" width={24} onError={imgFallback("/Icon/Home_logo.svg")} />
           </FloorButton>
@@ -861,7 +866,7 @@ function Wing({
               key={modelName}
               onClick={() => handleModelButtonClick(modelName)}
               className={active.model === modelName ? "active" : ""}
-              IsEmissionBtn={IsEmissionBtn}
+              $IsEmissionBtn={IsEmissionBtn}
             >
               {MODEL_TO_FLOOR[modelName] + 1}F
             </FloorButton>

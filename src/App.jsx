@@ -507,7 +507,7 @@ const fetchWeatherNow = async () => {
       console.log("어제 사용량 Fetch 시작");
 
       let now = new Date();
-      const yesterday = new Date();
+      let yesterday = new Date();
       yesterday.setDate(now.getDate() - 1);
       yesterday.setHours(0, 0, 0, 0);
 
@@ -528,17 +528,25 @@ const fetchWeatherNow = async () => {
         elecResponse.json(),
         waterResponse.json(),
       ]);
+      console.log("🍪 가스 어제 데이터:", gasJson);
+      console.log("🍪 전기 어제 데이터:", elecJson);
+      console.log("🍪 수도 어제 데이터:", waterJson);
 
-      let nowtime = dataFormat(new Date()).slice(11,13);
-
+      yesterday = new Date();
+      yesterday.setDate(now.getDate() - 1);
+      let nowtime = dataFormat(yesterday).slice(0,13);
+      console.log("🍪 어제 시간 키값:", nowtime);
     
-      let yesterdayGasUsage = gasJson.datas[nowtime].usage;
+      // let yesterdayGasUsage = gasJson.datas[nowtime].usage;
+      let yesterdayGasUsage = gasJson.datas.find(item => item.timestamp.startsWith(nowtime))?.usage ?? 0;
       console.log("가스 어제 이 시간 데이터:", yesterdayGasUsage);
 
-      let yesterdayElecUsage = elecJson.datas[nowtime].usage;
+      // let yesterdayElecUsage = elecJson.datas[nowtime].usage;
+      let yesterdayElecUsage = elecJson.datas.find(item => item.timestamp.startsWith(nowtime))?.usage ?? 0;
       console.log("전기 어제 이 시간 데이터:", yesterdayElecUsage);
 
-      let yesterdayWaterUsage = waterJson.datas[nowtime].usage;
+      // let yesterdayWaterUsage = waterJson.datas[nowtime].usage;
+      let yesterdayWaterUsage = waterJson.datas.find(item => item.timestamp.startsWith(nowtime))?.usage ?? 0;
       console.log("수도 어제 이 시간 데이터:", yesterdayWaterUsage);
 
 
@@ -568,8 +576,8 @@ const fetchWeatherNow = async () => {
           0
         );
         setYesterdayUsage({
-          gas: Math.floor(totalGasUsage * 100) / 100000,
           elec: Math.floor(totalElecUsage * 100000) / 100000,
+          gas: Math.floor(totalGasUsage * 100) / 100000,
           water: Math.floor(totalWaterUsage * 100) / 100000,
           maxGas: maxGasUsage,
           maxElec: maxElecUsage,
@@ -614,18 +622,23 @@ const fetchWeatherNow = async () => {
         elecResponse.json(),
         waterResponse.json(),
       ]);
+      console.log("🍪 가스 오늘 데이터:", gasJson);
+      console.log("🍪 전기 오늘 데이터:", elecJson);
+      console.log("🍪 수도 오늘 데이터:", waterJson);
 
-      
-      let nowtime = dataFormat(new Date()).slice(11,13);
-
+      let nowtime = dataFormat(now).slice(0,13);
+      console.log("🍪 현재 시간 키값:", nowtime);
     
-      let todayGasUsage = gasJson.datas[nowtime].usage;
+      // let todayGasUsage = gasJson.datas[nowtime].usage;
+      let todayGasUsage = gasJson.datas.find(item => item.timestamp.startsWith(nowtime))?.usage ?? 0;
       console.log("가스 오늘 이 시간 데이터:", todayGasUsage);
 
-      let todayElecUsage = elecJson.datas[nowtime].usage;
+      // let todayElecUsage = elecJson.datas[nowtime].usage;
+      let todayElecUsage = elecJson.datas.find(item => item.timestamp.startsWith(nowtime))?.usage ?? 0;
       console.log("전기 오늘 이 시간 데이터:", todayElecUsage);
 
-      let todayWaterUsage = waterJson.datas[nowtime].usage;
+      // let todayWaterUsage = waterJson.datas[nowtime].usage;
+      let todayWaterUsage = waterJson.datas.find(item => item.timestamp.startsWith(nowtime))?.usage ?? 0;
       console.log("수도 오늘 이 시간 데이터:", todayWaterUsage);
 
 
@@ -636,12 +649,12 @@ const fetchWeatherNow = async () => {
           0
         );
 
-        // const totalElecUsage = elecJson.datas.reduce(
-        //   (sum, item) => sum + item.usage,
-        //   0
-        // );
+        const totalElecUsage = elecJson.datas.reduce(
+          (sum, item) => sum + item.usage,
+          0
+        );
 
-        let totalElecUsage = 252.42; // 임시 고정값
+        // let totalElecUsage = 252.42; // 임시 고정값
 
         console.log("전기 전체 사용량:", totalElecUsage);
 
