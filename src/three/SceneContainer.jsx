@@ -22,10 +22,19 @@ export default function SceneContainer({ isAuthenticated, active, cameraSettings
         controlsRef.current.target.copy(pos);
         controlsRef.current.update();
 
-        setActive({
-            active: !active.active,
-            model: active.model === modelName ? null : modelName,
-        });
+        if (!active.active) {
+            setActive({
+                active: !active.active,
+                model: active.model === modelName ? null : modelName,
+            });
+        }
+
+        // 층 안에서 클릭 동작 구현
+        console.log(e.point.x, e.point.y, e.point.z);
+
+        
+
+
         setSelectedDevice(null); // 층 변경 시 기기 선택 해제
     };
 
@@ -76,7 +85,8 @@ export default function SceneContainer({ isAuthenticated, active, cameraSettings
                 <Model
                     key={modelName}
                     model={modelName}
-                    onClick={ isAuthenticated ? (e) => handleModelClick(e, modelName) : undefined }
+                    // modelsToShow.length !== 1 &&
+                    onClick={  isAuthenticated ? (e) => handleModelClick(e, modelName) : undefined }
                     isSelected={ isAuthenticated ? active.active : undefined }
                     onDeviceClick={ isAuthenticated ? handleDeviceClick : undefined }
                     selectedDevice={ isAuthenticated ? selectedDevice : undefined }
