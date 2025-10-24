@@ -399,18 +399,34 @@ function Detail({ onClose, todayUsage }) {
             console.log("선택된 에너지 타입:", selectedEnergy); //
 
             let filteredData = [];
-            let FloorCache = SelectedFloor;
 
             if (data.length > 0) {
-                if (selectedEnergy === "GAS" || FloorCache.includes("전체")) {
-                    filteredData = (Array.isArray(data[0]) ? data[0] : data).filter(item => item.energyType === selectedEnergy);
-                    FloorCache = FloorCache.filter(floor => floor !== "전체");
-                    if (FloorCache.length !== 0) {
-                        filteredData = data.filter(item => item.energyType === selectedEnergy);    
-                    }
-                } else if (FloorCache.includes("전체") === false) {
-                    filteredData = data.filter(item => item.energyType === selectedEnergy);
+                if (DetailSelected === "가스") {
+           z         //     if (floor === "전체") {
+                    //         filteredData = (Array.isArray(data[0]) ? data[0] : data).filter(item => item.energyType === selectedEnergy);
+                    //     } else {
+                    //         filteredData = data.filter(item => item.energyType === selectedEnergy);
+                    //     }   
+                    // });
+                    SelectedFloor.forEach(floor => {
+                        if (floor === "전체") {
+                            filteredData.push(...(Array.isArray(data[0]) ? data[0] : data).filter(item => item.energyType === selectedEnergy));
+                            console.log("🧱",floor)
+                        } else {
+                            filteredData.push(...data.filter(item => item.energyType === selectedEnergy && item.floor === floor));
+                        }
+                    });
                 }
+
+                // if (selectedEnergy === "GAS" || SelectedFloor.includes("전체")) {
+                //     filteredData = (Array.isArray(data[0]) ? data[0] : data).filter(item => item.energyType === selectedEnergy);
+                //     let FloorCache = SelectedFloor.filter(floor => floor !== "전체");
+                //     if (FloorCache.length !== 0) {
+                //         filteredData = data.filter(item => item.energyType === selectedEnergy);    
+                //     }
+                // } else if (!SelectedFloor.includes("전체")) {
+                //     filteredData = data.filter(item => item.energyType === selectedEnergy);
+                // }
                 console.log("필터링된 데이터:", filteredData);
             }
 
@@ -422,9 +438,8 @@ function Detail({ onClose, todayUsage }) {
                 // 각 데이터 항목을 dataset으로 변환
                 const colors = ['red', 'yellow', 'blue', 'green', 'orange', 'purple']; // 색상 배열
                 const datasets = filteredData.map((item, index) => {
-
-                    return {
-                        label: `${DetailSelected} - ${SelectedFloor[index]}층`,
+                        return {
+                        label: `${DetailSelected} - ${SelectedFloor[index]} 층`,
                         data: item.datas.map(d => d.usage),
                         borderColor: colors[index % colors.length],
                         backgroundColor: 'transparent',
@@ -434,9 +449,8 @@ function Detail({ onClose, todayUsage }) {
                         pointHoverRadius: 8,
                         pointBackgroundColor: "#FAFAFA",
                         pointBorderColor: colors[index % colors.length],
-                    };
+                        };
                 });
-
             // 차트 데이터 업데이트
             setChartData({
                 labels,
@@ -444,7 +458,7 @@ function Detail({ onClose, todayUsage }) {
             });
 
             console.log("가공된 차트 데이터:", { labels, datasets });
-        }
+            }
         
         } catch (error) {
             console.error("⭐ MAIN 데이터 가져오기 실패:", error);
@@ -496,9 +510,7 @@ function Detail({ onClose, todayUsage }) {
 
 
 
-        let url = "";
         let urls = [];
-        let FloorCache = SelectedFloor;
 
         // 요금 보기일 때
         if (IsChargeClick) {
@@ -507,20 +519,33 @@ function Detail({ onClose, todayUsage }) {
                 console.log("🍪", urls);
             }
             else {
-                if (SelectedFloor.includes("전체")) {
-                    urls.push(`/api/energy/bill?start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`);
-                    console.log("🍪🍪", urls);
-                } 
                 if (SelectedFloor.length > 0) {
-                    SelectedFloor
-                        .filter(floor => floor !== "전체")
-                        .forEach(
-                            (floor) => urls.push(`/api/energy/bill/${DetailSelected === "전력" ? "elec" : "water"}/${floor}?start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`)
-                        );
-                    console.log("🍪🍪🍪");
-                    console.log("🍪🍪🍪", SelectedFloor);
-                    console.log("🍪🍪🍪", urls);
+                    SelectedFloor.forEach((floor)=>{
+                        if (floor === "전체") {
+                            urls.push(`/api/energy/bill?start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`);
+                            console.log("🍪🍪", urls);
+                        } else {
+                            urls.push(`/api/energy/bill/${DetailSelected === "전력" ? "elec" : "water"}/${floor}?start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`);
+                            console.log("🍪🍪🍪");
+                            console.log("🍪🍪🍪", SelectedFloor);
+                            console.log("🍪🍪🍪", urls);
+                        }
+                    });
                 }
+                // if (SelectedFloor.includes("전체")) {
+                //     urls.push(`/api/energy/bill?start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`);
+                //     console.log("🍪🍪", urls);
+                // } 
+                // if (SelectedFloor.length > 0) {
+                //     SelectedFloor
+                //         .filter(floor => floor !== "전체")
+                //         .forEach(
+                //             (floor) => urls.push(`/api/energy/bill/${DetailSelected === "전력" ? "elec" : "water"}/${floor}?start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`)
+                //         );
+                //     console.log("🍪🍪🍪");
+                //     console.log("🍪🍪🍪", SelectedFloor);
+                //     console.log("🍪🍪🍪", urls);
+                // }
             }
         }
         else if (DetailSelected === "가스") {
@@ -536,25 +561,33 @@ function Detail({ onClose, todayUsage }) {
 
         // 층별 선택
         else {
-            if (SelectedFloor.includes("전체")) {
-                urls.push(`/api/energy/${DetailSelected === "전력" ? "elec" : DetailSelected === "가스" ? "gas" : "water"}?start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`);
-                FloorCache = FloorCache.filter(floor => floor !== "전체");
-                if (FloorCache.length !== 0) {
-                    FloorCache
-                    .forEach(
-                        (floor) => urls.push(`/api/energy/${DetailSelected === "전력" ? "elec" : "water"}/${floor}?start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`)
-                    );
-                }
-            } else {
-                    FloorCache
-                    .forEach(
-                        (floor) => urls.push(`/api/energy/${DetailSelected === "전력" ? "elec" : "water"}/${floor}?start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`)
-                    );
-            }
+            if (SelectedFloor.length > 0) {
+                SelectedFloor.forEach((floor)=>{
+                    if (floor === "전체") {
+                        urls.push(`/api/energy/${DetailSelected === "전력" ? "elec" : DetailSelected === "가스" ? "gas" : "water"}?start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`);
+                    } else {
+                        urls.push(`/api/energy/${DetailSelected === "전력" ? "elec" : "water"}/${floor}?start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`);
+                    }
+                });
+            // if (SelectedFloor.includes("전체")) {
+            //     urls.push(`/api/energy/${DetailSelected === "전력" ? "elec" : DetailSelected === "가스" ? "gas" : "water"}?start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`);
+            //     let FloorCache = SelectedFloor.filter(floor => floor !== "전체");
+            //     if (FloorCache.length !== 0) {
+            //         FloorCache
+            //         .forEach(
+            //             (floor) => urls.push(`/api/energy/${DetailSelected === "전력" ? "elec" : "water"}/${floor}?start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`)
+            //         );
+            //     }
+            // } else {
+            //         SelectedFloor
+            //         .forEach(
+            //             (floor) => urls.push(`/api/energy/${DetailSelected === "전력" ? "elec" : "water"}/${floor}?start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`)
+            //         );
+            // }
             console.log("🍪🍪🍪🍪", SelectedFloor);
             console.log("🍪🍪🍪🍪", urls);
+            }
         }
-
         if (urls.length > 0) {
             fetchData(urls);
             urls = [];
