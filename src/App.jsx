@@ -156,26 +156,34 @@ function App() {
     console.log("전체 장비 호출 시작...")
     fetch(`/api/devices`)
       .then((response) => response.json())
-      .then((data) => { 
+      .then((data) => {
         // console.log("전체 장비 데이터:", data);
-        data.map((device,idx) => {
-          console.log(device.floorNum + "층 장비 데이터:", device);
 
-          if(device.floorNum === '1') {
-            setDeviceInfo(prev => {
-              console.log(prev);
-            });
-          } else if (device.floorNum === '2') {
+        // 새로운 deviceInfo 객체 생성
+        const newDeviceInfo = [
+          { floorNum: 1, devices: [] },
+          { floorNum: 2, devices: [] },
+          { floorNum: 3, devices: [] },
+          { floorNum: 4, devices: [] },
+        ];
 
-          } else if (device.floorNum === '3') {
+        // 층별로 장비 분류
+        data.forEach((device) => {
+          // console.log(device.floorNum + "층 장비 데이터:", device);
 
-          } else if (device.floorNum === '4') {
-
-          }
           
-        })
-      
-      }).catch((error) => {console.error("Fetch error:", error);});  
+          const floorIndex = parseInt(device.floorNum) - 1;
+          if (floorIndex >= 0 && floorIndex < 4) {
+            newDeviceInfo[floorIndex].devices.push(device);
+          }
+        });
+
+        console.log("층별 장비 정보 최종:", newDeviceInfo);
+
+        // state 업데이트
+        setDeviceInfo(newDeviceInfo);
+
+      }).catch((error) => {console.error("Fetch error:", error);});
   }
 
 
@@ -559,6 +567,7 @@ const fetchWeatherNow = async () => {
         waterResponse.json(),
       ]);
       console.log("🍪 가스 어제 데이터:", gasJson);
+      
       console.log("🍪 전기 어제 데이터:", elecJson);
       console.log("🍪 수도 어제 데이터:", waterJson);
 
@@ -900,6 +909,7 @@ const fetchWeatherNow = async () => {
 
     // 최초 접속 시 즉시 실행
     exFetch();
+      
 
     fetchWeatherNow();
 
