@@ -21,7 +21,7 @@ const formatWon = (n) =>
 // [ADD] 위에서 아래로 ‘툭’ 떨어지며 쌓이는 효과
 const fallIn = keyframes`
   from {
-    transform: translateY(-12px);   /* 살짝 위에서 시작 */
+    transform: translateY(12px);   /* 살짝 위에서 시작 */
     opacity: 0;
   }
   to {
@@ -48,6 +48,8 @@ const FlashTri = styled.polygon`
   opacity: 0;
   animation: ${flashOnce} 260ms ease-out 40ms both;
   pointer-events: none;
+  transform-box: fill-box;        /* SVG에서 transform 기준 박스 명시 */
+  transform-origin: 50% 50%;      /* 중앙 기준으로 확대/축소 → 모서리 깜빡임 완화 */
 `;
 
 const OutlineTri = styled.polygon`
@@ -55,6 +57,8 @@ const OutlineTri = styled.polygon`
   stroke: #6E82FF;       /* 피라미드와 어울리는 라이트 블루 */
   stroke-width: 2.2;
   stroke-linejoin: round;
+  stroke-linecap: round;      /* 선 끝 둥글게 → 꼭짓점 깜빡임 완화 */
+  stroke-miterlimit: 1;       /* 과한 미터 피크 방지 */
   stroke-dasharray: ${({ $len }) => `${$len}px`};
   stroke-dashoffset: ${({ $len }) => `${$len}px`};
   animation: ${drawLine} 680ms ease-out forwards;
@@ -63,15 +67,16 @@ const OutlineTri = styled.polygon`
 `;
 
 
-
-
-
 // [ADD] SVG <rect>에 애니메이션 부여 (지연시간으로 순서 제어)
 const Band = styled.rect`
   will-change: transform, opacity;
   transform-origin: 50% 0%;
+  /* 애니 시작 전(딜레이 동안)에도 from 상태로 고정 → 1프레임 플래시 제거 */
+  transform: translateY(12px);
+  opacity: 0;
   animation: ${fallIn} 420ms ease-out both;
   animation-delay: ${({ $delay }) => `${$delay}ms`};
+  shape-rendering: crispEdges;
 
   /* 사용자 OS가 ‘애니메이션 줄이기’ 설정이면 자동 비활성화 */
   @media (prefers-reduced-motion: reduce) {
@@ -93,23 +98,45 @@ function PyramidBands({
   height = 100,
 }) {
   const bands = 5;
-  const bandHeight = (height - gapPx * (bands - 1)) / bands;
+  
 
   const COLOR_BASE = "#4B65E9"; // 기본 파랑
   const COLOR_HL   = "#FF9924"; // 강조 주황
   const clipId = "pyramid-clip";
+  
+  // 삼각형 좌우 경계 (y -> x)
+  const xLeft  = (y) => (width / 2) * (1 - y / height);
+  const xRight = (y) => width - xLeft(y);
+  const APEX_EPS = 1;
 
-  // [ADD] 삼각형 3점과 외곽선 둘레 길이 계산
-  const pTop = `${width/2},0`;
-  const pLeft = `0,${height}`;
+  // 정수 기반 균일 레이아웃: 밴드 높이 합 + 간격 = 전체 높이
+  const layout = [];
+  {
+    const totalGap = gapPx * (bands - 1);
+    const rawBand = (height - totalGap) / bands;
+    const hFloor = Math.floor(rawBand);
+    const remainder = (height - totalGap) - hFloor * bands; // 나머지 픽셀들을 위에서부터 1px씩 배분
+    let y = 0;
+    for (let i = 0; i < bands; i++) {
+      const h = hFloor + (i < remainder ? 1 : 0);
+      layout.push({ y1: y, y2: y + h });
+      y += h;
+      if (i < bands - 1) y += gapPx;
+    }
+  }
+
+  // ──[추가] 외곽선 애니메이션 타이밍(스파크용) + 삼각형 꼭짓점 정의──
+  const bandDelay   = 140;
+  const bandDur     = 420;
+  const outlineDur  = 680;
+  const outlineDelay = (bands - 1) * bandDelay + bandDur + 80;
+  const innerStart   = outlineDelay + outlineDur - 40; // ‘두 번째 바퀴 전’ 살짝 앞당김
+
+  const pTop   = `${width/2},${APEX_EPS}`;
+  const pLeft  = `0,${height}`;
   const pRight = `${width},${height}`;
-  const base = width;
-  const side = Math.hypot(width / 2, height); // sqrt((w/2)^2 + h^2)
-  const perimeter = base + side * 2;          // 외곽선 길이
-  // [ADD] 외곽선은 "밴드가 다 떨어지고 난 뒤" 시작
-  const bandDelay = 140;   // 각 밴드 지연(현재 코드와 동일)
-  const bandDur   = 420;   // 각 밴드 지속
-  const outlineDelay = (bands - 1) * bandDelay + bandDur + 80; // 총합 + 살짝 여유
+
+ 
 
   return (
     <svg
@@ -123,37 +150,68 @@ function PyramidBands({
       <defs>
         {/* 삼각형 모양으로 잘라내는 마스크 */}
         <clipPath id={clipId} clipPathUnits="userSpaceOnUse">
-          <polygon points={`${width/2},0 0,${height} ${width},${height}`} />
           <polygon points={`${pTop} ${pLeft} ${pRight}`} />
         </clipPath>
       </defs>
 
-      <FlashTri points={`${pTop} ${pLeft} ${pRight}`} />
+      <FlashTri
+        points={`${pTop} ${pLeft} ${pRight}`}
+        clipPath={`url(#${clipId})`}   /* 번쩍도 삼각형 내부로만 */
+      />
 
-      {/* 위→아래로 5개의 가로 밴드를 그리고, 클리핑으로 삼각형 안에만 보이게 합니다 */}
-      {Array.from({ length: bands }).map((_, i) => {
-        const y = i * (bandHeight + gapPx);
+      {layout.map(({ y1, y2 }, i) => {
         const isHL = i === highlightIndex;
         return (
           <Band
             key={i}
             x={0}
-            y={y}
+            y={y1}
             width={width}
-            height={bandHeight}
+            height={y2 - y1}
             clipPath={`url(#${clipId})`}
             fill={isHL ? COLOR_HL : COLOR_BASE}
-            
-            $delay={i * bandDelay}
+            $delay={i * 140}
           />
         );
       })}
-      {/* [ADD] 외곽선 그리기: 밴드 애니메이션 종료 후 둘레를 따라 한 바퀴 그려짐 */}
-      <OutlineTri
-        points={`${pTop} ${pRight} ${pLeft}`}  // 시계방향으로 그려 ‘한 바퀴’ 느낌
-        $len={perimeter}
-        $delay={outlineDelay}
-      />
+
+
+      {(() => {
+        const i = highlightIndex;
+        if (i < 0 || i >= bands) return null;
+        // 현재 밴드의 y1/y2를 layout에서 가져와서 ‘내부(inset)’로 빨간 스트로크 만들기
+        const { y1, y2 } = layout[i];
+        const inset = 3;                 // 박스 안쪽으로 3px
+        const yTop = y1 + inset;
+        const yBot = y2 - inset;
+        if (yBot <= yTop) return null;
+        const tl = `${xLeft(yTop)},${yTop}`;
+        const tr = `${xRight(yTop)},${yTop}`;
+        const br = `${xRight(yBot)},${yBot}`;
+        const bl = `${xLeft(yBot)},${yBot}`;
+        return (
+          <polygon
+            points={`${tl} ${tr} ${br} ${bl}`}
+            fill="none"
+            stroke="#FF5A5A"
+            strokeWidth="5"                // 3px로 두껍게
+            strokeLinejoin="round"
+            strokeLinecap="round"
+            opacity="0"
+            clipPath={`url(#${clipId})`}   // 혹시 몰라서 안전하게 클립 유지
+          >
+            <animate
+              attributeName="opacity"
+              from="0"
+              to="1"
+              dur="260ms"
+              begin={`${innerStart}ms`}     // 첫 바퀴 끝나기 직전 등장
+              fill="freeze"
+            />
+          </polygon>
+        );
+      })()}
+
     </svg>
   );
 }
@@ -171,7 +229,7 @@ const Maindiv = styled.div`
   display: flex;
   align-items: flex-start;
   width: 100%;
-  height: 672px;
+  height: 671px;
   padding: 8px;
   gap: 8px;
 `;
@@ -219,7 +277,7 @@ const MainTop = styled.div`
 
   > div:nth-child(1) {
     display: flex;
-    font: bold 18px "나눔고딕";
+    font: bold 22px "나눔고딕";
   }
   > div:nth-child(2) {
     display: flex;
@@ -238,7 +296,7 @@ const MainTop = styled.div`
   }
 `;
 const ExpectRatiodiv = styled(TodayRatio)`
-  font: 700 12px "나눔고딕";
+  font: 700 15px "나눔고딕";
 `;
 
 const MainBottomTop = styled.div`
@@ -257,16 +315,17 @@ const MainBottomMiddle = styled.div`
 const BottomMiddleLeft = styled.div`
   display: flex;
   /* [MOD] 중복 width 선언(40% vs 35%) 혼란 방지를 위해 최종 적용값만 남김 */
-  width: 50%;
+  flex: 0 0 42%;
   align-items: center;
   justify-content: center;
 
   height: calc(100% - 16px);
+  min-width: 0;
 `;
 
 const BottomMiddleRight = styled.div`
   display: flex;
-  width: calc(60% - 4px);
+  flex: 1 1 auto;
   justify-content: flex-start;
   align-items: center;
   padding: 8px;
@@ -275,29 +334,41 @@ const BottomMiddleRight = styled.div`
   border: 1px solid rgba(166, 166, 166, 0.2);
   background: rgba(255, 153, 36, 0.1);
   height: 65%;
-  
+  min-width: 0; 
 `;
 
 const BuildingAverageleft = styled.div`
   display: flex;
   flex-direction: column;
-  width: 48%;
-  gap: 18px;
+  flex: 0 0 130px;
+
+  gap: 25px;
 
   > div {
     display: flex;
     justify-content: flex-start;
     align-items: center;
-    font: bold 17px "나눔고딕";
+    font: bold 18px "나눔고딕";
     line-height: 1.2; 
     white-space: nowrap; 
+  }
+  /* 라벨 중 마지막 줄 = '우리 빌딩' */
+  > div:last-child {
+    color: #FF5A5A;
+    font-weight: 800;                   /* 굵기 고정 */
+    font-synthesis: none;               /* 가짜 볼드 합성 금지 */
+    -webkit-font-smoothing: auto;       /* 서브픽셀 AA 사용 */
+    text-rendering: geometricPrecision; /* 렌더링 안정화 */
+    letter-spacing: 0.2px;              /* 시각적 두께 보정(선택) */
+    transform: translateZ(0);           /* 레이어 고정으로 재래스터 최소화 */
   }
 `;
 const BuildingAverageright = styled.div`
   display: flex;
   flex-direction: column;
-  width: 60%;
-  gap: 18px;
+  flex: 1 1 auto;
+  min-width: 0; 
+  gap: 25px;
 
   > div {
     display: flex;
@@ -307,13 +378,18 @@ const BuildingAverageright = styled.div`
     line-height: 1.2;
     white-space: nowrap;
   }
+  /* 우리 빌딩(마지막 줄)만 굵기 고정 */
+  > div:last-child {
+    font-weight: 800;              /* 굵게 고정 */
+    letter-spacing: 0.2px;         /* 숫자 시인성 살짝 보정(선택) */
+  }
 `;
 
 const BottomBottom = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;    
-  font: bold 20px "나눔고딕";
+  font: bold 19px "나눔고딕";
   height: 15%;
   border: 1px solid rgba(166, 166, 166, 0.2);
   background: rgba(255, 153, 36, 0.1);

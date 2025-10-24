@@ -742,7 +742,7 @@ function Wing({
             />
             <DockLabel>상세분석</DockLabel>
           </DockBtn>
-          <DockBtn onClick={() => setIsEmissionBtn((prev) => !prev)} IsEmissionBtn={IsEmissionBtn}>
+          <DockBtn onClick={() => setIsEmissionBtn((prev) => !prev)} $IsEmissionBtn={IsEmissionBtn}>
             <DockIcon
               src="public/Icon/emission_icon.svg"
               alt=""
@@ -844,7 +844,7 @@ function Wing({
 
       <>
         {/* 헤더 */}
-        <HeaderBox IsEmissionBtn={IsEmissionBtn}>
+        <HeaderBox $IsEmissionBtn={IsEmissionBtn}>
           <HeaderIcon src="public/Icon/header_title_logo.svg" alt="토리 빌딩" onError={imgFallback("/Icon/header_title_logo.svg")} />
           <HeaderText>
             {active.active ? `토리 빌딩 - ${MODEL_TO_FLOOR[active.model] + 1}층` : "토리 빌딩"}
@@ -871,7 +871,7 @@ function Wing({
               {MODEL_TO_FLOOR[modelName] + 1}F
             </FloorButton>
           ))}
-          <FloorButton className="ToggleBtn" onClick={() => setRailOpen((prev) => !prev)} IsEmissionBtn={IsEmissionBtn}>
+          <FloorButton className="ToggleBtn" onClick={() => setRailOpen((prev) => !prev)} $IsEmissionBtn={IsEmissionBtn}>
             <img
               src={railOpen ? "Icon/toggle_on.svg" : "Icon/toggle_off.svg"}
               alt={railOpen ? "패널 닫기" : "패널 열기"}
