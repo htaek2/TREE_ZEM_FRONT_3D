@@ -60,7 +60,7 @@ function CameraController({ active, cameraSettings }) {
       "FOV:",
       targetFov
     );
-  }, [cameraSettings]);
+  }, [cameraSettings, active.active, camera]);
 
   return null;
 }

@@ -9,7 +9,7 @@ export default defineConfig({
     port: 3000,
     proxy: {
       "/api": {
-        target: "http://192.168.0.67:7770/",
+        target: "http://localhost:7770/",
         changeOrigin: true,
         secure: false,
         ws: true, // WebSocket 및 SSE 지원
@@ -18,4 +18,3 @@ export default defineConfig({
     },
   },
 });
-
