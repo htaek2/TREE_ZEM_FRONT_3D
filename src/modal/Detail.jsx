@@ -400,20 +400,29 @@ function Detail({ onClose, todayUsage }) {
 
             let filteredData = [];
 
+            // 중첩 배열 평탄화 (요금 데이터 처리용)
+            const mergedData = data.flatMap(item => Array.isArray(item) ? item : [item]);
+            
+
             if (data.length > 0) {
                 if (DetailSelected === "가스") {
-           z         //     if (floor === "전체") {
+                    filteredData = (Array.isArray(data[0]) ? data[0] : data).filter(item => item.energyType === selectedEnergy);
+                    //     if (floor === "전체") {
                     //         filteredData = (Array.isArray(data[0]) ? data[0] : data).filter(item => item.energyType === selectedEnergy);
                     //     } else {
                     //         filteredData = data.filter(item => item.energyType === selectedEnergy);
                     //     }   
                     // });
+                } else if (IsChargeClick) {
+                    filteredData = mergedData.filter(item => item.energyType === selectedEnergy);
+                    console.log("💰 필터링된 요금 데이터:", filteredData);
+                } else {
                     SelectedFloor.forEach(floor => {
                         if (floor === "전체") {
-                            filteredData.push(...(Array.isArray(data[0]) ? data[0] : data).filter(item => item.energyType === selectedEnergy));
+                            filteredData = (Array.isArray(data[0]) ? data[0] : data).filter(item => item.energyType === selectedEnergy);
                             console.log("🧱",floor)
                         } else {
-                            filteredData.push(...data.filter(item => item.energyType === selectedEnergy && item.floor === floor));
+                            filteredData = data.filter(item => item.energyType === selectedEnergy);
                         }
                     });
                 }
@@ -452,14 +461,9 @@ function Detail({ onClose, todayUsage }) {
                         };
                 });
             // 차트 데이터 업데이트
-            setChartData({
-                labels,
-                datasets
-            });
-
+            setChartData({labels,datasets});
             console.log("가공된 차트 데이터:", { labels, datasets });
-            }
-        
+            } 
         } catch (error) {
             console.error("⭐ MAIN 데이터 가져오기 실패:", error);
         }
@@ -485,6 +489,8 @@ function Detail({ onClose, todayUsage }) {
         //     eventSource.close();
         // };
         console.log("💡오늘 사용량 데이터:", todayUsage);
+
+        
 
 
     }, [isRealtimeClick, todayUsage]);
@@ -532,32 +538,12 @@ function Detail({ onClose, todayUsage }) {
                         }
                     });
                 }
-                // if (SelectedFloor.includes("전체")) {
-                //     urls.push(`/api/energy/bill?start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`);
-                //     console.log("🍪🍪", urls);
-                // } 
-                // if (SelectedFloor.length > 0) {
-                //     SelectedFloor
-                //         .filter(floor => floor !== "전체")
-                //         .forEach(
-                //             (floor) => urls.push(`/api/energy/bill/${DetailSelected === "전력" ? "elec" : "water"}/${floor}?start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`)
-                //         );
-                //     console.log("🍪🍪🍪");
-                //     console.log("🍪🍪🍪", SelectedFloor);
-                //     console.log("🍪🍪🍪", urls);
-                // }
             }
         }
         else if (DetailSelected === "가스") {
         urls.push(`/api/energy/gas?start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`);
         console.log("🍪", urls);
         }
-
-
-        // // 일반 전체 선택
-        // else if (SelectedFloor.includes("전체")) {
-        //     url = `/api/energy/${DetailSelected === "전력" ? "elec" : DetailSelected === "가스" ? "gas" : "water"}?start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`;
-        // }
 
         // 층별 선택
         else {
