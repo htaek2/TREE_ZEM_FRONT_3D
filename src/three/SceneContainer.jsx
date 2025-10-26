@@ -27,17 +27,10 @@ export default function SceneContainer({
       return;
     }
 
-    // 층별 타겟 위치 설정 (모델 중앙)
-    const floorTargets = {
-      f1: new THREE.Vector3(0, 0, 0),
-      f2: new THREE.Vector3(0, 5, 0),
-      f3: new THREE.Vector3(0, 10, 0),
-      f4: new THREE.Vector3(0, 15, 0),
-    };
-
     // OrbitControls 타겟을 해당 층 위치로 변경
-    if (controlsRef.current && floorTargets[modelName]) {
-      controlsRef.current.target.copy(floorTargets[modelName]);
+    if (controlsRef.current && constants.FLOOR_HEIGHTS[modelName] !== undefined) {
+      const targetY = constants.FLOOR_HEIGHTS[modelName];
+      controlsRef.current.target.copy(new THREE.Vector3(0, targetY, 0));
       controlsRef.current.update();
     }
 
@@ -58,17 +51,10 @@ export default function SceneContainer({
   const handleFloorButtonClick = (modelName) => {
     if (modelName === "top") return;
 
-    // 층별 타겟 위치 설정 (모델 중앙)
-    const floorTargets = {
-      f1: new THREE.Vector3(0, 0, 0),
-      f2: new THREE.Vector3(0, 5, 0),
-      f3: new THREE.Vector3(0, 10, 0),
-      f4: new THREE.Vector3(0, 15, 0),
-    };
-
     // OrbitControls 타겟을 해당 층 위치로 변경
-    if (controlsRef.current && floorTargets[modelName]) {
-      controlsRef.current.target.copy(floorTargets[modelName]);
+    if (controlsRef.current && constants.FLOOR_HEIGHTS[modelName] !== undefined) {
+      const targetY = constants.FLOOR_HEIGHTS[modelName];
+      controlsRef.current.target.copy(new THREE.Vector3(0, targetY, 0));
       controlsRef.current.update();
     }
 

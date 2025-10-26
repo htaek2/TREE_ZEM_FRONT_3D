@@ -16,14 +16,12 @@ export const MODEL_TO_FLOOR = {
   top: 4,
 };
 
-/**
- * 건물 구조 관련 상수
- */
-export const FLOOR_COUNT = 5; // 총 층 수
-export const FLOOR_HEIGHT = 2; // 각 층의 높이 (Y축 간격)
-export const FLOOR_WIDTH = 10; // 각 층의 가로 크기 (X축)
-export const FLOOR_DEPTH = 10; // 각 층의 세로 크기 (Z축)
-export const FLOOR_THICKNESS = 0.3; // 각 층 바닥/천장의 두께
+export const FLOOR_HEIGHTS = {
+  f1: 0, // 1층 바닥 높이
+  f2: 5, // 2층 바닥 높이
+  f3: 10, // 3층 바닥 높이
+  f4: 15, // 4층 바닥 높이
+};
 
 /**
  * 층별 색상 배열
@@ -76,5 +74,5 @@ export const SKY_COLOR = {
   SKY_BLUE: "#87CEEB",
   LIGHT_SKY_BLUE: "#87CEFA",
   DEEP_SKY_BLUE: "#00BFFF",
-  ALICE_BLUE: "#F0F8FF"
-}
+  ALICE_BLUE: "#F0F8FF",
+};
