@@ -1,6 +1,25 @@
 import { Instance, Instances } from '@react-three/drei';
+import * as THREE from 'three';
 
-export const SimpleMarkers = ({ markerInfo = [], selectFloor }) => {
+const Marker = ({ position , onClick, onPointerOver, onPointerOut }) => {
+  return (
+    <group position={position} onClick={onClick} onPointerOver={onPointerOver} onPointerOut={onPointerOut}>
+      {/* 검정색 테두리 (뒤쪽) */}
+      <mesh>
+        <sphereGeometry args={[0.3, 32, 32]} />
+        <meshBasicMaterial color={0x000000} side={THREE.BackSide} />
+      </mesh>
+
+      {/* 파란색 메인 구체 */}
+      <mesh>
+        <sphereGeometry args={[0.25, 32, 32]} />
+        <meshBasicMaterial color={0x00AA6F} />
+      </mesh>
+    </group>
+  );
+};
+
+export const SimpleMarkers = ({ markerInfo = [], selectFloor, setSelectedMarker }) => {
   // markerInfo가 없거나 빈 배열이면 렌더링하지 않음
   if (!markerInfo || markerInfo.length === 0) {
     return null;
@@ -20,7 +39,6 @@ export const SimpleMarkers = ({ markerInfo = [], selectFloor }) => {
     ? markerInfo.filter(marker => marker.deviceName.slice(0,2) === targetFloor)
     : markerInfo;
 
-  console.log("마커정보!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", filteredMarkers);
 
   // 필터링 후 마커가 없으면 렌더링하지 않음
   if (filteredMarkers.length === 0) {
@@ -28,18 +46,26 @@ export const SimpleMarkers = ({ markerInfo = [], selectFloor }) => {
   }
 
   return (
-    <Instances limit={filteredMarkers.length}>
-      {/* 마커 모양 정의 (작은 구체) */}
-      <sphereGeometry args={[0.1, 8, 8]} />
-      <meshBasicMaterial color="yellow" />
-
-      {/* markerInfo를 순회하며 각 위치에 마커 배치 */}
+    <>
       {filteredMarkers.map((marker, index) => (
-        <Instance
+        <Marker
           key={marker.deviceId || index}
-          position={marker.position}  // ← Vector3(x, y, z)
+          position={marker.position}
+          onClick={(e) => {
+            e.stopPropagation();
+            setSelectedMarker(marker);
+           console.log('마커 클릭됨:', marker);
+          }}
+          onPointerOver={(e) => {
+            e.stopPropagation();
+            document.body.style.cursor = 'pointer';
+            }}
+          onPointerOut={(e) => {
+            e.stopPropagation();
+            document.body.style.cursor = 'auto';
+          }}
         />
       ))}
-    </Instances>
+    </>
   );
 };
