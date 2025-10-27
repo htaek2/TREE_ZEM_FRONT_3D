@@ -1,4 +1,23 @@
 import { Instance, Instances } from '@react-three/drei';
+import * as THREE from 'three';
+
+const Marker = ({ position }) => {
+  return (
+    <group position={position}>
+      {/* 검정색 테두리 (뒤쪽) */}
+      <mesh>
+        <sphereGeometry args={[0.3, 32, 32]} />
+        <meshBasicMaterial color={0x000000} side={THREE.BackSide} />
+      </mesh>
+
+      {/* 파란색 메인 구체 */}
+      <mesh>
+        <sphereGeometry args={[0.25, 32, 32]} />
+        <meshBasicMaterial color={0x00AA6F} />
+      </mesh>
+    </group>
+  );
+};
 
 export const SimpleMarkers = ({ markerInfo = [], selectFloor }) => {
   // markerInfo가 없거나 빈 배열이면 렌더링하지 않음
@@ -28,18 +47,13 @@ export const SimpleMarkers = ({ markerInfo = [], selectFloor }) => {
   }
 
   return (
-    <Instances limit={filteredMarkers.length}>
-      {/* 마커 모양 정의 (작은 구체) */}
-      <sphereGeometry args={[0.1, 8, 8]} />
-      <meshBasicMaterial color="yellow" />
-
-      {/* markerInfo를 순회하며 각 위치에 마커 배치 */}
+    <>
       {filteredMarkers.map((marker, index) => (
-        <Instance
+        <Marker
           key={marker.deviceId || index}
-          position={marker.position}  // ← Vector3(x, y, z)
+          position={marker.position}
         />
       ))}
-    </Instances>
+    </>
   );
 };
