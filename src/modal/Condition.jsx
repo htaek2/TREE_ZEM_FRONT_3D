@@ -164,7 +164,7 @@ const [ratio, setRatio] = useState(Math.trunc(((billInfo.electricThisMonth + bil
         label: labelName,
         data: [OurValue, MyValue],
         borderColor: "#FAFAFA",
-        backgroundColor: "transparent",
+        backgroundColor: "#FAFAFA",
         borderDash: [5, 5],
         tension: 0.3,
         order: 1,
@@ -177,11 +177,27 @@ const [ratio, setRatio] = useState(Math.trunc(((billInfo.electricThisMonth + bil
     plugins: {
       legend: {
         display: true,
-        position: "bottom",
+        position: 'bottom',
         labels: {
-        color: "#fafafa", // 범례 글씨 색 (어두운 배경일 경우)
-        boxWidth: 12,
-        },
+          font: {
+            size: 10,        // 글자 크기
+            weight: "bold",  // 글자 굵기
+            family: "나눔고딕", // 글꼴
+            
+          },
+          generateLabels: (chart) => {
+            const data = chart.data;
+            return data.labels.map((label, i) => {
+              return {
+                text: label,
+                fillStyle: data.datasets[0].backgroundColor[i], // 각 값 색상
+                strokeStyle: data.datasets[0].backgroundColor[i],
+                index: i,
+                fontColor: "#FAFAFA",
+              };
+            });
+        }
+      }
       },
       title: {
         display: true,
@@ -210,6 +226,7 @@ const [ratio, setRatio] = useState(Math.trunc(((billInfo.electricThisMonth + bil
       },
     },
   });
+
 
   const MyBuildingCharge = (
     billInfo.electricThisMonth
