@@ -73,7 +73,7 @@ export const AverageChargeMainL = styled.div`
     display: flex;
     align-items: flex-start;
     flex-direction: column;
-    width: 65%;
+    width: 100%;
 `;
 export const AverageChargeMainR = styled.div`
     display: flex;
@@ -88,7 +88,7 @@ export const TodayTitle = styled.div`
     color: #FAFAFA;
 `;
 export const TodayValue = styled.div`
-    font: 700 20px "나눔고딕";
+    font: 700 24px "나눔고딕";
     color: ${({ type }) =>
     type === "elect" ? "#F3C41F" :
     type === "gas" ? "#F9864E" :
@@ -98,7 +98,7 @@ export const TodayRatio = styled.div`
     display: flex;
     justify-content: flex-start;
     align-items: center;
-    font: 700 10px "나눔고딕";
+    font: 700 12px "나눔고딕";
     color: #FAFAFA;
     gap: 4px;
 

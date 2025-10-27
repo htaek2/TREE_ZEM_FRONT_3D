@@ -18,6 +18,17 @@ import {
   Liner,
 } from "./ModalComponents/EnergyStyle.jsx";
 import { useState } from "react";
+// 차트 그리기
+import { Line } from "react-chartjs-2";
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 /* ⭐ 전체 타이틀 ⭐ */
 const TotalTitle = styled.div`
@@ -68,19 +79,33 @@ const AverageChargeHeader = styled.div`
 `;
 
 /* ⭐ 표 ⭐ */
-const AverageCountry = styled.div`
-  width: 100%;
-  display: flex;
-  align-items: center;
-  flex-direction: column;
-  gap: 8px;
-`;
 const AverageLocation = styled.div`
   width: 100%;
+  height: calc(100% - 150px);
   display: flex;
   align-items: center;
   flex-direction: column;
   gap: 8px;
+
+  > div:last-child {
+    display: flex;
+    width: 228px;
+    height: 150px;
+  }
+`;
+const AverageNational = styled.div`
+  width: 100%;
+  height: calc(100% - 100px);
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 8px;
+
+  > div:last-child {
+    display: flex;
+    width: 228px;
+    height: 150px;
+  }
 `;
 
 /* ---  2025-10-18 🍪 백민기 추가 props => elecUsage, waterUsage, gasUsage ---- */
@@ -106,6 +131,50 @@ const [ratio, setRatio] = useState(Math.trunc(((billInfo.electricThisMonth + bil
   console.log("Condition - buildingInfo:", buildingInfo);
   console.log("Condition - elecUsage:", elecUsage);
   console.log("Condition - monthElecUsage:", monthElecUsage);
+
+
+  // 차트 데이터 / 옵션
+  // const averageChartValue = 12;  // 표시할 값 (%)
+
+  const averageChartdata = {
+    label : ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+    datasets: [
+      {
+        label: "우리 빌딩",
+        data: [120, 150, 180, 150, 130, 170], // 예시 데이터
+        borderColor: "#756DE5", // 보라색
+        backgroundColor: "#756DE5",
+        tension: 0.3, // 곡선 정도
+      },
+      {
+        label: "우리 빌딩",
+        data: [120, 150, 180, 150, 130, 170], // 예시 데이터
+        borderColor: "#756DE5", // 보라색
+        backgroundColor: "#756DE5",
+        tension: 0.3, // 곡선 정도
+      },
+    ],
+  };
+  const AveragechartOptions = {
+    width: '100%',
+    height: '100%',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: "bottom",
+      },
+      title: {
+        display: true,
+        text: "우리지역 일평균 대비",
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: false,
+      },
+    },
+  };
 
   return (
     <Overlay>
@@ -226,13 +295,13 @@ const [ratio, setRatio] = useState(Math.trunc(((billInfo.electricThisMonth + bil
                   />
                 </UpDownIcon>
                 <UpDownFont ratio={ratio}>
-                  <div>증가</div>
-                  <div>감소</div>
+                  <div>높음</div>
+                  <div>낮음</div>
                 </UpDownFont>
               </TodayRatio>
             </AverageChargeMainL>
 
-            <AverageChargeMainR>표</AverageChargeMainR>
+            <AverageChargeMainR></AverageChargeMainR>
           </AverageChargeMain>
 
           <AverageChargeFooter>
@@ -254,17 +323,28 @@ const [ratio, setRatio] = useState(Math.trunc(((billInfo.electricThisMonth + bil
               <div>{billInfo.electricThisMonth + billInfo.gasThisMonth + billInfo.waterThisMonth} 원</div>
             </AverageChargeFooterR>
           </AverageChargeFooter>
-          <Liner />
-          <AverageCountry>
-               <div>우리지역(대전) 일평균 대비</div>
-            <div className="average_chart">표</div>
-           
-          </AverageCountry>
-          <Liner />
+<Liner />
           <AverageLocation>
-          <div>전국 일평균 대비</div>
-            <div className="average_chart">표</div>
+            <div>우리지역(대전) 월 평균 대비</div>
+            <div>
+            <Line
+              data={averageChartdata} 
+              options={AveragechartOptions}
+              $labels={"우리지역 평균"}
+            />
+            </div>
           </AverageLocation>
+          <Liner />
+          <AverageNational>
+            <div>전국 월 평균 대비</div>
+            <div>
+            <Line
+              data={averageChartdata} 
+              options={AveragechartOptions}
+              labels={"우리지역 평균"}
+            />
+            </div>
+          </AverageNational>
         </AverageAndEnergy>
       </EnergyMain>
     </Overlay>
