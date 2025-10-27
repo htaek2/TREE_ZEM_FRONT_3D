@@ -16,7 +16,7 @@ const GlobalStyle = createGlobalStyle`
         --wing-card-h: 208px;
         --dock-w: 60px;   /* 하단 박스 가로 */
         --dock-h: 40px;   /* 하단 박스 세로 */
-        --dock-label-bottom: 5px; /* 라벨을 박스 하단에서 5px 띄우기 */
+        --dock-label-bottom: 7px; /* 라벨을 박스 하단에서 5px 띄우기 */
         --dock-label-h: 10px;     /* 라벨 높이(= 글자 크기 10px과 동일하게) */
         --dock-gap: 3px;          /* 아이콘 ↔ 라벨 간격 */
     }
