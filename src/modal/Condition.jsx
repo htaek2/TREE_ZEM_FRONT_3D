@@ -20,6 +20,16 @@ import {
 import { useState } from "react";
 // 차트 그리기
 import { Line } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend, 
+} from "chart.js";
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -148,9 +158,10 @@ const [ratio, setRatio] = useState(Math.trunc(((billInfo.electricThisMonth + bil
       },
       {
         label: "우리 빌딩",
-        data: [120, 150, 180, 150, 130, 170], // 예시 데이터
-        borderColor: "#756DE5", // 보라색
-        backgroundColor: "#756DE5",
+        data: [100, 140, 160, 140, 120, 150], // 예시 데이터
+        borderColor: "#CCCCCC", // 보라색
+        backgroundColor: "#CCCCCC",
+        borderDash: [5, 5],
         tension: 0.3, // 곡선 정도
       },
     ],
@@ -162,16 +173,28 @@ const [ratio, setRatio] = useState(Math.trunc(((billInfo.electricThisMonth + bil
     maintainAspectRatio: false,
     plugins: {
       legend: {
+        display: true,
         position: "bottom",
+        labels: {
+        color: "#fafafa", // 범례 글씨 색 (어두운 배경일 경우)
+        boxWidth: 12,
+        },
       },
       title: {
         display: true,
         text: "우리지역 일평균 대비",
+        color: "#fafafa",
       },
     },
     scales: {
       y: {
         beginAtZero: false,
+        ticks: { color: "#fafafa" },
+        grid: { color: "rgba(255,255,255,0.2)" },
+      },
+      x: {
+        ticks: { color: "#fafafa" },
+        grid: { color: "rgba(255,255,255,0.2)" },
       },
     },
   };
