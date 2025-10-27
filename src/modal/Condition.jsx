@@ -19,22 +19,25 @@ import {
 } from "./ModalComponents/EnergyStyle.jsx";
 import { useState } from "react";
 // 차트 그리기
-import { Line } from "react-chartjs-2";
+import { Chart } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   Title,
   Tooltip,
-  Legend, 
+  Legend,
 } from "chart.js";
+
 ChartJS.register(
   CategoryScale,
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend
@@ -99,13 +102,13 @@ const AverageLocation = styled.div`
 
   > div:last-child {
     display: flex;
-    width: 228px;
-    height: 150px;
+    width: 100%;
+    height: 100%;
   }
 `;
 const AverageNational = styled.div`
   width: 100%;
-  height: calc(100% - 100px);
+  height: calc(100% - 96px);
   display: flex;
   align-items: center;
   flex-direction: column;
@@ -113,8 +116,8 @@ const AverageNational = styled.div`
 
   > div:last-child {
     display: flex;
-    width: 228px;
-    height: 150px;
+    width: 100%;
+    height: 100%;
   }
 `;
 
@@ -146,29 +149,29 @@ const [ratio, setRatio] = useState(Math.trunc(((billInfo.electricThisMonth + bil
   // 차트 데이터 / 옵션
   // const averageChartValue = 12;  // 표시할 값 (%)
 
-  const averageChartdata = {
-    label : ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+  const averageChartdata = (labelName, OurValue, MyValue) => ({
+    labels : [labelName, "우리 빌딩"],
     datasets: [
       {
+        type: "bar",
         label: "우리 빌딩",
-        data: [120, 150, 180, 150, 130, 170], // 예시 데이터
-        borderColor: "#756DE5", // 보라색
-        backgroundColor: "#756DE5",
-        tension: 0.3, // 곡선 정도
+        data: [OurValue, MyValue],
+        backgroundColor: ["#FAFAFA", "#756DE5"],
+        order: 2,
       },
       {
-        label: "우리 빌딩",
-        data: [100, 140, 160, 140, 120, 150], // 예시 데이터
-        borderColor: "#CCCCCC", // 보라색
-        backgroundColor: "#CCCCCC",
+        type: "line",
+        label: labelName,
+        data: [OurValue, MyValue],
+        borderColor: "#FAFAFA",
+        backgroundColor: "transparent",
         borderDash: [5, 5],
-        tension: 0.3, // 곡선 정도
+        tension: 0.3,
+        order: 1,
       },
     ],
-  };
-  const AveragechartOptions = {
-    width: '100%',
-    height: '100%',
+  });
+  const AveragechartOptions = (labelName) => ({
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -182,9 +185,18 @@ const [ratio, setRatio] = useState(Math.trunc(((billInfo.electricThisMonth + bil
       },
       title: {
         display: true,
-        text: "우리지역 일평균 대비",
+        text: labelName,
         color: "#fafafa",
+        font: {
+          size: 18, // 글자 크기 (원하는 값으로 조절)
+          weight: '400', // 글자 굵기 선택 사항
+        },
+        padding: {
+          top: 10,    // 타이틀 위 여백
+          bottom: 20, // 타이틀과 차트 사이 거리
+        },
       },
+      
     },
     scales: {
       y: {
@@ -197,7 +209,16 @@ const [ratio, setRatio] = useState(Math.trunc(((billInfo.electricThisMonth + bil
         grid: { color: "rgba(255,255,255,0.2)" },
       },
     },
-  };
+  });
+
+  const MyBuildingCharge = (
+    billInfo.electricThisMonth
+    + billInfo.gasThisMonth
+    + billInfo.waterThisMonth
+    + billInfo.electricRealTime 
+    + billInfo.gasRealTime 
+    + billInfo.waterRealTime
+  );
 
   return (
     <Overlay>
@@ -299,8 +320,8 @@ const [ratio, setRatio] = useState(Math.trunc(((billInfo.electricThisMonth + bil
         <AverageAndEnergy>
           <AverageCharge>
             <AverageChargeHeader>
-              <img src="/Icon/building_icon.svg" alt="빌딩"></img>동 업종 월평균
-              대비 사용량
+              <img src="/Icon/building_icon.svg" alt="빌딩"></img>동 업종 평균
+              대비 사용금액
             </AverageChargeHeader>
           </AverageCharge>
 
@@ -343,34 +364,24 @@ const [ratio, setRatio] = useState(Math.trunc(((billInfo.electricThisMonth + bil
             <AverageChargeFooterR>
               <div>{AvgFee.national} 원</div>
               <div>{AvgFee.location} 원</div>
-              <div>{
-                billInfo.electricThisMonth
-                + billInfo.gasThisMonth
-                + billInfo.waterThisMonth
-                + billInfo.electricRealTime 
-                + billInfo.gasRealTime 
-                + billInfo.waterRealTime} 원</div>
+              <div>{MyBuildingCharge} 원</div>
             </AverageChargeFooterR>
           </AverageChargeFooter>
 <Liner />
           <AverageLocation>
-            <div>우리지역(대전) 월 평균 대비</div>
             <div>
-            <Line
-              data={averageChartdata} 
-              options={AveragechartOptions}
-              $labels={"우리지역 평균"}
+            <Chart
+              data={averageChartdata("우리지역 평균", AvgFee.location, MyBuildingCharge)} 
+              options={AveragechartOptions("우리지역(대전) 월 평균 비교")}
             />
             </div>
           </AverageLocation>
           <Liner />
           <AverageNational>
-            <div>전국 월 평균 대비</div>
             <div>
-            <Line
-              data={averageChartdata} 
-              options={AveragechartOptions}
-              labels={"우리지역 평균"}
+            <Chart
+              data={averageChartdata("전국 평균", AvgFee.national, MyBuildingCharge)} 
+              options={AveragechartOptions("전국 월 평균 비교")}
             />
             </div>
           </AverageNational>
