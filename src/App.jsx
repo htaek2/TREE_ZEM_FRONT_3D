@@ -542,19 +542,19 @@ function App() {
             console.log("금월 요금 데이터:", data);
             if (energy.energyType === "ELECTRICITY") {
               const totalElecUsage = energy.datas.reduce(
-                (sum, el) => sum + el.usage,
+                (sum, el) => sum + Math.max(el.usage, 0),
                 0
               );
               console.log("전기 요금 합계:", Math.trunc(totalElecUsage));
             } else if (energy.energyType === "GAS") {
               const totalGasUsage = energy.datas.reduce(
-                (sum, el) => sum + el.usage,
+                (sum, el) => sum + Math.max(el.usage, 0),
                 0
               );
               console.log("가스 요금 합계:", Math.trunc(totalGasUsage));
             } else if (energy.energyType === "WATER") {
               const totalWaterUsage = energy.datas.reduce(
-                (sum, el) => sum + el.usage,
+                (sum, el) => sum + Math.max(el.usage, 0),
                 0
               );
               console.log("수도 요금 합계:", Math.trunc(totalWaterUsage));
@@ -564,19 +564,19 @@ function App() {
               electricThisMonth:
                 energy.energyType === "ELECTRICITY"
                   ? Math.trunc(
-                      energy.datas.reduce((sum, el) => sum + el.usage, 0)
+                      energy.datas.reduce((sum, el) => sum + Math.max(el.usage, 0),0)
                     )
                   : prev.electricThisMonth,
               gasThisMonth:
                 energy.energyType === "GAS"
                   ? Math.trunc(
-                      energy.datas.reduce((sum, el) => sum + el.usage, 0)
+                      energy.datas.reduce((sum, el) => sum +Math.max(el.usage, 0),0)
                     )
                   : prev.gasThisMonth,
               waterThisMonth:
                 energy.energyType === "WATER"
                   ? Math.trunc(
-                      energy.datas.reduce((sum, el) => sum + el.usage, 0)
+                      energy.datas.reduce((sum, el) => sum + Math.max(el.usage, 0),0)
                     )
                   : prev.waterThisMonth,
             }));
