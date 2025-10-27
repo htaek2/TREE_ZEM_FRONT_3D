@@ -1,7 +1,7 @@
 import { Instance, Instances } from '@react-three/drei';
 import * as THREE from 'three';
 
-const Marker = ({ position , onClick, onPointerOver, onPointerOut }) => {
+const Marker = ({ position , onClick, onPointerOver, onPointerOut , selectedMarker }) => {
   return (
     <group position={position} onClick={onClick} onPointerOver={onPointerOver} onPointerOut={onPointerOut}>
       {/* 검정색 테두리 (뒤쪽) */}
@@ -10,16 +10,16 @@ const Marker = ({ position , onClick, onPointerOver, onPointerOut }) => {
         <meshBasicMaterial color={0x000000} side={THREE.BackSide} />
       </mesh>
 
-      {/* 파란색 메인 구체 */}
+      {/* 메인 구체 */}
       <mesh>
         <sphereGeometry args={[0.25, 32, 32]} />
-        <meshBasicMaterial color={0x00AA6F} />
+        <meshBasicMaterial color={selectedMarker.status === 1 ? 0x00AA6F : 0xFF3B30} />
       </mesh>
     </group>
   );
 };
 
-export const SimpleMarkers = ({ markerInfo = [], selectFloor, setSelectedMarker }) => {
+export const SimpleMarkers = ({ markerInfo = [], selectFloor, selectedMarker, setSelectedMarker }) => {
   // markerInfo가 없거나 빈 배열이면 렌더링하지 않음
   if (!markerInfo || markerInfo.length === 0) {
     return null;
@@ -51,6 +51,7 @@ export const SimpleMarkers = ({ markerInfo = [], selectFloor, setSelectedMarker 
         <Marker
           key={marker.deviceId || index}
           position={marker.position}
+          selectedMarker={selectedMarker}
           onClick={(e) => {
             e.stopPropagation();
             setSelectedMarker(marker);
