@@ -41,8 +41,8 @@ const HeaderTop = styled.div`
 
 const Title = styled.h2`
   margin: 0;
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 22px;
+  font-weight: 700;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: white;
   letter-spacing: -0.5px;
@@ -69,10 +69,10 @@ const CategoryTag = styled.div`
   display: inline-block;
   background: rgba(255, 255, 255, 0.2);
   color: white;
-  padding: 4px 12px;
+  padding: 8px 12px;
   border-radius: 12px;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 400;
   margin-top: 8px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -96,7 +96,7 @@ const StatCard = styled.div`
   border-radius: 12px;
   padding: 14px;
   position: relative;
-  overflow: hidden;
+ 
   transition: transform 0.2s ease;
   
   &:hover {
@@ -180,14 +180,14 @@ const MarkerPanel = ({ selectedMarker, setSelectedMarker, postSwitching }) => {
               ×
             </CloseIcon>
           </HeaderTop>
-          <CategoryTag>{selectedMarker.deviceType === 0 ? '컴퓨터' :selectedMarker.deviceType === 1 ? '에어컨' : selectedMarker.deviceType === 2 ? '조명' : '기타'}</CategoryTag>
+          <CategoryTag>{selectedMarker.deviceType === 0 ? '💻 컴퓨터' :selectedMarker.deviceType === 1 ? '🍃 에어컨' : selectedMarker.deviceType === 2 ? '🔦 조명' : '기타'}</CategoryTag>
         </PanelHeader>
         
         
         <ContentBody>
           <StatsGrid>
             <StatCard $color="#F0FFFE" $accent="#00C9A7">
-              <StatLabel>디바이스 아이디</StatLabel>
+              <StatLabel>실시간 소비량</StatLabel>
               <StatValue>{selectedMarker.deviceId}</StatValue>
             </StatCard>
             
@@ -198,12 +198,12 @@ const MarkerPanel = ({ selectedMarker, setSelectedMarker, postSwitching }) => {
 
                 <StatCard $color="#FFF8F0" $accent="#FF9500">
               <StatLabel>ON / OFF</StatLabel>
-              <StatValue>{selectedMarker.status === 1 ? "켜져있음" : "꺼져있음"}</StatValue>
+              <StatValue>{selectedMarker.status === 1 ? "켜짐" : "꺼짐"}</StatValue>
             </StatCard>
           </StatsGrid>
           
           <ActionButtons>
-            <Button $active={selectedMarker.status === 1} $primary onClick={() => postSwitching(selectedMarker.deviceId)}>
+            <Button $active={selectedMarker.status === 1} $primary onClick={() => postSwitching(selectedMarker)}>
               On
             </Button>
           </ActionButtons>
