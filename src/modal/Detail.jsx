@@ -143,7 +143,7 @@ const DetailHeader = styled.div`
 const DetailDate = styled.div`
     display: flex;
     width: 100%;
-    height: 70%;
+    height: 100%;
     border: 2px solid rgba(166, 166, 166, 0.2);
     border-radius: 10px;
 `;
@@ -287,7 +287,7 @@ const DateTimePickerdiv = styled.div`
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: 40px;
+    gap: 50px;
     width: 100%;
     height: 100%;
 `;
@@ -736,11 +736,11 @@ function Detail({ onClose, todayUsage }) {
                             </ThemeProvider>
                         </DetailDate>
 
-                        <DetailRealTime 
+                        {/* <DetailRealTime 
                             $active={isRealtimeClick}
                             onClick={() => setIsRealtimeClick(prev => !prev)}>
                             실시간 보기<span>(오늘 기준)</span>
-                        </DetailRealTime>
+                        </DetailRealTime> */}
                     </DetailTop>
 <Lines />
                     <DetailBottom>
