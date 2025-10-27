@@ -276,14 +276,14 @@ function App() {
       try {
         const data = JSON.parse(event.data);
 
-        // console.log("SSE 데이터 수신:", data.elecPrice);
+        // console.log("SSE 데이터 수신.,,,,,,,:", data);
 
         // 실시간 요금 업데이트
         setBillInfo((prev) => ({
           ...prev,
-          electricThisMonth: prev.electricThisMonth + data.elecPrice,
-          gasThisMonth: prev.gasThisMonth + data.gasPrice,
-          waterThisMonth: prev.waterThisMonth + data.waterPrice,
+          electricThisMonth: prev.electricThisMonth + (data.elecPrice < 0 ? 0 : data.elecPrice),
+          gasThisMonth: prev.gasThisMonth + (data.gasPrice < 0 ? 0 : data.gasPrice),
+          waterThisMonth: prev.waterThisMonth + (data.waterPrice < 0 ? 0 : data.waterPrice),
         }));
         const waterUsages = data.floors.map(
           (floor) => floor.waterUsage.datas[0].usage

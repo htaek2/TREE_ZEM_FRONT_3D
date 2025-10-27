@@ -196,7 +196,7 @@ function Energy({
     },
   };
 
-  console.log("🍪 요달",ThisMonthBillInfo)
+  console.log("🍪 요달", ThisMonthBillInfo)
   console.log("🍪🍪 전달",LastMonthBillInfo)
 
   return (
