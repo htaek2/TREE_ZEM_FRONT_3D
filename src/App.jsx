@@ -159,6 +159,19 @@ function App() {
 
 
 
+  const postSwitching = (id) => {
+    console.log("스위칭 상태 변경 호출");
+    fetch(`/api/device/${id}`)
+      .then((response) => response.json())
+      .then((data) => {
+        console.log(data);
+      })
+      .catch((error) => {
+        console.error("Fetch error:", error);
+      });
+     
+
+  }
 
   const getDevices = () => {
     console.log("전체 장비 호출 시작...");
@@ -1110,7 +1123,7 @@ function App() {
         />
 
         {selectedMarker && (
-          <MarkerPanel selectedMarker={selectedMarker} setSelectedMarker={setSelectedMarker} />
+          <MarkerPanel selectedMarker={selectedMarker} setSelectedMarker={setSelectedMarker} postSwitching={postSwitching} />
       )}
       </Container>
     </>

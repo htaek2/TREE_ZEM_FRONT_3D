@@ -169,7 +169,7 @@ const Button = styled.button`
 
 
 // 컴포넌트
-const MarkerPanel = ({ selectedMarker, setSelectedMarker }) => {
+const MarkerPanel = ({ selectedMarker, setSelectedMarker, postSwitching }) => {
   return (
     <PanelWrapper>
       <PanelContent>
@@ -203,7 +203,7 @@ const MarkerPanel = ({ selectedMarker, setSelectedMarker }) => {
           </StatsGrid>
           
           <ActionButtons>
-            <Button $active={selectedMarker.status === 1} $primary onClick={() => setSelectedMarker(null)}>
+            <Button $active={selectedMarker.status === 1} $primary onClick={() => postSwitching(selectedMarker.deviceId)}>
               On
             </Button>
           </ActionButtons>

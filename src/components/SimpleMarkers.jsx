@@ -1,7 +1,7 @@
 import { Instance, Instances } from '@react-three/drei';
 import * as THREE from 'three';
 
-const Marker = ({ position , onClick, onPointerOver, onPointerOut , selectedMarker }) => {
+const Marker = ({ position , onClick, onPointerOver, onPointerOut , marker }) => {
   return (
     <group position={position} onClick={onClick} onPointerOver={onPointerOver} onPointerOut={onPointerOut}>
       {/* 검정색 테두리 (뒤쪽) */}
@@ -13,7 +13,7 @@ const Marker = ({ position , onClick, onPointerOver, onPointerOut , selectedMark
       {/* 메인 구체 */}
       <mesh>
         <sphereGeometry args={[0.25, 32, 32]} />
-        <meshBasicMaterial color={selectedMarker.status === 1 ? 0x00AA6F : 0xFF3B30} />
+        <meshBasicMaterial color={marker.status === 1 ? 0x00AA6F : 0xFF3B30} />
       </mesh>
     </group>
   );
@@ -51,7 +51,7 @@ export const SimpleMarkers = ({ markerInfo = [], selectFloor, selectedMarker, se
         <Marker
           key={marker.deviceId || index}
           position={marker.position}
-          selectedMarker={selectedMarker}
+          marker={marker}
           onClick={(e) => {
             e.stopPropagation();
             setSelectedMarker(marker);
