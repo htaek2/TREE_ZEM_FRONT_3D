@@ -4,6 +4,7 @@ import { Canvas, useThree, useFrame } from "@react-three/fiber";
 import styled from "styled-components";
 import { CAMERA_CONFIG, MODEL_TO_FLOOR, MODELS } from "./constants";
 import GlobalStyle from "./GlobalStyle";
+import * as THREE from 'three';
 
 import Login from "./components/Login";
 
@@ -12,6 +13,9 @@ import BrandClock from "./components/BrandClock";
 
 import Wing from "./components/Wing";
 import SceneContainer from "./three/SceneContainer";
+import { SimpleMarkers } from "./components/SimpleMarkers";
+import { floor } from "three/tsl";
+import MarkerPanel from "./modal/MarkerPanel";
 
 const Container = styled.div`
   position: fixed;
@@ -28,7 +32,6 @@ const Container = styled.div`
 const getResponsiveCameraSettings = (isAuthenticated, active) => {
   const width = window.innerWidth;
 
-  console.log("active!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",active);
   // 모바일 (768px 미만)
   if (width < 768) {
     return {
@@ -124,6 +127,14 @@ function App() {
     { floorNum: 4, devices: [] },
   ]);
 
+  const [makerInfo, setMakerInfo] = useState({
+    markerCount : 0,
+    markerInfo : []
+  });
+
+  const [selectedMarker, setSelectedMarker] = useState(null);
+
+
   const [buildingInfo, setBuildingInfo] = useState({
     totalArea: 0, // 건물 총 면적
   });
@@ -145,12 +156,25 @@ function App() {
     location: 0,
   });
 
-  const exFetch = () => {
-    console.log("전체 장비 호출 시작...");
+
+
+  const postSwitching = (id) => {
+    fetch(`/api/device/${id}`)
+      .then((response) => response.json())
+      .then((data) => {
+        console.log("스위칭 응답 데이터:", data);
+      })
+      .catch((error) => {
+        console.error("Fetch error:", error);
+      });
+     
+
+  }
+
+  const getDevices = () => {
     fetch(`/api/devices`)
       .then((response) => response.json())
       .then((data) => {
-        // console.log("전체 장비 데이터:", data);
 
         // 새로운 deviceInfo 객체 생성
         const newDeviceInfo = [
@@ -162,23 +186,44 @@ function App() {
 
         // 층별로 장비 분류
         data.forEach((device) => {
-          // console.log(device.floorNum + "층 장비 데이터:", device);
-
           const floorIndex = parseInt(device.floorNum) - 1;
           if (floorIndex >= 0 && floorIndex < 4) {
             newDeviceInfo[floorIndex].devices.push(device);
           }
         });
 
-        console.log("층별 장비 정보 최종:", newDeviceInfo);
+
+        const markerCount = data.length;
+        let markerInfo = [];
+
+        data.forEach((device) => {
+      
+          markerInfo.push({
+            deviceId: device.deviceId,
+            deviceType: device.deviceType,
+            deviceName: device.deviceName,
+            floor: device.floorNum,
+            installedTime : device.installedTime,
+            position : new THREE.Vector3(device.x, device.y, device.z),
+            status : device.status
+          });
+        });
 
         // state 업데이트
-        setDeviceInfo(newDeviceInfo);
+        setMakerInfo({
+          markerCount: markerCount,
+          markerInfo: markerInfo,
+        });
+
+    
       })
+
       .catch((error) => {
         console.error("Fetch error:", error);
       });
   };
+
+
 
   const dataFormat = (data) => {
     let month = data.getMonth() + 1;
@@ -209,13 +254,11 @@ function App() {
   };
 
   const ElectFetch = () => {
-    console.log("SSE 연결 시작...");
     // sse 연결 - 프록시를 통해 상대 경로 사용
     const eventSource = new EventSource("/api/energy/sse/all");
 
     // SSE 연결 성공
     eventSource.onopen = function () {
-      console.log("✅ SSE 연결 성공");
     };
 
     // 데이터 수신 시
@@ -223,14 +266,13 @@ function App() {
       try {
         const data = JSON.parse(event.data);
 
-        // console.log("SSE 데이터 수신:", data.elecPrice);
 
         // 실시간 요금 업데이트
         setBillInfo((prev) => ({
           ...prev,
-          electricThisMonth: prev.electricThisMonth + data.elecPrice,
-          gasThisMonth: prev.gasThisMonth + data.gasPrice,
-          waterThisMonth: prev.waterThisMonth + data.waterPrice,
+          electricThisMonth: prev.electricThisMonth + (data.elecPrice < 0 ? 0 : data.elecPrice),
+          gasThisMonth: prev.gasThisMonth + (data.gasPrice < 0 ? 0 : data.gasPrice),
+          waterThisMonth: prev.waterThisMonth + (data.waterPrice < 0 ? 0 : data.waterPrice),
         }));
         const waterUsages = data.floors.map(
           (floor) => floor.waterUsage.datas[0].usage
@@ -238,8 +280,6 @@ function App() {
 
         let totalWater = waterUsages.reduce((sum, usage) => sum + usage, 0);
 
-        // console.log("수도 사용량:", waterUsages);
-        // console.log("수도 사용량 합계:", totalWater);
 
         if (totalWater < 0) {
           totalWater = 0;
@@ -256,7 +296,6 @@ function App() {
         });
 
         if (data.floors.length === 0) {
-          console.log("층 데이터가 없습니다.");
           return;
         }
 
@@ -269,7 +308,6 @@ function App() {
           return sum + floorTotal;
         }, 0);
 
-        // console.log("층별 전기 사용량 합계:", totalFloorElecUsage);
 
         if (totalFloorElecUsage < 0) {
           totalFloorElecUsage = 0;
@@ -302,7 +340,6 @@ function App() {
           elec: Math.floor((prev.elec + totalFloorElecUsage) * 10) / 10,
         }));
       } catch (error) {
-        console.log("텍스트 데이터:", event.data);
       }
     };
 
@@ -313,10 +350,11 @@ function App() {
     };
   };
 
+  
+
   /*세구 1021 17:00*/
   // 현재 날씨 가져오기 (5분마다 갱신)
   const fetchWeatherNow = async () => {
-    // console.log("날짜요청이야아아아아아아아아아아아아앙아")
     fetch("/api/weather/now") // GET 요청 (기본값)
       .then((response) => {
         // 응답 헤더를 확인하거나, 응답이 성공적이지 않다면 여기서 처리할 수 있습니다.
@@ -326,7 +364,6 @@ function App() {
         return response.json(); // 응답 본문을 JSON으로 파싱
       })
       .then((data) => {
-        console.log("받은날씨:", data);
         setWeatherNow((prev) => {
           const toNumber = (v) => {
             if (v === null || v === undefined) return null;
@@ -363,11 +400,9 @@ function App() {
 
   const getBillStat = async () => {
     try {
-      console.log("12개월 월 평균 사용금액 조회 Fetch 시작");
       fetch(`/api/bill/stat`)
         .then((response) => response.json())
         .then((data) => {
-          console.log("12개월 통계 API 응답 데이터:", data);
 
           // data.avgAll이 존재하고 배열인지 확인
           if (
@@ -380,7 +415,6 @@ function App() {
               return sum + amount;
             }, 0);
             const average = total / data.avgAll.length;
-            console.log("12개월 월 평균 사용금액:", average, "원");
 
             setAvgFee((prev) => ({
               ...prev,
@@ -400,7 +434,6 @@ function App() {
               return sum + amount;
             }, 0);
             const averageLocal = totalLocal / data.avgLocal.length;
-            console.log("12개월 지역 월 평균 사용금액:", averageLocal, "원");
             setAvgFee((prev) => ({
               ...prev,
               location: Math.trunc(averageLocal),
@@ -417,7 +450,6 @@ function App() {
   /* 🍪 - 백 25-10-20 -*/
   const getLastMonthlyBill = async () => {
     try {
-      console.log("전월 요금 Fetch 시작");
       let now = new Date();
       const lastMonthEnd = new Date(
         now.getFullYear(),
@@ -443,7 +475,6 @@ function App() {
                 (sum, el) => sum + el.usage,
                 0
               );
-              console.log("전월 전기 요금 합계:", Math.trunc(totalElecUsage));
               setBillInfo((prev) => ({
                 ...prev,
                 electricLastMonth: Math.trunc(totalElecUsage),
@@ -453,7 +484,6 @@ function App() {
                 (sum, el) => sum + el.usage,
                 0
               );
-              console.log("전월 가스 요금 합계:", Math.trunc(totalGasUsage));
               setBillInfo((prev) => ({
                 ...prev,
                 gasLastMonth: Math.trunc(totalGasUsage),
@@ -463,7 +493,6 @@ function App() {
                 (sum, el) => sum + el.usage,
                 0
               );
-              console.log("전월 수도 요금 합계:", Math.trunc(totalWaterUsage));
               setBillInfo((prev) => ({
                 ...prev,
                 waterLastMonth: Math.trunc(totalWaterUsage),
@@ -481,7 +510,6 @@ function App() {
   /* 🍪 - 백 25-10-20 -*/
   const getMonthlyBill = async () => {
     try {
-      console.log("금월 요금 Fetch 시작");
 
       let now = new Date();
       const today = new Date();
@@ -500,44 +528,40 @@ function App() {
         .then((response) => response.json())
         .then((data) =>
           data.map((energy) => {
-            console.log("금월 요금 데이터:", data);
             if (energy.energyType === "ELECTRICITY") {
               const totalElecUsage = energy.datas.reduce(
-                (sum, el) => sum + el.usage,
+                (sum, el) => sum + Math.max(el.usage, 0),
                 0
               );
-              console.log("전기 요금 합계:", Math.trunc(totalElecUsage));
             } else if (energy.energyType === "GAS") {
               const totalGasUsage = energy.datas.reduce(
-                (sum, el) => sum + el.usage,
+                (sum, el) => sum + Math.max(el.usage, 0),
                 0
               );
-              console.log("가스 요금 합계:", Math.trunc(totalGasUsage));
             } else if (energy.energyType === "WATER") {
               const totalWaterUsage = energy.datas.reduce(
-                (sum, el) => sum + el.usage,
+                (sum, el) => sum + Math.max(el.usage, 0),
                 0
               );
-              console.log("수도 요금 합계:", Math.trunc(totalWaterUsage));
             }
             setBillInfo((prev) => ({
               ...prev,
               electricThisMonth:
                 energy.energyType === "ELECTRICITY"
                   ? Math.trunc(
-                      energy.datas.reduce((sum, el) => sum + el.usage, 0)
+                      energy.datas.reduce((sum, el) => sum + Math.max(el.usage, 0),0)
                     )
                   : prev.electricThisMonth,
               gasThisMonth:
                 energy.energyType === "GAS"
                   ? Math.trunc(
-                      energy.datas.reduce((sum, el) => sum + el.usage, 0)
+                      energy.datas.reduce((sum, el) => sum +Math.max(el.usage, 0),0)
                     )
                   : prev.gasThisMonth,
               waterThisMonth:
                 energy.energyType === "WATER"
                   ? Math.trunc(
-                      energy.datas.reduce((sum, el) => sum + el.usage, 0)
+                      energy.datas.reduce((sum, el) => sum + Math.max(el.usage, 0),0)
                     )
                   : prev.waterThisMonth,
             }));
@@ -552,7 +576,6 @@ function App() {
   };
   const getYesterdayUsage = async () => {
     try {
-      console.log("어제 사용량 Fetch 시작");
 
       let now = new Date();
       let yesterday = new Date();
@@ -564,7 +587,6 @@ function App() {
         new Date(yesterday.getTime() + 24 * 60 * 60 * 1000 - 1)
       );
 
-      console.log("Fetch 시작 시간:", start, "끝 시간:", end);
       const [gasResponse, elecResponse, waterResponse] = await Promise.all([
         fetch(`/api/energy/gas?start=${start}&end=${end}&datetimeType=0`),
         fetch(`/api/energy/elec?start=${start}&end=${end}&datetimeType=0`),
@@ -576,33 +598,26 @@ function App() {
         elecResponse.json(),
         waterResponse.json(),
       ]);
-      console.log("🍪 가스 어제 데이터:", gasJson);
-
-      console.log("🍪 전기 어제 데이터:", elecJson);
-      console.log("🍪 수도 어제 데이터:", waterJson);
+  
 
       yesterday = new Date();
       yesterday.setDate(now.getDate() - 1);
       let nowtime = dataFormat(yesterday).slice(0, 13);
-      console.log("🍪 어제 시간 키값:", nowtime);
 
       // let yesterdayGasUsage = gasJson.datas[nowtime].usage;
       let yesterdayGasUsage =
         gasJson.datas.find((item) => item.timestamp.startsWith(nowtime))
           ?.usage ?? 0;
-      console.log("가스 어제 이 시간 데이터:", yesterdayGasUsage);
 
       // let yesterdayElecUsage = elecJson.datas[nowtime].usage;
       let yesterdayElecUsage =
         elecJson.datas.find((item) => item.timestamp.startsWith(nowtime))
           ?.usage ?? 0;
-      console.log("전기 어제 이 시간 데이터:", yesterdayElecUsage);
 
       // let yesterdayWaterUsage = waterJson.datas[nowtime].usage;
       let yesterdayWaterUsage =
         waterJson.datas.find((item) => item.timestamp.startsWith(nowtime))
           ?.usage ?? 0;
-      console.log("수도 어제 이 시간 데이터:", yesterdayWaterUsage);
 
       if (gasResponse.ok && elecResponse.ok && waterResponse.ok) {
         const maxGasUsage = Math.max(
@@ -655,7 +670,6 @@ function App() {
 
   const getHourlyUsageFecth = async () => {
     try {
-      console.log("Fetch 시작");
 
       let now = new Date();
       const today = new Date();
@@ -664,7 +678,6 @@ function App() {
       let start = dataFormat(today);
       let end = dataFormat(now);
 
-      console.log("Fetch 시작 시간:", start, "끝 시간:", end);
       const [gasResponse, elecResponse, waterResponse] = await Promise.all([
         fetch(`/api/energy/gas?start=${start}&end=${end}&datetimeType=0`),
         fetch(`/api/energy/elec?start=${start}&end=${end}&datetimeType=0`),
@@ -676,30 +689,25 @@ function App() {
         elecResponse.json(),
         waterResponse.json(),
       ]);
-      console.log("🍪 가스 오늘 데이터:", gasJson);
-      console.log("🍪 전기 오늘 데이터:", elecJson);
-      console.log("🍪 수도 오늘 데이터:", waterJson);
+
 
       let nowtime = dataFormat(now).slice(0, 13);
-      console.log("🍪 현재 시간 키값:", nowtime);
+    
 
       // let todayGasUsage = gasJson.datas[nowtime].usage;
       let todayGasUsage =
         gasJson.datas.find((item) => item.timestamp.startsWith(nowtime))
           ?.usage ?? 0;
-      console.log("가스 오늘 이 시간 데이터:", todayGasUsage);
 
       // let todayElecUsage = elecJson.datas[nowtime].usage;
       let todayElecUsage =
         elecJson.datas.find((item) => item.timestamp.startsWith(nowtime))
           ?.usage ?? 0;
-      console.log("전기 오늘 이 시간 데이터:", todayElecUsage);
 
       // let todayWaterUsage = waterJson.datas[nowtime].usage;
       let todayWaterUsage =
         waterJson.datas.find((item) => item.timestamp.startsWith(nowtime))
           ?.usage ?? 0;
-      console.log("수도 오늘 이 시간 데이터:", todayWaterUsage);
 
       if (gasResponse.ok && elecResponse.ok && waterResponse.ok) {
         // 모든 usage 합산
@@ -715,7 +723,6 @@ function App() {
 
         // let totalElecUsage = 252.42; // 임시 고정값
 
-        console.log("전기 전체 사용량:", totalElecUsage);
 
         const totalWaterUsage = waterJson.datas.reduce(
           (sum, item) => sum + item.usage,
@@ -746,7 +753,6 @@ function App() {
 
   const getLastMonthUsage = async () => {
     try {
-      console.log("전월 사용량 Fetch 시작");
 
       const now = new Date();
       const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
@@ -762,7 +768,6 @@ function App() {
       let start = dataFormat(lastMonth);
       let end = dataFormat(lastMonthEnd);
 
-      console.log("전월 Fetch 시작 시간:", start, "끝 시간:", end);
       const [gasResponse, elecResponse, waterResponse] = await Promise.all([
         fetch(`/api/energy/gas?start=${start}&end=${end}&datetimeType=2`),
         fetch(`/api/energy/elec?start=${start}&end=${end}&datetimeType=2`),
@@ -801,10 +806,7 @@ function App() {
           0
         );
 
-        console.log("전월 가스 사용량:", totalGasUsage);
-        console.log("전월 전기 사용량:", totalElecUsage);
-        console.log("전월 수도 사용량:", totalWaterUsage);
-
+   
         setLastMonthUsage({
           gas: totalGasUsage,
           elec: totalElecUsage,
@@ -828,7 +830,6 @@ function App() {
 
   const getMonthlyUsageFetch = async () => {
     try {
-      console.log("금월 Fetch 시작");
 
       const now = new Date();
       const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -837,7 +838,6 @@ function App() {
       let start = dataFormat(thisMonth);
       let end = dataFormat(now);
 
-      console.log("금월 Fetch 시작 시간:", start, "끝 시간:", end);
       const [gasResponse, elecResponse, waterResponse] = await Promise.all([
         fetch(`/api/energy/gas?start=${start}&end=${end}&datetimeType=2`),
         fetch(`/api/energy/elec?start=${start}&end=${end}&datetimeType=2`),
@@ -866,7 +866,6 @@ function App() {
           0
         );
 
-        console.log("금월 전기 전체 사용량:", totalElecUsage);
 
         setMonthUsage((prev) => ({
           ...prev,
@@ -893,8 +892,7 @@ function App() {
       const response = await fetch("/api/buildings");
       if (response.ok) {
         const data = await response.json();
-        // console.log("빌딩 정보 API 응답:", data);
-        // console.log("totalArea 값:", data[0]?.totalArea);
+    
         setBuildingInfo({
           totalArea: data[0]?.totalArea || 0,
         });
@@ -912,13 +910,11 @@ function App() {
     if (user) {
       try {
         const userObj = JSON.parse(user);
-        console.log("로그인된 사용자 정보 조회", userObj);
         setAuthState({ isAuthenticated: true, user: userObj });
       } catch (error) {
         console.error("사용자 정보 파싱 실패:", error);
       }
     } else {
-      console.log("[Auth] 로그인된 사용자가 없습니다.");
       setAuthState({ isAuthenticated: false, user: null });
     }
     return null;
@@ -933,7 +929,7 @@ function App() {
     if (!auth.isAuthenticated) return;
 
     // 최초 접속 시 즉시 실행
-    exFetch();
+    getDevices();
 
     fetchWeatherNow();
 
@@ -1026,6 +1022,8 @@ function App() {
             far: 1000,
           }}
         >
+        
+       
           <SceneContainer
             active={active}
             cameraSettings={cameraSettings}
@@ -1036,7 +1034,10 @@ function App() {
             setActive={setActive}
             onFloorButtonClick={onFloorButtonClick}
           />
+
+          <SimpleMarkers markerInfo={makerInfo.markerInfo} selectFloor={active.model} selectedMarker={selectedMarker} setSelectedMarker={setSelectedMarker} />
         </Canvas>
+
 
         <BrandClock />
 
@@ -1046,7 +1047,7 @@ function App() {
           onClose={() => setRailOpen(false)}
           active={active}
           setActive={setActive}
-          selectedDevice={selectedDevice}
+          selectedDevice={selectedDevice} 
           setSelectedDevice={setSelectedDevice}
           onFloorButtonClick={onFloorButtonClick}
           todayUsage={todayUsage}
@@ -1061,6 +1062,10 @@ function App() {
           AvgFee={AvgFee}
           weatherNow={weatherNow}
         />
+
+        {selectedMarker && (
+          <MarkerPanel selectedMarker={selectedMarker} setSelectedMarker={setSelectedMarker} postSwitching={postSwitching} />
+      )}
       </Container>
     </>
   );

@@ -9,7 +9,11 @@ export default defineConfig({
     port: 3000,
     proxy: {
       "/api": {
+<<<<<<< HEAD
         target: "http://192.168.0.67:7770/",
+=======
+        target: "http://192.168.0.59:7770/",
+>>>>>>> e13270b45409432cd128881ab26262c906e86950
         changeOrigin: true,
         secure: false,
         ws: true, // WebSocket 및 SSE 지원

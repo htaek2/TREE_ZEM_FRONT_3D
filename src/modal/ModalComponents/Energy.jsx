@@ -15,6 +15,10 @@ import {
   Liner,
 } from "./EnergyStyle.jsx";
 import { useState, useEffect } from "react";
+// 반원 차트
+import { Doughnut } from "react-chartjs-2";
+import { Chart as ChartJS, ArcElement, Tooltip } from "chart.js";
+ChartJS.register(ArcElement, Tooltip);
 
 const Energy1Usage = styled.div`
   width: 100%;
@@ -61,6 +65,22 @@ const ChargeChart = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
+  width: 228px;
+  height: 124px;
+  position: relative;
+
+  > div {    
+    position: absolute;
+    top: 85%;
+    left: 52%;
+    transform: translate(-50%, -50%);
+    color: ${({ type }) =>
+      type === "elect" ? "#F3C41F" :
+      type === "gas" ? "#F9864E" :
+      "#00C0FF"};
+    font-size: 38px;
+    font-weight: 700;
+  }
 `;
 
 const MonthTitle = styled(TodayTitle)``;
@@ -146,6 +166,39 @@ function Energy({
     circle: "/Icon/condition_circle.svg",
   };
 
+  // 반원 차트
+  const energyChartValue = Math.round((ThisMonthBillInfo / LastMonthBillInfo) * 100) < 0 ? 0 
+                            : Math.round((ThisMonthBillInfo / LastMonthBillInfo) * 100)  // 표시할 값 (%)
+  console.log("💡💡", energyChartValue)
+  const energyChartdata = {
+    datasets: [
+      {
+        data: [energyChartValue, 100 - energyChartValue], // 게이지 비율
+        backgroundColor: [
+          type === "elect" ? "#F3C41F" :
+          type === "gas" ? "#F9864E" :
+          "#00C0FF", 
+          "#1A2228"], // 채워진 부분 / 빈 부분
+        borderWidth: 0,
+        cutout: "75%", // 가운데 비워서 반원 느낌
+        circumference: 180, // 반원
+        rotation: 270, // 시작 각도 (왼쪽에서 시작)
+      },
+    ],
+  };
+  const energyChartOptions = {
+    width: '100%',
+    height: '100%',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      tooltip: { enabled: false },
+    },
+  };
+
+  console.log("🍪 요달", ThisMonthBillInfo)
+  console.log("🍪🍪 전달",LastMonthBillInfo)
+
   return (
     <AverageAndEnergy>
       {/* 금일 사용량 */}
@@ -212,7 +265,7 @@ function Energy({
               </UpDownFont>
             </TodayRatio>
           </Energy1UsageMainL>
-          <Energy1UsageMainR>표</Energy1UsageMainR>
+          {/* <Energy1UsageMainR>표</Energy1UsageMainR> */}
         </Energy1UsageMain>
 
         <Energy1UsageFooter>
@@ -232,7 +285,7 @@ function Energy({
               {yesterdayUsage} {unitFilter}
             </div>
             <div>
-              {usagePerArea} {unitFilter}/㎡
+              {usagePerArea} {unitFilter}
             </div>
             <div>
               {yesterdayMaxUsage} {unitFilter}
@@ -300,7 +353,7 @@ function Energy({
               </UpDownFont>
             </MonthRatio>
           </Energy30UsageMainL>
-          <Energy30UsageMainR>표</Energy30UsageMainR>
+          {/* <Energy30UsageMainR>표</Energy30UsageMainR> */}
         </Energy30UsageMain>
 
         <Energy30UsageFooter>
@@ -320,7 +373,7 @@ function Energy({
               {lastMonthUsage} {unitFilter}
             </div>
             <div>
-              {monthUsagePerArea} {unitFilter}/㎡
+              {monthUsagePerArea} {unitFilter}
             </div>
             <div>
               {lastMonthMaxUsage} {unitFilter}
@@ -335,8 +388,11 @@ function Energy({
       <EnergyCharge>
         <div>
           <ChargeTitle>전월 대비 실시간 요금</ChargeTitle>
-          <ChargeChart>
-            <div>표</div>
+          <ChargeChart type={type}>
+            <Doughnut data={energyChartdata} options={energyChartOptions} type={type}/>
+            <div>
+              {energyChartValue}%
+            </div>
           </ChargeChart>
         </div>
 
@@ -351,8 +407,8 @@ function Energy({
           </EnergyChargeFooterL>
           <EnergyChargeFooterR>
             {/* 🍪 -백 10-20 */}
-            <div>{ThisMonthBillInfo} 원</div>
-            <div>{LastMonthBillInfo} 원</div>
+            <div>{ThisMonthBillInfo < 0 ? 0 : ThisMonthBillInfo} 원</div>
+            <div>{LastMonthBillInfo < 0 ? 0 : LastMonthBillInfo} 원</div>
           </EnergyChargeFooterR>
         </EnergyChargeFooter>
       </EnergyCharge>
