@@ -15,6 +15,7 @@ import Wing from "./components/Wing";
 import SceneContainer from "./three/SceneContainer";
 import { SimpleMarkers } from "./components/SimpleMarkers";
 import { floor } from "three/tsl";
+import MarkerPanel from "./modal/MarkerPanel";
 
 const Container = styled.div`
   position: fixed;
@@ -159,7 +160,7 @@ function App() {
 
 
 
-  const exFetch = () => {
+  const getDevices = () => {
     console.log("전체 장비 호출 시작...");
     fetch(`/api/devices`)
       .then((response) => response.json())
@@ -351,6 +352,8 @@ function App() {
       eventSource.close();
     };
   };
+
+  
 
   /*세구 1021 17:00*/
   // 현재 날씨 가져오기 (5분마다 갱신)
@@ -972,7 +975,7 @@ function App() {
     if (!auth.isAuthenticated) return;
 
     // 최초 접속 시 즉시 실행
-    exFetch();
+    getDevices();
 
     fetchWeatherNow();
 
@@ -1107,30 +1110,7 @@ function App() {
         />
 
         {selectedMarker && (
-        <div style={{
-          position: 'absolute',
-          top: '20px',
-          right: '20px',
-          background: 'rgba(0, 0, 0, 0.8)',
-          color: 'white',
-          padding: '20px',
-          borderRadius: '10px',
-          minWidth: '200px',
-        }}>
-          <h2 style={{ margin: '0 0 10px 0' }}>{selectedMarker.name}</h2>
-          <p>ID: {selectedMarker.id}</p>
-          <p>Magnitude: {selectedMarker.mag}</p>
-          <button
-            onClick={() => setSelectedMarker(null)}
-            style={{
-              marginTop: '10px',
-              padding: '5px 10px',
-              cursor: 'pointer',
-            }}
-          >
-            닫기
-          </button>
-        </div>
+          <MarkerPanel selectedMarker={selectedMarker} setSelectedMarker={setSelectedMarker} />
       )}
       </Container>
     </>
