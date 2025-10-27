@@ -158,18 +158,29 @@ function App() {
 
 
 
-  const postSwitching = (id) => {
-    fetch(`/api/device/${id}`)
-      .then((response) => response.json())
-      .then((data) => {
-        console.log("스위칭 응답 데이터:", data);
-      })
-      .catch((error) => {
-        console.error("Fetch error:", error);
-      });
-     
-
+  const postSwitching = (selectedMarker) => {
+      fetch(`/api/device/${selectedMarker.deviceId}`, {
+      method: 'PATCH', // HTTP 메서드를 'PATCH'로 설정합니다.
+      headers: {
+        'Content-Type': 'application/json' // 보낼 데이터의 형식을 지정합니다.
+      },
+      body: {
+        "status" : selectedMarker.status
+      }
+    })
+    .then(response => {
+  if (!response.ok) {
+    throw new Error('네트워크 응답이 좋지 않습니다.');
   }
+  return response.json(); // 응답 데이터를 JSON으로 파싱합니다.
+})
+.then(data => {
+  console.log('성공:', data); // 성공적인 응답 데이터입니다.
+})
+.catch(error => {
+  console.error('에러:', error); // 요청 중 에러가 발생했을 때 처리합니다.
+});
+}
 
   const getDevices = () => {
     fetch(`/api/devices`)
