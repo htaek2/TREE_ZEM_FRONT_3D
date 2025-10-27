@@ -414,8 +414,17 @@ function Detail({ onClose, todayUsage }) {
                     //     }   
                     // });
                 } else if (IsChargeClick) {
-                    filteredData = mergedData.filter(item => item.energyType === selectedEnergy);
-                    console.log("💰 필터링된 요금 데이터:", filteredData);
+                    let ChargeData;
+                    SelectedFloor.forEach(floor => {
+                        if (floor === "전체") {
+                            ChargeData = mergedData.filter(item => item.energyType === selectedEnergy);
+                            console.log("💰 필터링된 요금 데이터:", filteredData);
+                        } else {
+                            ChargeData = data.filter(item => item.energyType === selectedEnergy && item.floor === floor);
+                            console.log("💰 필터링된 요금 데이터:", filteredData);
+                        }
+                        filteredData.push(...ChargeData)
+                    });
                 } else {
                     SelectedFloor.forEach(floor => {
                         if (floor === "전체") {
@@ -423,6 +432,7 @@ function Detail({ onClose, todayUsage }) {
                             console.log("🧱",floor)
                         } else {
                             filteredData = data.filter(item => item.energyType === selectedEnergy);
+                            console.log("🧱",floor)
                         }
                     });
                 }
@@ -467,7 +477,7 @@ function Detail({ onClose, todayUsage }) {
         } catch (error) {
             console.error("⭐ MAIN 데이터 가져오기 실패:", error);
         }
-    }, [SelectedFloor, DetailSelected]);
+    }, [SelectedFloor, DetailSelected, IsChargeClick]);
 
 
 
