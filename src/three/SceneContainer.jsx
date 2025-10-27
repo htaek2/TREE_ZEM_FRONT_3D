@@ -18,6 +18,7 @@ export default function SceneContainer({
   setSelectedDevice,
   setActive,
   onFloorButtonClick,
+  makerInfo,
 }) {
   const controlsRef = useRef();
 
@@ -128,6 +129,7 @@ export default function SceneContainer({
               ishover={isAuthenticated ? true : false}
               nodeInfo={floorNodeInfo}
             />
+        
           );
         })}
       </Suspense>
