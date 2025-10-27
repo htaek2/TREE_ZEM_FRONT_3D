@@ -224,7 +224,7 @@ const LeftWing = styled.aside`
   width: 232px;
   display: grid;
   grid-template-rows: 210px 210px 210px auto;
-  gap: 12px;
+  gap: 8px;
   z-index: 950;
   opacity: ${({ $open }) => ($open ? 1 : 0)};
   pointer-events: ${({ $open }) => ($open ? "auto" : "none")};
@@ -269,7 +269,7 @@ const StatRow = styled.div`
   display: grid;
   grid-template-columns: 20px auto 1fr;
   align-items: center;
-  column-gap: 15px;
+  column-gap: 16px;
   padding: 0.5 8px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   &:last-child {
@@ -282,6 +282,7 @@ const StatIcon = styled.img`
   height: 24px;
   display: block;
   filter: brightness(0) invert(1);
+  margin: 4px 4px 8px 4px;
 `;
 
 const StatLabel = styled.span`
@@ -357,8 +358,8 @@ const DockBtn = styled.button`
   border-radius: 12px;
   font-size: 10px;
   font-weight: 400;
-  width: 60px;
-  height: 40px;
+  width: 45px;
+  height: 45px;
   box-sizing: border-box;
   cursor: pointer;
   position: relative;
@@ -366,6 +367,16 @@ const DockBtn = styled.button`
   flex-direction: column;
   align-items: center;
   justify-content: center;
+
+    
+  > .energyIcon {
+    bottom: 25px;
+    }
+  > .energylabel {
+    bottom: 14px;
+    font-size: 9px;
+    }
+
 `;
 
 const DockLabel = styled.span`
@@ -380,6 +391,10 @@ const DockLabel = styled.span`
   font-size: 10px;
   font-weight: 800;
   pointer-events: none;
+
+  > div {
+    margin: 1px;
+  }
 `;
 
 const DockIcon = styled.img`
@@ -676,7 +691,7 @@ function Wing({
       {/* 좌측 날개 */}
       <LeftWing $open={railOpen}>
         {/* 실시간 사용량 */}
-        <WingCard onClick={() => setActiveModal("condition")} $IsEmissionBtn={IsEmissionBtn}>
+        <WingCard>
           <CardTitle $IsEmissionBtn={IsEmissionBtn}>{EmissionNaming("실시간 사용량")}</CardTitle>
           <StatList $IsEmissionBtn={IsEmissionBtn}>
             <StatRow $IsEmissionBtn={IsEmissionBtn}>
@@ -742,6 +757,19 @@ function Wing({
 
         {/* 하단 버튼들 */}
         <DockActions>
+            <DockBtn onClick={() => setActiveModal("condition")}>
+              <DockIcon
+                src="public/Icon/con_icon.svg"
+                alt=""
+                aria-hidden="true"
+                onError={imgFallback("/Icon/analysis_icon.svg")}
+                className="energyIcon"
+              />
+              <DockLabel className="energylabel">
+                <div>에너지</div>
+                <div>현황</div>
+              </DockLabel>
+            </DockBtn>
           <DockBtn onClick={() => setActiveModal("analysis")}>
             <DockIcon
               src="public/Icon/analysis_icon.svg"
