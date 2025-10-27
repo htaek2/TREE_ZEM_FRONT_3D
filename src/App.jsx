@@ -131,6 +131,9 @@ function App() {
     markerInfo : []
   });
 
+  const [selectedMarker, setSelectedMarker] = useState(null);
+
+
   const [buildingInfo, setBuildingInfo] = useState({
     totalArea: 0, // 건물 총 면적
   });
@@ -151,6 +154,9 @@ function App() {
     national: 0,
     location: 0,
   });
+
+
+
 
   const exFetch = () => {
     console.log("전체 장비 호출 시작...");
@@ -1073,7 +1079,7 @@ function App() {
             onFloorButtonClick={onFloorButtonClick}
           />
 
-          <SimpleMarkers markerInfo={makerInfo.markerInfo} selectFloor={active.model} />
+          <SimpleMarkers markerInfo={makerInfo.markerInfo} selectFloor={active.model} selectedMarker={selectedMarker} setSelectedMarker={setSelectedMarker} />
         </Canvas>
 
 
@@ -1085,7 +1091,7 @@ function App() {
           onClose={() => setRailOpen(false)}
           active={active}
           setActive={setActive}
-          selectedDevice={selectedDevice}
+          selectedDevice={selectedDevice} 
           setSelectedDevice={setSelectedDevice}
           onFloorButtonClick={onFloorButtonClick}
           todayUsage={todayUsage}
@@ -1100,6 +1106,33 @@ function App() {
           AvgFee={AvgFee}
           weatherNow={weatherNow}
         />
+
+        {selectedMarker && (
+        <div style={{
+          position: 'absolute',
+          top: '20px',
+          right: '20px',
+          background: 'rgba(0, 0, 0, 0.8)',
+          color: 'white',
+          padding: '20px',
+          borderRadius: '10px',
+          minWidth: '200px',
+        }}>
+          <h2 style={{ margin: '0 0 10px 0' }}>{selectedMarker.name}</h2>
+          <p>ID: {selectedMarker.id}</p>
+          <p>Magnitude: {selectedMarker.mag}</p>
+          <button
+            onClick={() => setSelectedMarker(null)}
+            style={{
+              marginTop: '10px',
+              padding: '5px 10px',
+              cursor: 'pointer',
+            }}
+          >
+            닫기
+          </button>
+        </div>
+      )}
       </Container>
     </>
   );
