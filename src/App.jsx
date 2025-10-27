@@ -14,6 +14,7 @@ import BrandClock from "./components/BrandClock";
 import Wing from "./components/Wing";
 import SceneContainer from "./three/SceneContainer";
 import { SimpleMarkers } from "./components/SimpleMarkers";
+import { floor } from "three/tsl";
 
 const Container = styled.div`
   position: fixed;
@@ -175,8 +176,6 @@ function App() {
 
         // 층별로 장비 분류
         data.forEach((device) => {
-      
-
           const floorIndex = parseInt(device.floorNum) - 1;
           if (floorIndex >= 0 && floorIndex < 4) {
             newDeviceInfo[floorIndex].devices.push(device);
@@ -192,24 +191,24 @@ function App() {
         let markerInfo = [];
 
         data.forEach((device) => {
-          // console.log(
-          //   `장비 ID: ${device.deviceId}, 이름: ${device.deviceName}, 좌표: (${device.x}, ${device.y}, ${device.z})`
-          // );
+      
           markerInfo.push({
             deviceId: device.deviceId,
+            deviceType: device.deviceType,
             deviceName: device.deviceName,
+            floor: device.floorNum,
+            installedTime : device.installedTime,
             position : new THREE.Vector3(device.x, device.y, device.z),
+            status : device.status
           });
         });
 
         // state 업데이트
-        setDeviceInfo(newDeviceInfo);
         setMakerInfo({
           markerCount: markerCount,
           markerInfo: markerInfo,
         });
 
-        console.log("최종 deviceInfo 데이터:", newDeviceInfo);
         console.log("최종 markerInfo 데이터:", markerInfo);
       })
 
