@@ -169,7 +169,7 @@ function Energy({
   // 반원 차트
   const energyChartValue = Math.round((ThisMonthBillInfo / LastMonthBillInfo) * 100) < 0 ? 0 
                             : Math.round((ThisMonthBillInfo / LastMonthBillInfo) * 100)  // 표시할 값 (%)
-
+  console.log("💡💡", energyChartValue)
   const energyChartdata = {
     datasets: [
       {
@@ -195,6 +195,9 @@ function Energy({
       tooltip: { enabled: false },
     },
   };
+
+  console.log("🍪 요달",ThisMonthBillInfo)
+  console.log("🍪🍪 전달",LastMonthBillInfo)
 
   return (
     <AverageAndEnergy>

@@ -235,7 +235,7 @@ const [ratio, setRatio] = useState(Math.trunc(((billInfo.electricThisMonth + bil
               : 0
           }
           // 🍪 -백 10-20
-          ThisMonthBillInfo={billInfo.electricThisMonth}
+          ThisMonthBillInfo={billInfo.electricThisMonth + (billInfo.electricRealTime < 0 ? 0 : billInfo.electricRealTime)}
           LastMonthBillInfo={billInfo.electricLastMonth}
           // 🍪 전일/전월 동시간 대비
           todayComparisonRatio={todayComparisonRatio.elec}
@@ -262,7 +262,7 @@ const [ratio, setRatio] = useState(Math.trunc(((billInfo.electricThisMonth + bil
               : 0
           }
           // 🍪 -백 10-20
-          ThisMonthBillInfo={billInfo.gasThisMonth}
+          ThisMonthBillInfo={billInfo.gasThisMonth + (billInfo.gasRealTime < 0 ? 0 : billInfo.gasRealTime)}
           LastMonthBillInfo={billInfo.gasLastMonth}
           // 🍪 전일/전월 동시간 대비
           todayComparisonRatio={todayComparisonRatio.gas}
@@ -289,7 +289,7 @@ const [ratio, setRatio] = useState(Math.trunc(((billInfo.electricThisMonth + bil
               : 0
           }
           // 🍪 -백 10-20
-          ThisMonthBillInfo={billInfo.waterThisMonth}
+          ThisMonthBillInfo={billInfo.waterThisMonth + (billInfo.waterRealTime < 0 ? 0 : billInfo.waterRealTime)}
           LastMonthBillInfo={billInfo.waterLastMonth}
           // 🍪 전일/전월 동시간 대비
           todayComparisonRatio={todayComparisonRatio.water}
@@ -343,7 +343,13 @@ const [ratio, setRatio] = useState(Math.trunc(((billInfo.electricThisMonth + bil
             <AverageChargeFooterR>
               <div>{AvgFee.national} 원</div>
               <div>{AvgFee.location} 원</div>
-              <div>{billInfo.electricThisMonth + billInfo.gasThisMonth + billInfo.waterThisMonth} 원</div>
+              <div>{
+                billInfo.electricThisMonth
+                + billInfo.gasThisMonth
+                + billInfo.waterThisMonth
+                + billInfo.electricRealTime 
+                + billInfo.gasRealTime 
+                + billInfo.waterRealTime} 원</div>
             </AverageChargeFooterR>
           </AverageChargeFooter>
 <Liner />
