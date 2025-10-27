@@ -4,6 +4,7 @@ import { Canvas, useThree, useFrame } from "@react-three/fiber";
 import styled from "styled-components";
 import { CAMERA_CONFIG, MODEL_TO_FLOOR, MODELS } from "./constants";
 import GlobalStyle from "./GlobalStyle";
+import * as THREE from 'three';
 
 import Login from "./components/Login";
 
@@ -12,6 +13,7 @@ import BrandClock from "./components/BrandClock";
 
 import Wing from "./components/Wing";
 import SceneContainer from "./three/SceneContainer";
+import { SimpleMarkers } from "./components/SimpleMarkers";
 
 const Container = styled.div`
   position: fixed;
@@ -124,6 +126,11 @@ function App() {
     { floorNum: 4, devices: [] },
   ]);
 
+  const [makerInfo, setMakerInfo] = useState({
+    markerCount : 0,
+    markerInfo : []
+  });
+
   const [buildingInfo, setBuildingInfo] = useState({
     totalArea: 0, // 건물 총 면적
   });
@@ -150,7 +157,7 @@ function App() {
     fetch(`/api/devices`)
       .then((response) => response.json())
       .then((data) => {
-        // console.log("전체 장비 데이터:", data);
+        console.log("전체 장비 데이터:", data);
 
         // 새로운 deviceInfo 객체 생성
         const newDeviceInfo = [
@@ -162,7 +169,7 @@ function App() {
 
         // 층별로 장비 분류
         data.forEach((device) => {
-          // console.log(device.floorNum + "층 장비 데이터:", device);
+      
 
           const floorIndex = parseInt(device.floorNum) - 1;
           if (floorIndex >= 0 && floorIndex < 4) {
@@ -171,14 +178,41 @@ function App() {
         });
 
         console.log("층별 장비 정보 최종:", newDeviceInfo);
+        console.log("모든 장비 개수:", data.length);
+
+        console.log("장비의 좌표 정보 확인: ");
+
+        const markerCount = data.length;
+        let markerInfo = [];
+
+        data.forEach((device) => {
+          // console.log(
+          //   `장비 ID: ${device.deviceId}, 이름: ${device.deviceName}, 좌표: (${device.x}, ${device.y}, ${device.z})`
+          // );
+          markerInfo.push({
+            deviceId: device.deviceId,
+            deviceName: device.deviceName,
+            position : new THREE.Vector3(device.x, device.y, device.z),
+          });
+        });
 
         // state 업데이트
         setDeviceInfo(newDeviceInfo);
+        setMakerInfo({
+          markerCount: markerCount,
+          markerInfo: markerInfo,
+        });
+
+        console.log("최종 deviceInfo 데이터:", newDeviceInfo);
+        console.log("최종 markerInfo 데이터:", markerInfo);
       })
+
       .catch((error) => {
         console.error("Fetch error:", error);
       });
   };
+
+
 
   const dataFormat = (data) => {
     let month = data.getMonth() + 1;
@@ -1026,6 +1060,8 @@ function App() {
             far: 1000,
           }}
         >
+        
+       
           <SceneContainer
             active={active}
             cameraSettings={cameraSettings}
@@ -1036,7 +1072,10 @@ function App() {
             setActive={setActive}
             onFloorButtonClick={onFloorButtonClick}
           />
+
+          <SimpleMarkers markerInfo={makerInfo.markerInfo} selectFloor={active.model} />
         </Canvas>
+
 
         <BrandClock />
 

@@ -214,6 +214,7 @@ function Model({ model, onClick, isSelected, nodeInfo }) {
       onPointerOut={handlePointerOut}
     >
       <primitive object={scene} />
+      
     </group>
   );
 }
