@@ -8,6 +8,12 @@ import {
 } from "./ModalComponents/EnergyStyle.jsx";
 // [MOD] API 호출을 위해 useEffect 추가
 import { useEffect, useState } from "react";
+// OPEN AI 연결
+import OpenAI from "openai";
+
+
+
+
 
 
 
@@ -428,20 +434,23 @@ const PlanMain = styled.div`
   > div {
     display: flex;
     justify-content: flex-start;
-    align-items: center;
     width: 100%;
-    height: 10%;
+    min-height: 64px;
     border: 1px solid rgba(166, 166, 166, 0.2);
     border-radius: 10px;
 
+    flex-wrap: wrap;
+    padding: 8px;
+    word-break: break-word; /* 긴 단어 줄바꿈 */
+    box-sizing: border-box; /* 패딩 포함 계산 */
   }
 
 `;  
 
 const MachineDiv = styled.div`
     background: ${({ title }) => 
-    title === 'usage' ? 'rgba(37, 127, 255, 0.3)' :
-    title === 'warning' ? 'rgba(251, 44, 54, 0.3)' :
+    title === 'report1' ? 'rgba(37, 127, 255, 0.3)' :
+    title === 'report2' ? 'rgba(251, 44, 54, 0.3)' :
     'rgba(35, 212, 147, 0.3)'};    
 
     > div:first-child {
@@ -471,12 +480,31 @@ const MachineDiv = styled.div`
     }
 `;
 
-function Analysis({ onClose }) {
+function Analysis({ 
+  onClose,
+  elecUsage,
+  waterUsage,
+  gasUsage,
+  yesterdayUsage,
+  monthElecUsage,
+  monthWaterUsage,
+  monthGasUsage,
+  lastMonthUsage,
+  buildingInfo,
+  // 🍪 -백 10-20
+  billInfo,
+  todayComparisonRatio = { gas: 0, elec: 0, water: 0 },
+  monthComparisonRatio = { gas: 0, elec: 0, water: 0 },
+  AvgFee ={ national: 0, location: 0 },
+ }) {
     const [ExpectRatio, setExpectRatio] = useState([20, -30]);
     // MachinePlan 예시 데이터는 8개까지 가능
-    const [MachineTitle, setMachineTitle] = useState(["greenCom", "usage", "warning", "greenAircon"]);
-    const [MachinePlan, setMachinePlan] = useState(["test1", "test2", "test3", "test4"]);
-
+    const [MachineTitle, setMachineTitle] = useState([]);
+    // useState(["usage", "warning",]);
+    const [MachinePlan, setMachinePlan] = useState([]);
+      // "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaheight 고정값 제거 height: 15% 대신 min-height나 auto로 변경. 텍스트가 여러 줄일 때 자동 줄바꿈 설정 flex-wrap: wrap 또는 word-break: break-word 추가 정렬이 깨지지 않도록 align-items: flex-start 로 조정", 
+      // "조금 이따 샤워해 이대로 더 나를 안아줘 이렇게 니 품에서 얘기 하고파 조금 이따 샤워해 이대로 더 나를 안아줘 이렇게 니 품에서 장난 치고파 작지만 귀여운 너의 가슴이 난 좋아 니 머리카락 넘겨줄 때 손에 닿는 이마 내 몸 위에 올라 날 바라보는 그 눈동자 조명 아래 살짝 비친 하얀 살결의 빛깔 날 미치게 하는 이 못된 여자 때론 너와 사랑할 때 난 3년 만에 집에 온 뱃사람 같아 니가 날 거칠게 만드니까 침대는 바다가 되고 우린 헤엄쳐 서로의 상처를 치유하듯 부드럽게 어루만져  세상 가장 깨끗한 너의 품에 안겨 내 더렵혀진 영혼을 다 씻어 이대로 더 있어"
+    const [machineReports, setMachineReports] = useState([]);
     // [ADD] 분석 API 응답 상태
     const [analysis, setAnalysis] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -525,12 +553,112 @@ function Analysis({ onClose }) {
 
 
 
-    const AlertIcon = (index) =>
-      MachineTitle[index] === "greenCom" ? "/Icon/GreenComIcon.svg"
-      : MachineTitle[index] === "greenAircon" ? "/Icon/GreenAirconIcon.svg"
-      : MachineTitle[index] === "usage" ? "/Icon/UsageAiconIcon.svg"
-      : MachineTitle[index] === "warning" ? "/Icon/WarningIcon.svg" : null;
+    const AlertIcon  = {
+      "report1" : "/Icon/UsageAiconIcon.svg",
+      "report2" : "/Icon/WarningIcon.svg"
+    }
+  
 
+
+
+
+  const Openai = new OpenAI({
+    apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+    dangerouslyAllowBrowser: true, // 브라우저 직접 호출
+  });
+
+  
+  useEffect(()=>{
+    const fetchAI = async () => {
+      try {
+        const prompt = `
+          너는 에너지 분석 전문가야.
+
+          아래 JSON 데이터를 기반으로 건물의 에너지 사용 현황을 분석하고,
+          두 개의 보고서를 작성해줘.
+
+          ---
+
+          ### 📘 보고서1
+          - **title**: 전반적 에너지 사용 요약 제목 (한 줄)
+          - **plan**:
+            1. 전기, 가스, 수도의 전일/전월 증감율 및 비용 분석 + 권고사항
+            2. 외부 환경(온도 등)에 따른 냉난방 절감 가능성 또는 추천 온도
+
+          ### ⚡ 보고서2
+          - **title**: 패턴 기반 분석 요약 제목 (한 줄)
+          - **plan**:
+            1. 피크 시간대, 이상 패턴, 특정 층/장비의 에너지 사용 이상 탐지
+            2. 전반적 절감 방향 또는 개선 방안을 한 줄로 제시
+
+          ---
+
+          
+          ### 출력 형식 (반드시 유효한 JSON으로, 속성 이름은 항상 큰따옴표 사용)
+          [
+            {"num": "report1", "title": "제목", "plan": "내용"},
+            {"num": "report2", "title": "제목", "plan": "내용"}
+          ]
+
+          ### 데이터 목록
+          {
+          "elecUsage" : ${JSON.stringify(elecUsage || {}, null, 2)}
+          "waterUsage" : ${JSON.stringify(waterUsage || {}, null, 2)} 
+          "gasUsage" : ${JSON.stringify(gasUsage || {}, null, 2)} 
+          "yesterdayUsage" : ${JSON.stringify(yesterdayUsage || {}, null, 2)} 
+          "monthElecUsage" : ${JSON.stringify(monthElecUsage || {}, null, 2)} 
+          "monthWaterUsage" : ${JSON.stringify(monthWaterUsage || {}, null, 2)} 
+          "monthGasUsage" : ${JSON.stringify(monthGasUsage || {}, null, 2)} 
+          "lastMonthUsage" : ${JSON.stringify(lastMonthUsage || {}, null, 2)} 
+          "buildingInfo" : ${JSON.stringify(buildingInfo || {}, null, 2)} 
+          "billInfo" : ${JSON.stringify(billInfo || {}, null, 2)} 
+          "todayComparisonRatio" : ${JSON.stringify(todayComparisonRatio || {}, null, 2)} 
+          "monthComparisonRatio" : ${JSON.stringify(monthComparisonRatio || {}, null, 2)} 
+          "AvgFee" : ${JSON.stringify(AvgFee || {}, null, 2)} 
+          }
+        `;
+
+        const completion = await Openai.chat.completions.create({
+          model : "gpt-4o-mini",
+          messages : [
+            {role: "system", content: ""},
+            {role: "user", content: prompt},
+          ],
+          temperature: 0.5, // 0.0 (항상 비슷 답변) , 0.3 ~ 0.7 (설명, 보고서용), 1.0 이상 (답변 다양, 일관성x)
+        });
+
+        let text = completion.choices[0].message.content;
+        text = text.replace(/```json|```/g, "").trim();
+        console.log("AI 응답:", text);
+
+        // JSON 파싱 시도
+        const parsed = JSON.parse(text);
+        setMachineReports(parsed);
+
+        const reports = parsed.reduce(
+          (acc, d) => {
+            if (d.num === "report1") {
+              acc.report1 = { title: d.title, plan: d.plan };
+            } else if (d.num === "report2") {
+              acc.report2 = { title: d.title, plan: d.plan };
+            }
+            return acc;
+          }, {});
+
+        // 상태 업데이트
+        setMachineTitle([reports.report1.title, reports.report2.title]);
+        setMachinePlan([reports.report1.plan, reports.report2.plan]);
+      } catch (err) {
+        console.error("AI 호출 실패:", err);
+        setMachineTitle(["error"]);
+        setMachinePlan(["AI 응답을 불러오지 못했습니다."]);
+      }
+    };
+
+    // if (Testing) { // 🍪 무슨 데이터로 ?? useState 바꿔야함
+      fetchAI();
+    // }
+  }, []); // 🍪 무슨 데이터로 ?? useState 바꿔야함
   
     return (
         <Overlay>
@@ -650,14 +778,14 @@ function Analysis({ onClose }) {
               <AnalysisPlan>
                 <PlanTop>에너지 절감 방안 제시</PlanTop>
                 <PlanMain>
-                  {MachinePlan.map((Plan, index) => (
-                    <MachineDiv key={index} title={MachineTitle[index]}>
+                  {machineReports.map((d, index) => (
+                    <MachineDiv key={index} title={d.num}>
                       <div>
-                        <div>{MachineTitle[index]}</div>
-                        <div>{Plan}</div>
+                        <div>{d.title}</div>
+                        <div>{d.plan}</div>
                       </div>
                       <div className={`MachineImg${index}`}>
-                        <img src={AlertIcon(index)} alt={MachineTitle[index]} />
+                        <img src={AlertIcon[d.num]} alt={AlertIcon[d.num]} />
                       </div>
                     </MachineDiv>
                   ))}

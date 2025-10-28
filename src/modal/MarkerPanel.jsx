@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import styled, { keyframes, css } from 'styled-components';
 
 
@@ -80,6 +81,20 @@ const CategoryTag = styled.div`
   z-index: 1;
 `;
 
+const StatusTag = styled.div`
+  display: inline-block;
+  background: ${props => props.$active ? 'rgba(0, 0, 0, 0.4)' : 'rgba(0, 0, 0, 0.2)'};
+  color: white;
+  padding: 15px 12px;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: 400;
+  margin-top: 8px;
+  margin-right: 8px;
+  text-transform: uppercase;
+  position: relative;
+  z-index: 1;
+`
 const ContentBody = styled.div`
   padding: 14px;
 `;
@@ -117,7 +132,7 @@ const StatCard = styled.div`
 
 const StatLabel = styled.p`
   margin: 0 0 4px 0;
-  font-size: 11px;
+  font-size: 12px;
   text-transform: uppercase;
   color: #8E8E93;
   font-weight: 600;
@@ -151,48 +166,97 @@ const Button = styled.button`
   ${props => props.$active ? css`
     background: linear-gradient(135deg, #00C9A7 0%, #00AA6F 100%);
     color: white;
-    
-    &:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 6px 16px rgba(0, 201, 167, 0.4);
-    }
   ` : css`
     background: linear-gradient(135deg, #722323ff 0%, #FF3B30 100%);
     color: white;
     box-shadow: 0 4px 12px rgba(0, 201, 167, 0.3);
-    
-    &:hover {
-      background: #E8E8EA;
-    }
   `}
 `;
 
 
 // 컴포넌트
-const MarkerPanel = ({ selectedMarker, setSelectedMarker, postSwitching }) => {
+const MarkerPanel = ({ floors, selectedMarker, setSelectedMarker, postSwitching, FloorsButtonClick}) => {
+  const [cnsInRlTm , setCnsInRlTm] = useState("불러오는중...");
+  const [selectedFloor, setSelectedFloor] = useState([]);
+
+  // 안전하게 마지막 층 번호 추출
+  const getLastFloor = () => {
+    // floors 배열이 비어있거나 유효하지 않으면 4를 기본값으로 반환
+    if (!floors || floors.length === 0) return 4;
+
+    // 마지막 층의 devices 확인
+    const lastFloorData = floors[floors.length - 1];
+    if (!lastFloorData || !lastFloorData.devices || lastFloorData.devices.length === 0) return 4;
+
+    // 마지막 디바이스의 deviceName 확인
+    const lastDevice = lastFloorData.devices[lastFloorData.devices.length - 1];
+    if (!lastDevice || !lastDevice.deviceName) return 4;
+
+    // deviceName에서 층 번호 추출 (예: "4F-Computer-01" -> "4")
+    const floorNum = lastDevice.deviceName.split('F')[0];
+    const parsed = parseInt(floorNum, 10);
+
+    // 유효한 숫자인지 확인
+    return isNaN(parsed) ? 4 : parsed;
+  };
+
+  const lastfloor = getLastFloor();
+
+  useEffect(() => {
+    // selectedMarker가 변경될 때마다 실행
+    floors.forEach(floor => floor.devices.forEach(device => {
+      if (device.deviceId  === selectedMarker.deviceId) {
+        console.log("device.electricityUsage.datas[0].usage:", device.electricityUsage.datas[0].usage);
+        setCnsInRlTm(device.electricityUsage.datas[0].usage);
+      }
+    }));
+  }, [selectedMarker, floors]);
+
+
+  const handleFloorClick = (floorNum) => {
+    console.log("층 버튼 클릭됨:", floorNum);
+    if(selectedFloor.includes(floorNum)){
+      setSelectedFloor(prev => prev.filter(floor => floor !== floorNum));
+      return;
+    }
+    setSelectedFloor(prev => [...prev, floorNum]);
+    console.log("선택된 층들:", selectedFloor);
+
+  };
+  
   return (
     <PanelWrapper>
       <PanelContent>
         <PanelHeader>
           <HeaderTop>
-            <Title>선택된 기기</Title>
+            <Title>층 정보 : {selectedMarker.floor}층</Title>
             <CloseIcon onClick={() => setSelectedMarker(null)}>
               ×
             </CloseIcon>
           </HeaderTop>
           <CategoryTag>{selectedMarker.deviceType === 0 ? '💻 컴퓨터' :selectedMarker.deviceType === 1 ? '🍃 에어컨' : selectedMarker.deviceType === 2 ? '🔦 조명' : '기타'}</CategoryTag>
+          
         </PanelHeader>
+        
+
         
         
         <ContentBody>
           <StatsGrid>
             <StatCard $color="#F0FFFE" $accent="#00C9A7">
-              <StatLabel>실시간 소비량</StatLabel>
-              <StatValue>{selectedMarker.deviceId}</StatValue>
+              <StatLabel>🎛️ 층별 장비 선택</StatLabel>
+             {Array.from({ length: lastfloor }, (_, i) => i + 1).map(floor => (
+  <StatusTag $active={selectedFloor.includes(floor)} key={floor} onClick={() => handleFloorClick(floor)}>{floor}층</StatusTag>
+))}
+            </StatCard>
+
+            <StatCard $color="#F0FFFE" $accent="#00C9A7">
+              <StatLabel>⚡실시간 소비량</StatLabel>
+              <StatValue>{cnsInRlTm}</StatValue>
             </StatCard>
             
             <StatCard $color="#FFF8F0" $accent="#FF9500">
-              <StatLabel>디바이스 이름</StatLabel>
+              <StatLabel>기기 이름</StatLabel>
               <StatValue>{selectedMarker.deviceName}</StatValue>
             </StatCard>
 
@@ -203,7 +267,7 @@ const MarkerPanel = ({ selectedMarker, setSelectedMarker, postSwitching }) => {
           </StatsGrid>
           
           <ActionButtons>
-            <Button $active={selectedMarker.status === 1} $primary onClick={() => postSwitching(selectedMarker)}>
+            <Button $active={selectedMarker.status === 0} $primary onClick={() => postSwitching(selectedMarker)}>
               {selectedMarker.status === 1 ? "OFF" : "ON"}
             </Button>
           </ActionButtons>

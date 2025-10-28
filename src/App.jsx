@@ -63,7 +63,6 @@ function App() {
   const [active, setActive] = useState({ active: false, model: null });
   const modelsToShow = active.active ? [active.model] : MODELS;
   const [selectedDevice, setSelectedDevice] = useState(null);
-  const [computers, setComputer] = useState([]);
   const cameraSettings = useMemo(
     () => getResponsiveCameraSettings(auth.isAuthenticated, active),
     [auth.isAuthenticated, active]
@@ -955,6 +954,11 @@ function App() {
     }
   };
 
+    // iot 장비 층별로 제어하기
+  const FloorsButtonClick = async (floorNum) => {
+    console.log("층 선택!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",floorNum);
+  }
+
   // 로그인된 사용자 정보 조회 함수
   const fetchUserInfo = async () => {
     const user = localStorage.getItem("user");
@@ -970,6 +974,8 @@ function App() {
     }
     return null;
   };
+
+
 
   useEffect(() => {
     fetchUserInfo();
@@ -1089,7 +1095,6 @@ function App() {
           <SimpleMarkers markerInfo={makerInfo.markerInfo} selectFloor={active.model} selectedMarker={selectedMarker} setSelectedMarker={setSelectedMarker} />
         </Canvas>
 
-
         <BrandClock />
 
         <Wing
@@ -1115,9 +1120,9 @@ function App() {
         />
 
         {selectedMarker && (
-          <MarkerPanel selectedMarker={selectedMarker} setSelectedMarker={setSelectedMarker} postSwitching={postSwitching} />
+          <MarkerPanel floors={floors} selectedMarker={selectedMarker} setSelectedMarker={setSelectedMarker} postSwitching={postSwitching} FloorsButtonClick={FloorsButtonClick}/>
       )}
-      </Container>
+      </Container>  
     </>
   );
 }

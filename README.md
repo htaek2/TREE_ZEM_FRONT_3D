@@ -20,5 +20,7 @@
 
 - [o] 차트 그리기
 - npm i react-chartjs-2
+- [o] OPEN AI API
+- npm install openai
 
 npm install react-router-dom styled-components @mui/x-date-pickers @mui/material @emotion/react @emotion/styled dayjs dayjs react-animated-numbers

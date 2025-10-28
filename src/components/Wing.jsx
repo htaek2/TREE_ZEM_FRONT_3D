@@ -841,6 +841,7 @@ function Wing({
   todayComparisonRatio = {},
   monthComparisonRatio = {},
   AvgFee = 0,
+<<<<<<< HEAD
   // ⬇️ 탄소배출 API에서 받아온 값(kgCO₂e) 주입
   carbon = {
     today: 0,              // 금일 배출량 총합(전력 기준이면 kWh→배출 전환 API 결과)
@@ -848,6 +849,9 @@ function Wing({
     thisYear: [],          // 금년 월별 배출량 [1~12]
     lastYear: [],          // 전년 월별 배출량 [1~12]
   },
+=======
+  onFloorButtonClick,
+>>>>>>> 6f28f7707f9fade45c9c94d6474cb80692da46c5
 }) {
   const [managerName] = useState("이**");
   const [alertCount, setAlertCount] = useState(0);
@@ -858,7 +862,13 @@ function Wing({
 
   const handleModelButtonClick = (modelName) => {
     if (modelName === "top") return;
-    setActive({ active: true, model: modelName });
+    // SceneContainer의 handleFloorButtonClick 호출 (OrbitControls 타겟 업데이트 포함)
+    if (onFloorButtonClick?.current) {
+      onFloorButtonClick.current(modelName);
+    } else {
+      // fallback: ref가 없는 경우 기본 동작
+      setActive({ active: true, model: modelName });
+    }
     setSelectedDevice(null);
   };
 
@@ -1131,6 +1141,7 @@ function Wing({
           현황
         </Condition>
       )}
+<<<<<<< HEAD
       {activeModal === "analysis" && (
         <Analysis onClose={() => setActiveModal(null)}>통합분석</Analysis>
       )}
@@ -1139,6 +1150,28 @@ function Wing({
           상세분석
         </Detail>
       )}
+=======
+      {activeModal === "analysis" && 
+        <Analysis 
+          onClose={() => setActiveModal(null)}
+          elecUsage={todayUsage.elec}
+          waterUsage={todayUsage.water}
+          gasUsage={todayUsage.gas}
+          yesterdayUsage={yesterdayUsage}
+          monthElecUsage={monthUsage.elec}
+          monthWaterUsage={monthUsage.water}
+          monthGasUsage={monthUsage.gas}
+          lastMonthUsage={lastMonthUsage}
+          buildingInfo={buildingInfo}
+          billInfo={billInfo}
+          todayComparisonRatio={todayComparisonRatio}
+          monthComparisonRatio={monthComparisonRatio} 
+          AvgFee={AvgFee}
+        >
+          통합분석
+        </Analysis>}
+      {activeModal === "detail" && <Detail onClose={() => setActiveModal(null)} todayUsage={todayUsage}>상세분석</Detail>}
+>>>>>>> 6f28f7707f9fade45c9c94d6474cb80692da46c5
 
       {/* 우측 정보 스택 */}
       <RightInfo $open={railOpen}>
