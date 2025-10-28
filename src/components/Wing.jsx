@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState, useMemo } from "react";
+import { useState, useEffect, useRef, useLayoutEffect } from "react";
 import styled, { css } from "styled-components";
 
 import Condition from "../modal/Condition";
@@ -19,7 +19,7 @@ const WEATHER_KO = {
   snowy: "눈",
   cloudy: "흐림",
 };
-
+// 숫자/문자 어떤 값이 들어와도 한글 라벨로 바꿔줌. 없으면 "—"로 표시
 const toLabel = (raw) => {
   if (raw === null || raw === undefined || raw === "") return "—";
   const s = String(raw).trim().toLowerCase();
@@ -27,12 +27,13 @@ const toLabel = (raw) => {
   if (Number.isFinite(n)) return WEATHER_KO[n] ?? `코드 ${n}`;
   return WEATHER_KO[s] ?? s;
 };
-
+// 날씨 상태를 아이콘 파일 이름에 맞는 키(sunny/rainy...)로 맞춰줌
 const toIconKey = (raw) => {
   if (raw == null || raw === "") return "cloudy";
   const s = String(raw).trim().toLowerCase();
   const n = Number(s);
-  if (Number.isFinite(n)) return ({ 0: "sunny", 1: "rainy", 2: "snowy", 3: "cloudy" })[n] ?? "cloudy";
+  if (Number.isFinite(n))
+    return ({ 0: "sunny", 1: "rainy", 2: "snowy", 3: "cloudy" })[n] ?? "cloudy";
   return s;
 };
 
@@ -49,10 +50,19 @@ const imgFallback = (fallback) => (e) => {
    공통 스타일 helpers
 =========================== */
 // === 공통 스타일 토큰 (한 곳에서 일괄 조절) ===
-const PANEL_ALPHA_OFF = 0.5;   // 탄소배출 OFF일 때 패널 불투명도
-const PANEL_ALPHA_ON  = 0.3;   // 탄소배출 ON(초록)일 때 패널 불투명도
+const PANEL_ALPHA_OFF = 0.5; // 탄소배출 OFF일 때 패널 불투명도
+const PANEL_ALPHA_ON = 0.3; // 탄소배출 ON(초록)일 때 패널 불투명도
 const PANEL_BORDER_ALPHA = 0.12;
 const PANEL_SHADOW = "2px 3px 5px 0 rgba(0,0,0,.5)";
+const EMISSION_UNIT = "㎥";
+const SHADOW_TEXT   = "2px 3px 4px rgba(0,0,0,0.3)";
+const SHADOW_FILTER = "drop-shadow(2px 3px 4px rgba(0,0,0,0.3))";
+
+const textShadowIfOn = css`
+  ${({ $IsEmissionBtn }) => $IsEmissionBtn && `text-shadow: ${SHADOW_TEXT};`}
+`;
+
+
 
 // OFF/ON에 따라 동일 로직으로 배경 생성
 const panelBg = ({ $IsEmissionBtn }) =>
@@ -61,10 +71,6 @@ const panelBg = ({ $IsEmissionBtn }) =>
     : `rgba(45,45,45, ${PANEL_ALPHA_OFF})`;
 
 // 탄소배출 토글에 따른 소프트 배경 색상(카드, 패널용)
-const bgSoft = ($IsEmissionBtn, alphaOff = 0.28, alphaOn = 0.22) =>
-  $IsEmissionBtn ? `rgba(0,170,111, ${alphaOn})` : `rgba(0,0,0, ${alphaOff})`;
-
-// 탄소배출 토글에 따른 알약 배경 색상(타이틀, 라벨 버튼류)
 const bgPill = ($IsEmissionBtn, alphaOff = 0.85, alphaOn = 1) =>
   $IsEmissionBtn ? `rgba(0,170,111, ${alphaOn})` : `rgba(45,45,45, ${alphaOff})`;
 
@@ -76,6 +82,8 @@ const pillBase = css`
   min-height: 34px;
   flex: 0 0 34px;
   line-height: 14px;
+  
+  /* 안쪽 여백과 배치 */
   box-sizing: border-box;
   border-radius: 9999px 0 0 9999px;
   padding: 8px 14px;
@@ -85,7 +93,7 @@ const pillBase = css`
   font-family: "Nanum Gothic", system-ui, sans-serif;
   font-weight: 800;
   font-size: 14px;
-  color: #fff;
+  color: #FAFAFA;
   white-space: nowrap;
   text-overflow: ellipsis;
   position: relative;
@@ -133,7 +141,7 @@ const HeaderBox = styled.div`
   height: 40px;
   padding: 0 16px;
   border-radius: 999px;
-  color: #fff;
+  color: #FAFAFA;
   font-size: 24px;
   font-weight: 800;
   letter-spacing: 0.5px;
@@ -163,11 +171,13 @@ const HeaderBox = styled.div`
 const HeaderIcon = styled.img`
   width: 28px;
   height: 28px;
-  filter: brightness(0) invert(1);
+  filter: ${({ $IsEmissionBtn }) =>
+    `brightness(0) invert(1)${$IsEmissionBtn ? ` ${SHADOW_FILTER}` : ""}`};
 `;
 
 const HeaderText = styled.span`
   white-space: nowrap;
+  ${textShadowIfOn}
 `;
 
 /* ===========================
@@ -213,6 +223,12 @@ const FloorButton = styled.button`
   }
 `;
 
+
+const FloorImg = styled.img`
+  display: block;
+  filter: ${({ $IsEmissionBtn }) =>
+    `brightness(0) invert(1)${$IsEmissionBtn ? ` ${SHADOW_FILTER}` : ""}`};
+`;
 /* ===========================
    좌측 날개(패널) + 카드
 =========================== */
@@ -223,7 +239,7 @@ const LeftWing = styled.aside`
   bottom: 20px;
   width: 232px;
   display: grid;
-  grid-template-rows: 210px 210px 210px auto;
+  grid-template-rows: 210px 210px 210px;
   gap: 8px;
   z-index: 950;
   opacity: ${({ $open }) => ($open ? 1 : 0)};
@@ -233,11 +249,10 @@ const LeftWing = styled.aside`
 
 const WingCard = styled.div`
   position: relative;
-  background: ${panelBg};                               /* ✅ 배경 통일 */
-  border: 1px solid rgba(255,255,255, ${PANEL_BORDER_ALPHA});
-
+  background: ${panelBg}; /* ✅ 배경 통일 */
+  border: 1px solid rgba(255, 255, 255, ${PANEL_BORDER_ALPHA});
   border-radius: 10px;
-  color: #fff;
+  color: #FAFAFA;
   padding: 8px 6px;
   overflow: hidden;
   width: 200px;
@@ -251,12 +266,14 @@ const WingCard = styled.div`
 const CardTitle = styled.div`
   ${pillBase}
   background: ${({ $IsEmissionBtn }) => bgPill($IsEmissionBtn)};
+  ${textShadowIfOn}
 `;
 
 const StatList = styled.div`
   flex: 1;
   display: grid;
-  grid-template-rows: ${({ $IsEmissionBtn }) => ($IsEmissionBtn ? "repeat(4, 1fr)" : "repeat(3, 1fr)")};
+  grid-template-rows: ${({ $IsEmissionBtn }) =>
+    $IsEmissionBtn ? "repeat(4, 1fr)" : "repeat(3, 1fr)"};
   height: 100%;
   > .TotalEmission {
     display: ${({ $IsEmissionBtn }) => ($IsEmissionBtn ? "flex" : "none")};
@@ -281,7 +298,8 @@ const StatIcon = styled.img`
   width: 24px;
   height: 24px;
   display: block;
-  filter: brightness(0) invert(1);
+  filter: ${({ $IsEmissionBtn }) =>
+   `brightness(0) invert(1)${$IsEmissionBtn ? ` ${SHADOW_FILTER}` : ""}`};
   margin: 4px 4px 8px 4px;
 `;
 
@@ -291,6 +309,7 @@ const StatLabel = styled.span`
   font-size: 17px;
   letter-spacing: -0.2px;
   white-space: nowrap;
+  ${textShadowIfOn}
 `;
 
 const StatValue = styled.div`
@@ -301,6 +320,7 @@ const StatValue = styled.div`
   font-family: "Nanum Gothic", system-ui, sans-serif;
   font-weight: 700;
   font-size: 17px;
+  ${textShadowIfOn}
 `;
 
 const StatUnit = styled.span``;
@@ -310,51 +330,86 @@ const ChartCard = styled(WingCard)`
   flex-direction: column;
 `;
 
-
-
 const ChartCanvas = styled.div`
-  /* 고정 높이(반응형 아님) */
   height: 150px;
   flex: 0 0 150px;
-
-  /* 제목과의 간격, 카드 바닥과의 간격을 동일하게 */
   margin: 10px 0 10px;
-
-  /* 박스 모양 */
   position: relative;
-  border-radius: 12px;                       /* ✅ 네 모서리 동일 라운드 */
+  z-index: 5; /* 툴팁이 상단 카드 내부에서 묻히지 않도록 */
+  border-radius: 12px;
   background: rgba(0, 0, 0, 0.15);
   border: 1px solid rgba(255, 255, 255, 0.25);
-  overflow: hidden;                           /* ✅ SVG가 라운드에 정확히 클리핑 */
-
-  /* 내부 패딩 없음(축 여백은 SVG 좌표계에서 처리) */
+  overflow: hidden;
   padding: 0;
-
-  /* 레이아웃 단순화 */
   display: block;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+  & *:focus { outline: none; }
 
-  & > svg { width: 100%; height: 100%; display: block; }
+  & > svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
 `;
 
+// 👇 ChartCanvas 정의 아래에 추가
+const LegendWrap = styled.div`
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 999;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  line-height: 1;
+`;
 
+const LegendItem = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: #fafafa;
+  white-space: nowrap;
+`;
 
+const SwatchSquare = styled.span`
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: ${({$color}) => $color};
+  border: 1px solid rgba(0,0,0,0.35);
+`;
+
+// 라인+동그라미 미니 스와치(12×10)
+const LineDot = ({ line="#FAFAFA", dot="#FAFAFA" }) => (
+  <svg width="16" height="10" viewBox="0 0 16 10" aria-hidden="true">
+    <path d="M1 8 L15 2" fill="none" stroke={line} strokeWidth="1.8" strokeLinecap="round" />
+    <circle cx="8" cy="5" r="2.2" fill={dot} />
+  </svg>
+);
 
 
 
 const DockActions = styled.div`
-  width: 200px;
-  margin: 50 auto;
+  position: absolute;   /* 패널 내부 하단에 고정 */
+  left: 43.5%;
+  bottom: -8px;
+  transform: translateX(-50%);
+  width: 205px;
   box-sizing: border-box;
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 0;
+  z-index: 960;
 `;
 
 const DockBtn = styled.button`
   background: ${({ $IsEmissionBtn }) => bgPill($IsEmissionBtn)};
   border: 1px solid rgba(255, 255, 255, 0.18);
-  color: #fff;
+  color: #FAFAFA;
   border-radius: 12px;
   font-size: 10px;
   font-weight: 400;
@@ -368,15 +423,13 @@ const DockBtn = styled.button`
   align-items: center;
   justify-content: center;
 
-    
   > .energyIcon {
     bottom: 25px;
-    }
+  }
   > .energylabel {
     bottom: 14px;
     font-size: 9px;
-    }
-
+  }
 `;
 
 const DockLabel = styled.span`
@@ -395,6 +448,7 @@ const DockLabel = styled.span`
   > div {
     margin: 1px;
   }
+  ${textShadowIfOn}
 `;
 
 const DockIcon = styled.img`
@@ -407,6 +461,7 @@ const DockIcon = styled.img`
   max-width: none;
   max-height: none;
   display: block;
+  filter: ${({ $IsEmissionBtn }) => ($IsEmissionBtn ? SHADOW_FILTER : "none")};
 `;
 
 /* ===========================
@@ -418,7 +473,7 @@ const RightInfo = styled.div`
   right: ${({ $open }) => ($open ? "16px" : "calc(-1 * (16px + 230px + 40px))")};
   display: grid;
   grid-auto-rows: min-content;
-  gap: 8px;
+  gap: 6px;
   z-index: 120;
   opacity: ${({ $open }) => ($open ? 1 : 0)};
   pointer-events: ${({ $open }) => ($open ? "auto" : "none")};
@@ -434,10 +489,9 @@ const InfoGroup = styled.div`
   row-gap: 0;
 `;
 
-/* 말풍선 꼬리: 보더+채움 이중 처리로 상단에 딱 붙게 */
+/* 말풍선 패널 공통 */
 const InfoPanelBase = styled.div`
   --tail: 8px;
-
   --panel-bd: transparent;
 
   overflow: hidden;
@@ -447,10 +501,10 @@ const InfoPanelBase = styled.div`
   padding: ${({ open }) => (open ? "8px 8px 40px" : "0 8px 0")};
   margin-top: ${({ open }) => (open ? "6px" : "0")};
 
-  background: ${panelBg}; 
-  border: 1px solid rgba(255,255,255, ${PANEL_BORDER_ALPHA});
+  background: ${panelBg};
+  border: 1px solid rgba(255, 255, 255, ${PANEL_BORDER_ALPHA});
   border-radius: 8px;
-  color: #fff;
+  color: #FAFAFA;
   line-height: 1.5;
   position: relative;
   z-index: 1000;
@@ -468,40 +522,57 @@ const InfoPanelBase = styled.div`
 const InfoManager = styled(InfoPanelBase)``;
 
 const InfoWeather = styled(InfoPanelBase)`
-  /* 아래 여분 줄여서 내용이 바닥까지 차게 */
   padding: ${({ open }) => (open ? "12px" : "0 12px")};
+  display: block; /* 줄 간격을 행별로 제어하기 쉽게 block로 */
 
-  /* 세 줄을 위→아래로 꽉 채움(좌우 폭 유지) */
-  display: grid;
-  grid-template-rows: repeat(3, 1fr);
-  align-items: stretch;
-  --icon-dy: 0px;
+  /* ====== [튜닝 포인트] 행별 커스텀 변수 ====== */
+  /* 아이콘 크기(공통) */
+  --icon-size: 23px;
+  /* 아이콘 ←→ 텍스트 간격(= padding-left) */
+  --pad1: 28px;  /* 1행 */
+  --pad2: 28px;  /* 2행 */
+  --pad3: 28px;  /* 3행 */
+  /* 아이콘 수직 미세 오프셋(+ 아래로 / - 위로) */
+  --dy1: 3.5px;  /* 1행 */
+  --dy2: 2px;    /* 2행 */
+  --dy3: 2px;    /* 3행 */
+  /* 아이콘 수평 미세 오프셋(+ 오른쪽 / - 왼쪽) */
+  --ix1: 0px;    /* 1행 */
+  --ix2: 0px;    /* 2행 */
+  --ix3: 0px;    /* 3행 */
+  /* 줄 간격(행과 행 사이) */
+  --gap1: 6px;   /* 1행 아래 */
+  --gap2: 6px;   /* 2행 아래 */
+  /* 3행은 마지막이라 gap 없음 */
 
-  /* 각 행 공통: 왼쪽 아이콘 공간 확보 */
   & p {
     position: relative;
-    padding-left: 28px;
     display: flex;
     align-items: center;
     line-height: 1.8;
     font-variant-numeric: tabular-nums;
+    margin: 0; /* 기본 여백 제거 */
   }
+  & p:nth-child(1) { padding-left: var(--pad1); margin-bottom: var(--gap1); }
+  & p:nth-child(2) { padding-left: var(--pad2); margin-bottom: var(--gap2); }
+  & p:nth-child(3) { padding-left: var(--pad3); }
 
-  /* 좌측 아이콘: 공통 베이스 */
   & p::before {
     content: "";
     position: absolute;
     left: 0;
     top: 50%;
-    transform: translateY(calc(-50% + var(--icon-dy)));
-    width: 23px;
-    height: 23px;
+    width: var(--icon-size);
+    height: var(--icon-size);
     background-size: contain;
     background-repeat: no-repeat;
     filter: brightness(0) invert(1);
   }
+  /* 행별 개별 오프셋 적용 */
+  & p:nth-child(1)::before { transform: translateY(calc(-65% + var(--dy1))); left: calc(0px + var(--ix1)); }
+  & p:nth-child(2)::before { transform: translateY(calc(-45% + var(--dy2))); left: calc(0px + var(--ix2)); }
+  & p:nth-child(3)::before { transform: translateY(calc(-50% + var(--dy3))); left: calc(0px + var(--ix3)); }
 
-  /* 1행(날씨): data-wicon 값으로 동적 아이콘 */
   &[data-wicon="sunny"] p:nth-child(1)::before {
     background-image: url("/Icon/sunny_icon.svg");
   }
@@ -515,7 +586,6 @@ const InfoWeather = styled(InfoPanelBase)`
     background-image: url("/Icon/cloudy_icon.svg");
   }
 
-  /* 2행/3행: 고정 아이콘 */
   & p:nth-child(2)::before {
     background-image: url("/Icon/humidity_icon.svg");
   }
@@ -549,7 +619,7 @@ const InfoItem = styled.div`
   border-radius: 9999px 0 0 9999px;
   background: ${({ $IsEmissionBtn }) => bgPill($IsEmissionBtn)};
   border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #fff;
+  color: #FAFAFA;
   font-size: 16px;
   font-weight: 700;
   overflow: hidden;
@@ -582,13 +652,17 @@ const InfoIcon = styled.img`
   height: 20px;
   flex-shrink: 0;
   display: block;
-  filter: ${({ $white }) => ($white ? "brightness(0) invert(1)" : "none")};
+  filter: ${({ $white, $IsEmissionBtn }) => {
+   const base = $white ? "brightness(0) invert(1)" : "none";
+   return $IsEmissionBtn ? `${base} ${SHADOW_FILTER}` : base;
+ }};
 `;
 
 const InfoLabel = styled.span`
   opacity: 0.95;
   text-overflow: ellipsis;
   line-height: 20px;
+  ${textShadowIfOn}
 `;
 
 const InfoValue = styled.span`
@@ -599,6 +673,7 @@ const InfoValue = styled.span`
   flex-shrink: 0;
   white-space: nowrap;
   line-height: 20px;
+  ${textShadowIfOn}
 `;
 
 /* 우측 하단 고정 액션 영역 */
@@ -616,9 +691,11 @@ const PanelBtn = styled.button`
   height: 20px;
   padding: 0 10px;
   border-radius: 999px;
-  background: ${({ $IsEmissionBtn }) => ($IsEmissionBtn ? "rgba(0,170,111,1)" : "rgba(45,45,45,0.50)")};
-  border: 1px solid ${({ $IsEmissionBtn }) => ($IsEmissionBtn ? "rgba(0,170,111,1)" : "#2D2D2D")};
-  color: #fff;
+  background: ${({ $IsEmissionBtn }) =>
+    $IsEmissionBtn ? "rgba(0,170,111,1)" : "rgba(45,45,45,0.50)"};
+  border: 1px solid
+    ${({ $IsEmissionBtn }) => ($IsEmissionBtn ? "rgba(0,170,111,1)" : "#2D2D2D")};
+  color: #FAFAFA;
   font-size: 13px;
   font-weight: 700;
   line-height: 20px;
@@ -627,7 +704,121 @@ const PanelBtn = styled.button`
   justify-content: center;
   white-space: nowrap;
   cursor: pointer;
+  ${textShadowIfOn}
 `;
+
+// ==== 공통 툴팁 오버레이 ====
+// 파일 내 어디든 선언 가능하지만, 아래 차트 두 개보다 "위"에 두면 깔끔합니다.
+
+const TipWrap = styled.div`
+  position: fixed;
+  z-index: 99999;
+  pointer-events: none;
+  background: rgba(20,20,22,0.88);
+  border: 1px solid rgba(255,255,255,0.18);
+  box-shadow: 0 8px 18px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06);
+  color: #FAFAFA;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  line-height: 1.25;
+  white-space: nowrap;
+  backdrop-filter: blur(6px);
+`;
+
+const TipArrow = styled.div`
+  position: absolute;
+  width: 10px; height: 10px;
+  background: rgba(20,20,22,0.88);
+  transform: rotate(45deg);
+  border: 1px solid rgba(255,255,255,0.18);
+
+  /* 좌/우 배치에 따라 테두리와 위치 조정 */
+  ${({ $side }) =>
+    $side === "left"
+      ? `
+        right: -5px; top: 50%; transform: translateY(-50%) rotate(45deg);
+        border-left: none; border-top: none; /* ▷ 모양 */
+      `
+      : `
+        left: -5px; top: 50%; transform: translateY(-50%) rotate(45deg);
+        border-right: none; border-bottom: none; /* ◁ 모양 */
+      `}
+`;
+
+function TooltipOverlay({ tip, containerRef }) {
+  const selfRef = useRef(null);
+  const [pos, setPos] = useState({ left: -99999, top: -99999, side: "right" });
+  const [ready, setReady] = useState(false);
+
+  useLayoutEffect(() => {
+    if (!tip?.show || !containerRef?.current || !selfRef.current) {
+      setReady(false);
+      return;
+    }
+
+    const cont = containerRef.current;
+    const contRect = cont.getBoundingClientRect();
+    const box = selfRef.current.getBoundingClientRect();
+
+    const offsetX = 12; // 클릭 지점에서의 가로 오프셋
+    const margin = 6;   // 경계 여유
+
+    // tip.x, tip.y 는 ChartCanvas 로컬 좌표 (이미 getLocalXY로 계산됨)
+    const clickX = tip.x;
+    const clickY = tip.y;
+
+    // 1) 기본은 "우측" 배치
+    let left = clickX + offsetX;
+    let top  = clickY - box.height / 2;
+    let side = "right";
+
+    // 2) 수직 경계 클램프
+    if (top < margin) top = margin;
+    if (top + box.height > contRect.height - margin) {
+      top = contRect.height - margin - box.height;
+    }
+
+    // 3) 수평 경계 체크: 우측 공간 부족하면 좌측으로 플립
+    if (left + box.width > contRect.width - margin) {
+      left = clickX - offsetX - box.width;
+      side = "left";
+      if (left < margin) left = margin; // 극단적으로 좁을 때
+    }
+
+    // ✅ fixed 포지셔닝이므로 ‘컨테이너 오프셋’을 더해 뷰포트 좌표로 변환
+    setPos({
+      left: contRect.left + left,
+      top:  contRect.top  + top,
+      side,
+    });
+    setReady(true);
+    
+  }, [tip?.show, tip?.x, tip?.y, containerRef]);
+
+  if (!tip?.show) return null;
+
+  return (
+    <TipWrap ref={selfRef} style={{ left: pos.left, top: pos.top, visibility: ready ? 'visible' : 'hidden' }}>
+      {tip.title && (
+        <div style={{ opacity: .9, fontWeight: 800, marginBottom: 3 }}>{tip.title}</div>
+      )}
+      {tip.lines?.map((l, i) => (
+        <div key={i}>
+          <span style={{ opacity: .9 }}>{l.label}</span>
+          <span style={{ opacity: .6, margin: "0 6px" }}>:</span>
+          <span style={{ fontWeight: 800 }}>
+            {l.value}{tip.unit ? ` ${tip.unit}` : ""}
+          </span>
+        </div>
+      ))}
+      <TipArrow $side={pos.side} />
+    </TipWrap>
+  );
+}
+
+
+
 
 /* ===========================
    컴포넌트 본문
@@ -647,9 +838,16 @@ function Wing({
   setRailOpen = () => {},
   billInfo = {},
   weatherNow = null,
-  todayComparisonRatio={},
-  monthComparisonRatio={},
+  todayComparisonRatio = {},
+  monthComparisonRatio = {},
   AvgFee = 0,
+  // ⬇️ 탄소배출 API에서 받아온 값(kgCO₂e) 주입
+  carbon = {
+    today: 0,              // 금일 배출량 총합(전력 기준이면 kWh→배출 전환 API 결과)
+    yesterday: 0,          // 전일 배출량 총합
+    thisYear: [],          // 금년 월별 배출량 [1~12]
+    lastYear: [],          // 전년 월별 배출량 [1~12]
+  },
 }) {
   const [managerName] = useState("이**");
   const [alertCount, setAlertCount] = useState(0);
@@ -666,6 +864,79 @@ function Wing({
 
   const [activeModal, setActiveModal] = useState(null);
   const [IsEmissionBtn, setIsEmissionBtn] = useState(false);
+  
+  // 탄소배출 API 결과 보관
+  const [emDaily, setEmDaily] = useState({ today: 0, yesterday: 0 }); // 금일/전일 합계(kgCO₂e)
+  const [emYear, setEmYear]   = useState({
+    thisYear: [],          // 금년 월별(1~12)
+    lastYear: [],          // 전년 월별(1~12)
+    thisYearProjected: []  // 금년 '예상'(YTD 평균 보간)
+  });
+  const [emLoading, setEmLoading] = useState(false);
+
+  // 탄소배출 모드가 켜질 때만 API 호출
+  useEffect(() => {
+  if (!IsEmissionBtn) return;
+  let abort = false;
+
+  (async () => {
+    try {
+      setEmLoading(true);
+      const nowKST = KSTnow();
+
+      // ---------- A. 전일/금일 (각각 day(1)로 호출) ----------
+      const today = new Date(nowKST);
+      const yester = new Date(nowKST); yester.setDate(yester.getDate() - 1);
+
+      const [sY, eY] = rangeDay(yester);
+      const [sT, eT] = rangeDay(today);
+
+      const [rowsY, rowsT] = await Promise.all([
+        apiCarbon(sY, eY, 1),   // 어제 하루
+        apiCarbon(sT, eT, 1),   // 오늘 하루
+      ]);
+
+      const daily = {
+        yesterday: sumUsage(rowsY),
+        today:     sumUsage(rowsT),
+      };
+
+      // ---------- B. 금년/전년 월별 (각각 12회 month(2) 호출) ----------
+      const thisYear = nowKST.getFullYear();
+      const lastYear = thisYear - 1;
+
+      const monthsThis = await Promise.all(
+        Array.from({length:12}, (_,i) => monthlyTotalByType2(thisYear, i+1))
+      );
+      const monthsLast = await Promise.all(
+        Array.from({length:12}, (_,i) => monthlyTotalByType2(lastYear, i+1))
+      );
+
+      // 금년 '예상' 보간 (YTD 평균)
+      const nowM = nowKST.getMonth(); // 0~11
+      const done = monthsThis.slice(0, nowM+1).filter(n => n>0);
+      const ytdAvg = done.length ? (done.reduce((a,b)=>a+b,0)/done.length) : 0;
+      const projected = monthsThis.map((v,i) => (v>0 ? v : (i>nowM ? ytdAvg : 0)));
+
+      if (!abort) {
+        setEmDaily(daily);
+        setEmYear({
+          thisYear: monthsThis,
+          lastYear: monthsLast,
+          thisYearProjected: projected,
+        });
+      }
+    } catch (e) {
+      console.warn('[carbon] fetch error:', e);
+    } finally {
+      if (!abort) setEmLoading(false);
+    }
+  })();
+
+  return () => { abort = true; };
+}, [IsEmissionBtn]);
+
+
 
   const EmissionNaming = (name) => {
     if (!IsEmissionBtn) return name;
@@ -686,22 +957,31 @@ function Wing({
   const [openWeather, setOpenWeather] = useState(false);
   const [openAlert, setOpenAlert] = useState(false);
 
+  // 전일/당일 라벨
+  const now = KSTnow();
+  const y = new Date(now);
+  y.setDate(y.getDate() - 1);
+  const dailyLabels = [md(y), md(now)];
+
   return (
     <>
       {/* 좌측 날개 */}
       <LeftWing $open={railOpen}>
         {/* 실시간 사용량 */}
-        <WingCard>
-          <CardTitle $IsEmissionBtn={IsEmissionBtn}>{EmissionNaming("실시간 사용량")}</CardTitle>
+        <WingCard $IsEmissionBtn={IsEmissionBtn}>
+          <CardTitle $IsEmissionBtn={IsEmissionBtn}>
+            {EmissionNaming("실시간 사용량")}
+          </CardTitle>
           <StatList $IsEmissionBtn={IsEmissionBtn}>
             <StatRow $IsEmissionBtn={IsEmissionBtn}>
-              <StatIcon
+              <StatIcon 
                 src="Icon/elect_icon.svg"
                 alt="전력"
                 onError={imgFallback("/Icon/elect_icon.svg")}
+                $IsEmissionBtn={IsEmissionBtn}
               />
-              <StatLabel>전력</StatLabel>
-              <StatValue>
+              <StatLabel $IsEmissionBtn={IsEmissionBtn}>전력</StatLabel>
+              <StatValue $IsEmissionBtn={IsEmissionBtn}>
                 <span>{todayUsage.elec}</span>
                 <StatUnit>kWh</StatUnit>
               </StatValue>
@@ -712,9 +992,10 @@ function Wing({
                 src="/Icon/gas_icon.svg"
                 alt="가스"
                 onError={imgFallback("/Icon/gas_icon.svg")}
+                $IsEmissionBtn={IsEmissionBtn}
               />
-              <StatLabel>가스</StatLabel>
-              <StatValue>
+              <StatLabel $IsEmissionBtn={IsEmissionBtn}>가스</StatLabel>
+              <StatValue $IsEmissionBtn={IsEmissionBtn}>
                 <span>{todayUsage.gas}</span>
                 <StatUnit>㎥</StatUnit>
               </StatValue>
@@ -725,77 +1006,106 @@ function Wing({
                 src="/Icon/water_icon.svg"
                 alt="수도"
                 onError={imgFallback("/Icon/water_icon.svg")}
+                $IsEmissionBtn={IsEmissionBtn}
               />
-              <StatLabel>수도</StatLabel>
-              <StatValue>
+              <StatLabel $IsEmissionBtn={IsEmissionBtn}>수도</StatLabel>
+              <StatValue $IsEmissionBtn={IsEmissionBtn}>
                 <span>{todayUsage.water}</span>
                 <StatUnit>㎥</StatUnit>
               </StatValue>
             </StatRow>
 
             <StatRow $IsEmissionBtn={IsEmissionBtn} className="TotalEmission">
-              <StatLabel>총 배출량</StatLabel>
-              <StatValue>
-                <span>{0}</span>
-                <StatUnit>㎥</StatUnit>
+              <StatLabel $IsEmissionBtn={IsEmissionBtn}>총 배출량</StatLabel>
+              <StatValue $IsEmissionBtn={IsEmissionBtn}>
+                <span>{(emDaily.today).toLocaleString('ko-KR')}</span>
+                <StatUnit>{EMISSION_UNIT}</StatUnit>
               </StatValue>
             </StatRow>
           </StatList>
         </WingCard>
 
-        {/* 전일 대비 전력 사용량 */}
-        <ChartCard $IsEmissionBtn={IsEmissionBtn}>
-          <CardTitle $IsEmissionBtn={IsEmissionBtn}>{EmissionNaming("전일 대비 전력 사용량")}</CardTitle>
-          <DailyElecCompareChart IsEmissionBtn={IsEmissionBtn} />
-        </ChartCard>
+        {/* 전일 대비 전력 사용량 (미니차트) */}
+        {(() => {
+          const todayElec = Number(todayUsage?.elec || 0);
+          const yesterElec = Number(yesterdayUsage?.elec || 0);
+          return (
+            <ChartCard $IsEmissionBtn={IsEmissionBtn}>
+              <CardTitle $IsEmissionBtn={IsEmissionBtn}>
+                {EmissionNaming("전일 대비 전력 사용량")}
+              </CardTitle>
+              <DailyElecCompareMini
+                today={IsEmissionBtn ? emDaily.today : todayElec}
+                yesterday={IsEmissionBtn ? emDaily.yesterday : yesterElec}
+                labels={dailyLabels}
+                IsEmissionBtn={IsEmissionBtn}
+              />
+            </ChartCard>
+          );
+        })()}
 
-        {/* 전년 대비 전력 사용량 */}
+        {/* 전년 대비 전력 사용량 → 당월/전월 비교 (미니차트) */}
         <ChartCard $IsEmissionBtn={IsEmissionBtn}>
-          <CardTitle $IsEmissionBtn={IsEmissionBtn}>{EmissionNaming("전년 대비 전력 사용량")}</CardTitle>
-          <YearElecCompareChart IsEmissionBtn={IsEmissionBtn} />
+          <CardTitle $IsEmissionBtn={IsEmissionBtn}>
+            {EmissionNaming("전년 대비 전력 사용량")}
+          </CardTitle>
+          <YearCompareLineMini
+              thisYear={IsEmissionBtn
+                ? (emYear.thisYearProjected.length ? emYear.thisYearProjected : emYear.thisYear)
+                : [120,140,180,150,200,220,240,210,260,300,280,310]}
+              lastYear={IsEmissionBtn
+                ? emYear.lastYear
+                : [100,130,160,140,180,190,200,180,210,250,230,260]}
+            IsEmissionBtn={IsEmissionBtn}
+          />
         </ChartCard>
 
         {/* 하단 버튼들 */}
         <DockActions>
-            <DockBtn onClick={() => setActiveModal("condition")}>
-              <DockIcon
-                src="public/Icon/con_icon.svg"
-                alt=""
-                aria-hidden="true"
-                onError={imgFallback("/Icon/analysis_icon.svg")}
-                className="energyIcon"
-              />
-              <DockLabel className="energylabel">
-                <div>에너지</div>
-                <div>현황</div>
-              </DockLabel>
-            </DockBtn>
-          <DockBtn onClick={() => setActiveModal("analysis")}>
+          <DockBtn onClick={() => setActiveModal("condition")} $IsEmissionBtn={IsEmissionBtn}>
+            <DockIcon
+              src="public/Icon/con_icon.svg"
+              alt=""
+              aria-hidden="true"
+              onError={imgFallback("/Icon/analysis_icon.svg")}
+              className="energyIcon"
+              $IsEmissionBtn={IsEmissionBtn} />
+            <DockLabel className="energylabel" $IsEmissionBtn={IsEmissionBtn}>
+              <div>에너지</div>
+              <div>현황</div>
+            </DockLabel>
+          </DockBtn>
+          <DockBtn onClick={() => setActiveModal("analysis")} $IsEmissionBtn={IsEmissionBtn}>
             <DockIcon
               src="public/Icon/analysis_icon.svg"
               alt=""
               aria-hidden="true"
               onError={imgFallback("/Icon/analysis_icon.svg")}
-            />
-            <DockLabel>통합분석</DockLabel>
+              $IsEmissionBtn={IsEmissionBtn} />
+            <DockLabel $IsEmissionBtn={IsEmissionBtn}>통합분석</DockLabel>
           </DockBtn>
-          <DockBtn onClick={() => setActiveModal("detail")}>
+          <DockBtn onClick={() => setActiveModal("detail")} $IsEmissionBtn={IsEmissionBtn}>
             <DockIcon
               src="public/Icon/detail_icon.svg"
               alt=""
               aria-hidden="true"
               onError={imgFallback("/Icon/detail_icon.svg")}
-            />
-            <DockLabel>상세분석</DockLabel>
+              $IsEmissionBtn={IsEmissionBtn} />
+          
+            <DockLabel $IsEmissionBtn={IsEmissionBtn}>상세분석</DockLabel>
           </DockBtn>
-          <DockBtn onClick={() => setIsEmissionBtn((prev) => !prev)} $IsEmissionBtn={IsEmissionBtn}>
+          <DockBtn
+            onClick={() => setIsEmissionBtn((prev) => !prev)}
+            $IsEmissionBtn={IsEmissionBtn}
+          >
             <DockIcon
               src="public/Icon/emission_icon.svg"
               alt=""
               aria-hidden="true"
               onError={imgFallback("/Icon/analysis_icon.svg")}
-            />
-            <DockLabel>탄소배출</DockLabel>
+              $IsEmissionBtn={IsEmissionBtn} />
+        
+            <DockLabel $IsEmissionBtn={IsEmissionBtn}>탄소배출</DockLabel>
           </DockBtn>
         </DockActions>
       </LeftWing>
@@ -815,20 +1125,30 @@ function Wing({
           buildingInfo={buildingInfo}
           billInfo={billInfo}
           todayComparisonRatio={todayComparisonRatio}
-          monthComparisonRatio={monthComparisonRatio} 
+          monthComparisonRatio={monthComparisonRatio}
           AvgFee={AvgFee}
         >
           현황
         </Condition>
       )}
-      {activeModal === "analysis" && <Analysis onClose={() => setActiveModal(null)}>통합분석</Analysis>}
-      {activeModal === "detail" && <Detail onClose={() => setActiveModal(null)} todayUsage={todayUsage}>상세분석</Detail>}
+      {activeModal === "analysis" && (
+        <Analysis onClose={() => setActiveModal(null)}>통합분석</Analysis>
+      )}
+      {activeModal === "detail" && (
+        <Detail onClose={() => setActiveModal(null)} todayUsage={todayUsage}>
+          상세분석
+        </Detail>
+      )}
 
       {/* 우측 정보 스택 */}
       <RightInfo $open={railOpen}>
         {/* 1) 책임자 */}
         <InfoGroup>
-          <InfoItem $IsEmissionBtn={IsEmissionBtn} onClick={() => setOpenManager((v) => !v)} aria-expanded={openManager}>
+          <InfoItem
+            $IsEmissionBtn={IsEmissionBtn}
+            onClick={() => setOpenManager((v) => !v)}
+            aria-expanded={openManager}
+          >
             <InfoIcon
               $white
               src="/Icon/manager_icon.svg"
@@ -847,7 +1167,11 @@ function Wing({
 
         {/* 2) 외부날씨 */}
         <InfoGroup>
-          <InfoItem $IsEmissionBtn={IsEmissionBtn} onClick={() => setOpenWeather((v) => !v)} aria-expanded={openWeather}>
+          <InfoItem
+            $IsEmissionBtn={IsEmissionBtn}
+            onClick={() => setOpenWeather((v) => !v)}
+            aria-expanded={openWeather}
+          >
             <InfoIcon
               $white
               src="/Icon/temperature_icon.svg"
@@ -855,9 +1179,15 @@ function Wing({
               onError={imgFallback("/icon/temperature_icon.svg")}
             />
             <InfoLabel>외부온도</InfoLabel>
-            <InfoValue>{outerTemp == null ? "—" : `${Math.round(outerTemp)}°C`}</InfoValue>
+            <InfoValue>
+              {outerTemp == null ? "—" : `${Math.round(outerTemp)}°C`}
+            </InfoValue>
           </InfoItem>
-          <InfoWeather open={openWeather} $IsEmissionBtn={IsEmissionBtn} data-wicon={toIconKey(weatherNow?.weatherStatus)}>
+          <InfoWeather
+            open={openWeather}
+            $IsEmissionBtn={IsEmissionBtn}
+            data-wicon={toIconKey(weatherNow?.weatherStatus)}
+          >
             <p>외부 날씨: {toLabel(weatherNow?.weatherStatus)}</p>
             <p>외부 습도: {outerHumidity == null ? "—" : `${Math.round(outerHumidity)}%`}</p>
             <p>외부 풍속: {outerWind == null ? "—" : `${outerWind} m/s`}</p>
@@ -866,8 +1196,16 @@ function Wing({
 
         {/* 3) 경고/알림 */}
         <InfoGroup>
-          <InfoItem $IsEmissionBtn={IsEmissionBtn} onClick={() => setOpenAlert((v) => !v)} aria-expanded={openAlert}>
-            <InfoIcon src="/Icon/warning_icon.svg" alt="경고/알림" onError={imgFallback("/icon/warning_icon.svg")} />
+          <InfoItem
+            $IsEmissionBtn={IsEmissionBtn}
+            onClick={() => setOpenAlert((v) => !v)}
+            aria-expanded={openAlert}
+          >
+            <InfoIcon
+              src="/Icon/warning_icon.svg"
+              alt="경고/알림"
+              onError={imgFallback("/icon/warning_icon.svg")}
+            />
             <InfoLabel>경고/알림</InfoLabel>
             <InfoValue>{alertCount}</InfoValue>
           </InfoItem>
@@ -891,9 +1229,16 @@ function Wing({
       <>
         {/* 헤더 */}
         <HeaderBox $IsEmissionBtn={IsEmissionBtn}>
-          <HeaderIcon src="public/Icon/header_title_logo.svg" alt="토리 빌딩" onError={imgFallback("/Icon/header_title_logo.svg")} />
-          <HeaderText>
-            {active.active ? `토리 빌딩 - ${MODEL_TO_FLOOR[active.model] + 1}층` : "토리 빌딩"}
+          <HeaderIcon
+            src="public/Icon/header_title_logo.svg"
+            alt="토리 빌딩"
+            onError={imgFallback("/Icon/header_title_logo.svg")}
+            $IsEmissionBtn={IsEmissionBtn}
+          />
+          <HeaderText $IsEmissionBtn={IsEmissionBtn}>
+            {active.active
+              ? `토리 빌딩 - ${MODEL_TO_FLOOR[active.model] + 1}층`
+              : "토리 빌딩"}
           </HeaderText>
         </HeaderBox>
 
@@ -905,7 +1250,13 @@ function Wing({
             onClick={() => setActive({ active: false, model: null })}
             $IsEmissionBtn={IsEmissionBtn}
           >
-            <img src="public/Icon/Home_logo.svg" alt="전체보기" width={24} onError={imgFallback("/Icon/Home_logo.svg")} />
+            <FloorImg
+              src="public/Icon/Home_logo.svg"
+              alt="전체보기"
+              width={24}
+              onError={imgFallback("/Icon/Home_logo.svg")}
+              $IsEmissionBtn={IsEmissionBtn}
+            />
           </FloorButton>
           {MODELS.filter((model) => model !== "top").map((modelName) => (
             <FloorButton
@@ -917,7 +1268,11 @@ function Wing({
               {MODEL_TO_FLOOR[modelName] + 1}F
             </FloorButton>
           ))}
-          <FloorButton className="ToggleBtn" onClick={() => setRailOpen((prev) => !prev)} $IsEmissionBtn={IsEmissionBtn}>
+          <FloorButton
+            className="ToggleBtn"
+            onClick={() => setRailOpen((prev) => !prev)}
+            $IsEmissionBtn={IsEmissionBtn}
+          >
             <img
               src={railOpen ? "Icon/toggle_on.svg" : "Icon/toggle_off.svg"}
               alt={railOpen ? "패널 닫기" : "패널 열기"}
@@ -931,363 +1286,425 @@ function Wing({
 }
 
 /* ---------------------------------------------------------------------
-   [ADD] 전력 API 유틸/요청 + SVG 막대 차트
+   [간단 유틸 + 미니 차트 2종]
 --------------------------------------------------------------------- */
 
-// KST 기준 now
+// KST now
 const KSTnow = () => new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
-
-// yyyy-MM-dd HH:mm:ss 포맷터
 const pad2 = (n) => String(n).padStart(2, "0");
-const fmtTS = (d) => `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+const md = (d) => `${pad2(d.getMonth() + 1)}/${pad2(d.getDate())}`;
+// yyyy-MM-dd HH:mm:ss 포맷
+const ymd_hms = (d) => {
+  const yyyy = d.getFullYear();
+  const MM   = pad2(d.getMonth() + 1);
+  const dd   = pad2(d.getDate());
+  const HH   = pad2(d.getHours());
+  const mm   = pad2(d.getMinutes());
+  const ss   = pad2(d.getSeconds());
+  return `${yyyy}-${MM}-${dd} ${HH}:${mm}:${ss}`;
+};
+// 서버별로 공백/구분자 취향이 다름 → 3가지 포맷 제공
+const ymd_hms_T  = (d) => ymd_hms(d).replace(' ', 'T'); // ISO풍: 2025-10-28T00:00:00
+const ymd_hms_plus = (d) => ymd_hms(d).replace(' ', '+'); // 쿼리: 2025-10-28+00:00:00
 
-// 안전 JSON
-const safeJson = async (res) => {
-  const t = await res.text();
-  try { return JSON.parse(t); } catch { return null; }
+const urlTime = (d, mode='enc') => {
+  if (mode === 'plus')   return ymd_hms_plus(d);         // ‘+’ 선호 서버
+  if (mode === 'isoT')   return ymd_hms_T(d);          // ‘T’ 선호 서버
+  return encodeURIComponent(ymd_hms(d));               // 기본: 공백→%20
 };
 
-// 합계(usage 합)
-const sumUsage = (arr) => Array.isArray(arr) ? arr.reduce((a, b) => a + (Number(b?.usage) || 0), 0) : 0;
+/* ---------------------------
+   탄소배출 API 헬퍼 (slice 호출)
+---------------------------- */
 
-// [API] GET /api/energy/elec?start=...&end=...&datetimeType=0|1|2|3
-async function fetchElec({ start, end, datetimeType }) {
-  const qs = new URLSearchParams({ start, end, datetimeType: String(datetimeType) }).toString();
-  const res = await fetch(`/api/energy/elec?${qs}`, { method: "GET" });
+// 하루 범위
+const rangeDay = (d) => {
+  const s = new Date(d); s.setHours(0,0,0,0);
+  const e = new Date(d); e.setHours(23,59,59,999);
+  return [s,e];
+};
+
+// 월 범위 (y: 4자리 연도, m: 1~12)
+const rangeMonth = (y, m) => {
+  const s = new Date(y, m-1, 1, 0,0,0,0);
+  const e = new Date(y, m,   0, 23,59,59,999); // 그 달의 마지막 날 23:59:59
+  return [s,e];
+};
+
+// (필요 시) 연 범위
+const rangeYear = (y) => {
+  const s = new Date(y, 0, 1, 0,0,0,0);
+  const e = new Date(y,11,31,23,59,59,999);
+  return [s,e];
+};
+
+// 실제 호출 (문서 포맷 준수: 공백 포함 → encodeURIComponent)
+async function apiCarbon(start, end, datetimeType) {
+  const u = `/api/stats/carbon?start=${urlTime(start,'enc')}&end=${urlTime(end,'enc')}&datetimeType=${datetimeType}`;
+  const res = await fetch(u, { headers: { Accept:'application/json' } });
   if (!res.ok) {
-    const payload = await safeJson(res);
-    throw new Error(`에너지 API 오류 ${res.status}` + (payload ? `: ${JSON.stringify(payload)}` : ""));
+    console.warn('[carbon] HTTP', res.status, u);
+    return [];
   }
-  const json = await res.json();
-  return Array.isArray(json?.datas) ? json.datas : [];
-}
-
-// [API] GET /api/stats/carbon?start=...&end=...&datetimeType=0|1|2|3
-async function fetchCarbon({ start, end, datetimeType }) {
-  const qs = new URLSearchParams({ start, end, datetimeType: String(datetimeType) }).toString();
-  const res = await fetch(`/api/stats/carbon?${qs}`, { method: "GET" });
-  if (!res.ok) {
-    const payload = await safeJson(res);
-    throw new Error(`탄소배출 API 오류 ${res.status}` + (payload ? `: ${JSON.stringify(payload)}` : ""));
+  try {
+    return await res.json();
+  } catch {
+    return [];
   }
-  // carbon 응답은 배열 루트: [{timestamp, usage}, ...]
-  const json = await res.json();
-  return Array.isArray(json) ? json : [];
+}
+
+// 공통: 응답에서 usage만 안전합산
+const sumUsage = (rows) => unwrapRows(rows).reduce((acc, r) => acc + pickVal(r), 0);
+
+// 월별 합계 (그 달 하루하루를 백엔드가 day(1)만 허용한다면 day루프가 필요하지만,
+// 문서에 month(2)가 있다면 "한 달을 month(2) 한 번"으로 충분)
+async function monthlyTotalByType2(y, m) {
+  const [s,e] = rangeMonth(y,m);
+  const rows = await apiCarbon(s, e, 2);
+  return sumUsage(rows);
 }
 
 
 
-/* -----------------------------
-   비교범위(전일 / 전년)
-------------------------------*/
-// 전일 대비: 오늘 00:00~지금 vs 어제 00:00~어제의 '같은 시각' (시간단위=0)
-function buildDailyRanges() {
-  const now = KSTnow();
+// --- 응답 스키마 방어 유틸(배치: urlTime 아래) ---
+const unwrapRows = (json) => Array.isArray(json?.data) ? json.data : (Array.isArray(json) ? json : []);
 
-  const today0 = new Date(now); today0.setHours(0,0,0,0);
-  const yesterday0 = new Date(today0); yesterday0.setDate(yesterday0.getDate()-1);
+const pickTs = (r) => r?.timestamp ?? r?.time ?? r?.date ?? r?.datetime ?? "";
 
-  const yesterdayNow = new Date(
-    yesterday0.getFullYear(), yesterday0.getMonth(), yesterday0.getDate(),
-    now.getHours(), now.getMinutes(), now.getSeconds()
-  );
-
-  return {
-    today:     { start: fmtTS(today0),     end: fmtTS(now),          datetimeType: 0 },
-    yesterday: { start: fmtTS(yesterday0), end: fmtTS(yesterdayNow),  datetimeType: 0 },
-  };
-}
-
-// 전년 대비: 올해 1/1 00:00~지금 vs 작년 1/1 00:00~작년의 '같은 월/일/시각' (일단위=1)
-function buildYearlyRanges() {
-  const now = KSTnow();
-  const thisYStart = new Date(now.getFullYear(), 0, 1, 0,0,0);
-  const lastYStart = new Date(now.getFullYear()-1, 0, 1, 0,0,0);
-  const lastYNow   = new Date(now.getFullYear()-1, now.getMonth(), now.getDate(),
-                               now.getHours(), now.getMinutes(), now.getSeconds());
-
-  return {
-    thisYear: { start: fmtTS(thisYStart), end: fmtTS(now),     datetimeType: 1 },
-    lastYear:{ start: fmtTS(lastYStart),  end: fmtTS(lastYNow), datetimeType: 1 },
-  };
-}
+const pickVal = (r) => {
+  // 서버가 배출량을 usage/value/amount/total 등으로 줄 수 있음 → 숫자만 안전 추출
+  const n = Number(r?.usage ?? r?.value ?? r?.amount ?? r?.total ?? 0);
+  return Number.isFinite(n) ? n : 0;
+};
 
 
 
+/* 전일 대비 (프롭 기반 미니 바차트) */
+/* 전일 대비 (프롭 기반 미니 바차트) — 클릭/호버 툴팁(안전 가드 버전) */
+function DailyElecCompareMini({ today = 0, yesterday = 0, labels = ["어제", "오늘"], IsEmissionBtn }) {
+  const ref = useRef(null);
+  const [tip, setTip] = useState(null);
 
-
-/* -----------------------------
-   전일 대비 (어제 vs 오늘) 2막대 + MM/DD 라벨
-------------------------------*/
-function DailyElecCompareChart({ IsEmissionBtn }) {
-  const [loading, setLoading] = useState(true);
-  const [err, setErr]         = useState(null);
-  const [todaySum, setToday]  = useState(0);
-  const [yestSum, setYest]    = useState(0);
-  const [labels, setLabels]   = useState(["오늘","어제"]); // MM/DD로 덮어씀
-
-  
-  // Y축 눈금: 정수 표기 (캡 X)
-  const fmtTick = (n) => String(Math.round(Number(n) || 0));
-
-  // yyyy-MM-dd HH:mm:ss → MM/DD
-  const toMD = (d) => {
-    const m = String(d.getMonth()+1).padStart(2,"0");
-    const day = String(d.getDate()).padStart(2,"0");
-    return `${m}/${day}`;
+  // 좌표 계산을 안전하게: wrapper ref → SVG → 이벤트 타겟 순으로 fallback
+  const getLocalXY = (e) => {
+    const clientX = e.clientX ?? e.touches?.[0]?.clientX ?? 0;
+    const clientY = e.clientY ?? e.touches?.[0]?.clientY ?? 0;
+    const svg = e.currentTarget?.ownerSVGElement;
+    const rect =
+      ref.current?.getBoundingClientRect?.() ??
+      svg?.getBoundingClientRect?.() ??
+      e.currentTarget?.getBoundingClientRect?.() ??
+      { left: 0, top: 0 };
+    return { x: clientX - rect.left, y: clientY - rect.top - 6 };
   };
 
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      setLoading(true); setErr(null);
-      try {
-        // 토글에 따라 데이터 소스 선택 (전력 vs 탄소배출)
-        const fetcher = IsEmissionBtn ? fetchCarbon : fetchElec;
-        // 오늘/어제 범위 (시간단위=0) → 합계
-        const now = KSTnow();
-        const today0 = new Date(now); today0.setHours(0,0,0,0);
-        const yesterday0 = new Date(today0); yesterday0.setDate(yesterday0.getDate()-1);
-        const yesterdayNow = new Date(yesterday0.getFullYear(), yesterday0.getMonth(), yesterday0.getDate(),
-                                      now.getHours(), now.getMinutes(), now.getSeconds());
+  const toggleTip = (e, label, value) => {
+    const currentLabel = tip?.lines?.[0]?.label;
+    // 같은 항목을 다시 클릭하면 닫기
+    if (tip?.show && currentLabel === label) {
+      setTip({ ...tip, show: false });
+      return;
+    }
+    const { x, y } = getLocalXY(e);
+    setTip({
+      show: true,
+      x, y,
+      title: "전일 대비 전력 사용량",
+      unit: IsEmissionBtn ? EMISSION_UNIT : "kWh",
+      lines: [{ label, value: Number(value || 0).toLocaleString("ko-KR") }],
+    });
+  };
 
-        const ranges = {
-          today:     { start: fmtTS(today0),     end: fmtTS(now),          datetimeType: 0 },
-          yesterday: { start: fmtTS(yesterday0), end: fmtTS(yesterdayNow), datetimeType: 0 },
-        };
 
-        const [d1, d2] = await Promise.all([ fetcher(ranges.today), fetcher(ranges.yesterday) ]);
-        if (!alive) return;
 
-        setToday(sumUsage(d1));
-        setYest(sumUsage(d2));
-        setLabels([toMD(yesterday0), toMD(now)]);
-      } catch (e) {
-        if (alive) setErr(e.message || String(e));
-      } finally {
-        if (alive) setLoading(false);
-      }
-    })();
-    return () => { alive = false; };
-  }, [IsEmissionBtn]); // 토글 바뀌면 다시 조회
 
-  // ── 렌더: 두 막대 + MM/DD 라벨 ─────────────────────────────────────
-  const dataMax = Math.max(1, todaySum, yestSum);
+
   const W = 100, H = 100;
-  const PL = 10, PR = 10;
-  const PT = 10, PB = 18; // 상/하 패딩 (X축 라벨 여유 포함)
-  const plotW = W - PL - PR;
-  const plotH = H - PT - PB;
+  const PL = 10, PR = 10, PT = 18, PB = 18;
+  const plotW = W - PL - PR, plotH = H - PT - PB;
 
-  const yMax  = Math.max(1, dataMax);
+  const maxV = Math.max(1, today, yesterday);
+  const h = (v) => Math.max(3, (v / maxV) * plotH);
 
-  const barW = 22, gap = 16, total = barW*2 + gap;
-  const gX = PL + (plotW - total)/2;
-  const h  = (v)=>Math.max(3,(v/yMax)*plotH);
-  const aTop = H - PB - h(yestSum);
-  const bTop = H - PB - h(todaySum);
+  const barW = 22, gap = 16, total = barW * 2 + gap;
+  const gX = PL + (plotW - total) / 2;
 
-  const colA  = "rgba(180,180,180,0.9)";  // 전일=회색
-  const colB  = "#FAFAFA";                // 금일=흰색(요청)
-  const label = "rgba(255,255,255,0.98)";
+  const aTop = H - PB - h(yesterday);
+  const bTop = H - PB - h(today);
 
-  const stroke="rgba(0,0,0,0.35)";
-  const fmt=(n)=>Number.isFinite(n)?n.toLocaleString("ko-KR"):"0";
+  const axis = "rgba(255,255,255,0.28)";
+
+  const colA = "rgba(180,180,180,0.9)"; // 어제
+  const colB = "#FAFAFA";                // 오늘
+  const labelC = "rgba(255,255,255,0.98)";
 
   return (
-    <ChartCanvas role="img" aria-label="전일 대비 전력 사용량">
-      {loading && <div style={{padding:"8px",color:"#fff"}}>불러오는 중…</div>}
-      {err && <div style={{padding:"8px",color:"#ff7777"}}>에러: {err}</div>}
-      {!loading && !err && (
-        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
+    <ChartCanvas ref={ref} role="img" aria-label="전일 대비 전력 사용량(간단)">
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        preserveAspectRatio="none"
+        onPointerDown={(e)=>{ 
+          // 빈 영역 클릭 시 닫기 (핫존<rect>에서 stop하지 않았으므로 우선 간단히 조건부로)
+          if (tip?.show) setTip({ ...tip, show:false });
+        }}
+      >
+        {IsEmissionBtn && (
+          <defs>
+            <filter id="svgTextShadow" x="-50%" y="-50%" width="200%" height="200%">
+              <feDropShadow dx="2" dy="3" stdDeviation="2" flood-color="#000" flood-opacity="0.3"/>
+            </filter>
+          </defs>
+        )}
+        
+        {/* 축 */}
+        <line x1={PL} y1={H-PB} x2={W-PR} y2={H-PB} stroke={axis} strokeWidth="1.2" strokeLinecap="round" />
+        <line x1={PL} y1={PT}   x2={PL}   y2={H-PB} stroke={axis} strokeWidth="1.2" strokeLinecap="round" />
 
-          {/* 내부 패널만 라운드로 남김 */}
-          <line x1={PL} y1={H-PB} x2={W-PR} y2={H-PB}
-            stroke="rgba(255,255,255,0.28)" strokeWidth="1.2" strokeLinecap="round" />
-          <line x1={PL} y1={PT}   x2={PL}   y2={H-PB}
-            stroke="rgba(255,255,255,0.28)" strokeWidth="1.2" strokeLinecap="round" />
+        {/* 어제 */}
+        <path
+          d={`M${gX} ${aTop + h(yesterday)}
+              L${gX} ${aTop + 3}
+              Q${gX} ${aTop} ${gX + 3} ${aTop}
+              L${gX + barW - 3} ${aTop}
+              Q${gX + barW} ${aTop} ${gX + barW} ${aTop + 3}
+              L${gX + barW} ${aTop + h(yesterday)} Z`}
+          fill={colA}
+          stroke="none"
+        />
 
-          {/* 어제 */}
-          <rect x={gX}
-                y={aTop}
-                width={barW}
-                height={h(yestSum)}
-                rx="3" ry="3"
-                fill={colA}
-                stroke={stroke} strokeWidth="0.6">
-            <title>{`어제(${labels[0]}): ${fmt(yestSum)}`}</title>
-          </rect>
+        {/* 오늘 */}
+        <path
+          d={`M${gX + barW + gap} ${bTop + h(today)}
+              L${gX + barW + gap} ${bTop + 3}
+              Q${gX + barW + gap} ${bTop} ${gX + barW + gap + 3} ${bTop}
+              L${gX + 2*barW + gap - 3} ${bTop}
+              Q${gX + 2*barW + gap} ${bTop} ${gX + 2*barW + gap} ${bTop + 3}
+              L${gX + 2*barW + gap} ${bTop + h(today)} Z`}
+          fill={colB}
+          stroke="none"
+        />
 
-          {/* 오늘 */}
-          <rect x={gX+barW+gap}
-                y={bTop}
-                width={barW}
-                height={h(todaySum)}
-                rx="3" ry="3"
-                fill={colB}
-                stroke={stroke} strokeWidth="0.6">
-            <title>{`오늘(${labels[1]}): ${fmt(todaySum)}`}</title>
-          </rect>
+        {/* 투명 클릭/호버 핫존 */}
+        <rect
+          x={gX - barW*0.2} y={PT} width={barW*1.4} height={H-PT-PB}
+          fill="transparent" role="button" tabIndex={0}
+          onPointerDown={(e)=>{ e.preventDefault(); e.currentTarget.blur?.(); toggleTip(e, labels[0], yesterday); }}
+          aria-label={`${labels[0]} 사용량 ${Number(yesterday||0).toLocaleString("ko-KR")} ${IsEmissionBtn ? "kgCO₂e":"kWh"} 보기`}
+        />
+        <rect
+          x={gX + barW + gap - barW*0.2} y={PT} width={barW*1.4} height={H-PT-PB}
+          fill="transparent" role="button" tabIndex={0}
+          onPointerDown={(e)=>{ e.preventDefault(); e.currentTarget.blur?.(); toggleTip(e, labels[1], today); }}
+          aria-label={`${labels[1]} 사용량 ${Number(today||0).toLocaleString("ko-KR")} ${IsEmissionBtn ? "kgCO₂e":"kWh"} 보기`}
+        />
 
-          {/* X축 라벨(MM/DD) */}
-          <text x={gX+barW/2}           y={H-5}  fontSize="10" fontWeight="800"
-            fill={label} textAnchor="middle" dominantBaseline="alphabetic">{labels[0]}</text>
-          <text x={gX+barW+gap+barW/2}  y={H-5}  fontSize="10" fontWeight="800"
-            fill={label} textAnchor="middle" dominantBaseline="alphabetic">{labels[1]}</text>
+        {/* 라벨 */}
+        <text x={gX + barW/2}             y={H-5} fontSize="10" fontWeight="800" fill={labelC} textAnchor="middle" filter={IsEmissionBtn ? "url(#svgTextShadow)" : undefined}>{labels[0]}</text>
+        <text x={gX + barW + gap + barW/2} y={H-5} fontSize="10" fontWeight="800" fill={labelC} textAnchor="middle" filter={IsEmissionBtn ? "url(#svgTextShadow)" : undefined}>{labels[1]}</text>
+      </svg>
 
-
-        </svg>
-      )}
+      {/* 우측 상단 레전드 */}
+      <LegendWrap aria-hidden="true">
+        <LegendItem>
+          <SwatchSquare $color={colA} />
+          <span>전일</span>
+        </LegendItem>
+        <LegendItem>
+          <SwatchSquare $color={colB} />
+          <span>금일</span>
+        </LegendItem>
+      </LegendWrap>
+      <TooltipOverlay tip={tip} containerRef={ref} />
     </ChartCanvas>
   );
 }
 
-/* -----------------------------
-   전년 대비 (월별 1~12) 라인: 전년(아래/회색) + 금년(위/강조)
-------------------------------*/
 
-// yyyy-MM-dd HH:mm:ss → Date (KST 보정)
-const parseTS = (ts) => {
-  // "YYYY-MM-DD HH:mm:ss" -> "YYYY-MM-DDTHH:mm:ss+09:00"
-  try { return new Date(ts.replace(" ", "T") + "+09:00"); }
-  catch { return new Date(ts); }
-};
+function YearCompareLineMini({ thisYear = [], lastYear = [], IsEmissionBtn }) {
+  const ref = useRef(null);
+  const [tip, setTip] = useState(null);
 
-// 해당 연도의 월별 합계를 12칸 배열로
-async function fetchMonthlySeries(year) {
-  const start = fmtTS(new Date(year, 0, 1, 0,0,0));
-  const now   = KSTnow();
-  // end는 같은 해 12/31 23:59:59까지 요청해도, 서버는 있는 달만 줄 걸로 가정
-  const end   = fmtTS(new Date(year, 11, 31, 23,59,59));
+  const getLocalXY = (e) => {
+    const clientX = e.clientX ?? e.touches?.[0]?.clientX ?? 0;
+    const clientY = e.clientY ?? e.touches?.[0]?.clientY ?? 0;
+    const svg = e.currentTarget?.ownerSVGElement;
+    const rect =
+      ref.current?.getBoundingClientRect?.() ??
+      svg?.getBoundingClientRect?.() ??
+      e.currentTarget?.getBoundingClientRect?.() ??
+      { left: 0, top: 0 };
+    return { x: clientX - rect.left, y: clientY - rect.top };
+  };
 
-  const datas = await fetchElec({ start, end, datetimeType: 2 }); // month
-  const arr = Array.from({length:12}, ()=>0);
-  datas.forEach(d => {
-    const dt = parseTS(d.timestamp);
-    const mi = dt.getMonth(); // 0~11
-    arr[mi] += Number(d?.usage) || 0;
-  });
-  return arr;
-}
+  const toggleTip = (e, label, value) => {
+    const currentLabel = tip?.lines?.[0]?.label;
+    if (tip?.show && currentLabel === label) {
+      setTip({ ...tip, show: false });
+      return;
+    }
+    const { x, y } = getLocalXY(e);
+    setTip({
+      show: true, x, y,
+      title: "전년 대비 전력 사용량",
+      unit: IsEmissionBtn ? EMISSION_UNIT : "kWh",
+      lines: [{ label, value: fmtSmart(value) }],
+    });
+  };
 
-function YearElecCompareChart({ IsEmissionBtn }) {
-  const [loading, setLoading] = useState(true);
-  const [err, setErr]         = useState(null);
-  const [thisY, setThisY]     = useState(Array(12).fill(0));
-  const [lastY, setLastY]     = useState(Array(12).fill(0));
-  const [currMonth, setCurrMonth] = useState((KSTnow().getMonth())); // 0=Jan
 
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      setLoading(true); setErr(null);
-      // 탄소배출 모드에서는 아직 데이터 없음 → 바로 스켈레톤 상태로 종료
-      if (IsEmissionBtn) {
-        if (alive) setLoading(false);
-        return;
-      }
-      try {
-        const now = KSTnow();
-        const y  = now.getFullYear();
-        const ly = y-1;
-        const [sThis, sLast] = await Promise.all([ 
-          fetchMonthlySeries(y),
-          fetchMonthlySeries(ly) 
-        ]);
-        if (!alive) return;
-        setThisY(sThis);
-        setLastY(sLast);
-        setCurrMonth(now.getMonth());
-      } catch (e) {
-        if (alive) setErr(e.message || String(e));
-      } finally {
-        if (alive) setLoading(false);
-      }
-    })();
-    return () => { alive = false; };
-  }, [IsEmissionBtn]);
+  // ✅ 소수 자릿수 그대로 보여주는 포맷터 (최대 6자리 보호)
+  const fracLen = (x) => {
+    const s = String(x);
+    const i = s.indexOf(".");
+    return i >= 0 ? Math.min(6, s.length - i - 1) : 0;
+  };
+  const fmtSmart = (x) => {
+    const v = Number(x);
+    if (!Number.isFinite(v)) return "0";
+    const f = fracLen(x);
+    return new Intl.NumberFormat("ko-KR", {
+      minimumFractionDigits: f,
+      maximumFractionDigits: f,
+    }).format(v);
+  };
 
-  // ── 좌표/스케일: Daily와 동일 규격 ────────────────────────────────
+
   const W = 100, H = 100;
-  const PL = 10, PR = 10;
-  const PT = 10, PB = 18;             // 내부 여백(축/라벨 확보)
-  const plotW = W - PL - PR;
-  const plotH = H - PT - PB;
+  const PL = 2, PR = 5, PT = 22, PB = 18;
+  const plotW = W - PL - PR, plotH = H - PT - PB;
 
-  const months = Array.from({ length: 12 }, (_, i) => i); // 0..11
-  const quarterIdx = [2, 5, 8, 11]; // 3,6,9,12월 인덱스
+  const thisY = thisYear.length ? thisYear : [50, 80, 60, 100, 70, 90, 80, 60, 40, 30, 20, 10];
+  const lastY = lastYear.length ? lastYear : [40, 70, 50, 90, 60, 80, 70, 50, 30, 20, 10, 5];
+
   const maxVal = Math.max(1, ...thisY, ...lastY);
-  const x = (i) => PL + (plotW * i / 11);
-  const y = (v) => H - PB - (v / maxVal) * plotH;
+  const x = (i) => PL + (plotW * i) / 11;
+  const Y_SHIFT = 10;
+  const yBase = (v) => H - PB - (v / maxVal) * plotH;
+  const y = (v) => Math.min(H - PB - 3, yBase(v) + Y_SHIFT);
 
-  // 라인 경로
-  const toPath = (arr, limitIdx = 11) =>
-    arr.map((v, i) => (i > limitIdx ? null : `${i === 0 ? "M" : "L"} ${x(i)} ${y(v)}`))
-       .filter(Boolean)
-       .join(" ");
+  const quarterIdx = [2, 5, 8, 11];
+  const toPathByIdx = (arr, idxs) =>
+    idxs.map((i, j) => `${j === 0 ? 'M' : 'L'} ${x(i)} ${y(arr[i])}`).join(' ');
 
-  const pathLast = toPath(lastY, 11);
-  const pathThis = toPath(thisY, currMonth); // 금년은 현재 월까지만
+  const pathLast = toPathByIdx(lastY, quarterIdx);
+  const pathThis = toPathByIdx(thisY, quarterIdx);
 
-  // 색/스타일: Daily와 톤을 맞춤
-  const axis  = "rgba(255,255,255,0.28)";
-  const colLast = "rgba(180,180,180,0.9)";     // 전년=회색
-  const colThis = "#FAFAFA";                   // 금년=흰색
-  const label   = "rgba(255,255,255,0.98)";
+  const colAxis = "rgba(255,255,255,0.28)";
+  const colLast = "rgba(255,255,255,0.28)";
+  const colThis = "#FAFAFA";
+  const labelC  = "rgba(255,255,255,0.98)";
+  const labelY  = H - 5;
 
-  // 하단 라벨: Daily와 동일 위치/크기
-  const labelY = H - 5;        // 바닥에서 5px 위
-  const labelFS = 10;
+  const R_LAST = 3.2, R_THIS = 3.6, R_CUT = Math.max(R_LAST, R_THIS) + 1.2;
+  const commonLineProps = {
+    fill: "none",
+    vectorEffect: "non-scaling-stroke",
+    strokeLinejoin: "round",
+    strokeLinecap: "round",
+    shapeRendering: "geometricPrecision",
+  };
 
   return (
-    <ChartCanvas role="img" aria-label="전년 대비 전력 사용량">
-      {loading && <div style={{ padding: "8px", color: "#fff" }}>불러오는 중…</div>}
-      {err && <div style={{ padding: "8px", color: "#ff7777" }}>에러: {err}</div>}
-      {!loading && !err && (
-        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none"
-             style={{ textRendering: "geometricPrecision" }}>
-          {/* 축 (Daily와 동일 톤/두께) */}
-          <line x1={PL} y1={H-PB} x2={W-PR} y2={H-PB}
-                stroke={axis} strokeWidth="1.2" strokeLinecap="round" />
-          <line x1={PL} y1={PT}   x2={PL}   y2={H-PB}
-                stroke={axis} strokeWidth="1.2" strokeLinecap="round" />
+    <ChartCanvas ref={ref} role="img" aria-label="연간 전력 사용량(전년/금년)">
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        preserveAspectRatio="xMidYMid meet"
+        onPointerDown={()=>{ if (tip?.show) setTip({ ...tip, show:false }); }}
+      >
+        {IsEmissionBtn && (
+          <defs>
+            <filter id="svgTextShadowY" x="-50%" y="-50%" width="200%" height="200%">
+              <feDropShadow dx="2" dy="3" stdDeviation="2" flood-color="#000" flood-opacity="0.3"/>
+            </filter>
+          </defs>
+        )}
+        {/* 축 */}
+        <line x1={PL} y1={H-PB} x2={W-PR} y2={H-PB} stroke={colAxis} strokeWidth="1.2" />
+        <line x1={PL} y1={PT}   x2={PL}   y2={H-PB} stroke={colAxis} strokeWidth="1.2" />
 
-          {/* 전년: 회색 라인 + 점(연결감 강화) */}
-          <path d={pathLast} fill="none" stroke={colLast} strokeWidth="1.0"
-                strokeLinecap="round" strokeLinejoin="round" />
-          {quarterIdx.map((i) => (
-            <circle key={`l-${i}`} cx={x(i)} cy={y(lastY[i])} r="1.8" fill={colLast} />
-          ))}
+        {/* 선-도트 겹침 제거 마스크 */}
+        <defs>
+          <mask id="cut-lines-under-dots">
+            <rect x="0" y="0" width={W} height={H} fill="white" />
+            {quarterIdx.map((i) => (
+              <circle key={`m-last-${i}`} cx={x(i)} cy={y(lastY[i])} r={R_CUT} fill="black" />
+            ))}
+            {quarterIdx.map((i) => (
+              <circle key={`m-this-${i}`} cx={x(i)} cy={y(thisY[i])} r={R_CUT} fill="black" />
+            ))}
+          </mask>
+        </defs>
 
-          {/* 금년: 흰색 라인 + 점(현재월까지만) */}
-          <path d={pathThis} fill="none" stroke={colThis} strokeWidth="1.6"
-                strokeLinecap="round" strokeLinejoin="round" />
-          {quarterIdx.filter(i => i <= currMonth).map((i) => (
-            <circle key={`t-${i}`} cx={x(i)} cy={y(thisY[i])} r="2.2" fill={colThis} />
-          ))}
+        {/* 라인 (마스크 적용) */}
+        <g mask="url(#cut-lines-under-dots)">
+          <path d={pathLast} stroke={colLast} strokeWidth="1.6" {...commonLineProps} />
+          <path d={pathThis} stroke={colThis} strokeWidth="2.0" {...commonLineProps} />
+        </g>
 
-           // 숫자 크기(10) 유지, "월"만 8로 축소
-          {quarterIdx.map((i) => (
-            <text key={`q-${i}`}
-                  x={x(i) - 1.5}
-                  y={labelY}
-                  fontWeight="700"
-                  fill={label}
-                  textAnchor="middle"
-                  dominantBaseline="alphabetic">
-              <tspan fontSize="10">{i + 1}</tspan>
-              <tspan fontSize="7" dx="0.5">월</tspan>
-            </text>
-          ))}
-        </svg>
-      )}
+        {/* 전년도 도트 + 넉넉한 클릭 영역 */}
+        {quarterIdx.map((i) => {
+          const cx = x(i), cy = y(lastY[i]);
+          const label = `${new Date().getFullYear()-1}년 ${i+1}월`;
+          return (
+            <g key={`last-${i}`}>
+              <circle cx={cx} cy={cy} r={R_LAST} fill={colLast} />
+              <circle
+                cx={cx} cy={cy} r={R_THIS+4}
+                fill="transparent" role="button" tabIndex={0}
+                onPointerDown={(e)=>toggleTip(e, label, lastY[i])}
+                aria-label={`${label} 사용량 ${Number(lastY[i]||0).toLocaleString("ko-KR")} ${IsEmissionBtn ? "kgCO₂e":"kWh"} 보기`}
+              />
+            </g>
+          );
+        })}
+
+        {/* 금년도 도트 + 넉넉한 클릭 영역 */}
+        {quarterIdx.map((i) => {
+          const cx = x(i), cy = y(thisY[i]);
+          const label = `${new Date().getFullYear()}년 ${i+1}월`;
+          return (
+            <g key={`this-${i}`}>
+              <circle cx={cx} cy={cy} r={R_THIS} fill={colThis} />
+              <circle
+                cx={cx} cy={cy} r={R_THIS+4}
+                fill="transparent" role="button" tabIndex={0}
+                onPointerDown={(e)=>toggleTip(e, label, thisY[i])}
+                aria-label={`${label} 사용량 ${Number(thisY[i]||0).toLocaleString("ko-KR")} ${IsEmissionBtn ? "kgCO₂e":"kWh"} 보기`}
+              />
+            </g>
+          );
+        })}
+
+        {/* 라벨 */}
+        {quarterIdx.map((i) => (
+          <text key={`label-${i}`} filter={IsEmissionBtn ? "url(#svgTextShadowY)" : undefined} x={x(i)} y={labelY} fontSize="10" fontWeight="800" fill={labelC} textAnchor="middle">
+            {i + 1}<tspan fontSize="7" dx="0.5">월</tspan>
+          </text>
+        ))}
+      </svg>
+      {/* 우측 상단 레전드 : 동그라미+선 */}
+      <LegendWrap aria-hidden="true">
+        <LegendItem>
+          <LineDot line={colLast} dot={colLast} />
+          <span>전년</span>
+        </LegendItem>
+        <LegendItem>
+          <LineDot line={colThis} dot={colThis} />
+          <span>금년</span>
+        </LegendItem>
+      </LegendWrap>
+      <TooltipOverlay tip={tip} containerRef={ref} />
     </ChartCanvas>
   );
 }
+
+
+
+
+
 
 
 
 
 
 export default Wing;
-
