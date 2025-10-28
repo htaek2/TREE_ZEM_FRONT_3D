@@ -1088,7 +1088,6 @@ function App() {
           <SimpleMarkers markerInfo={makerInfo.markerInfo} selectFloor={active.model} selectedMarker={selectedMarker} setSelectedMarker={setSelectedMarker} />
         </Canvas>
 
-
         <BrandClock />
 
         <Wing

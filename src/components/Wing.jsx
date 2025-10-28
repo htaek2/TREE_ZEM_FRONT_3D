@@ -650,6 +650,7 @@ function Wing({
   todayComparisonRatio={},
   monthComparisonRatio={},
   AvgFee = 0,
+  onFloorButtonClick,
 }) {
   const [managerName] = useState("이**");
   const [alertCount, setAlertCount] = useState(0);
@@ -660,7 +661,13 @@ function Wing({
 
   const handleModelButtonClick = (modelName) => {
     if (modelName === "top") return;
-    setActive({ active: true, model: modelName });
+    // SceneContainer의 handleFloorButtonClick 호출 (OrbitControls 타겟 업데이트 포함)
+    if (onFloorButtonClick?.current) {
+      onFloorButtonClick.current(modelName);
+    } else {
+      // fallback: ref가 없는 경우 기본 동작
+      setActive({ active: true, model: modelName });
+    }
     setSelectedDevice(null);
   };
 
