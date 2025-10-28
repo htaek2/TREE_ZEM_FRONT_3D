@@ -458,7 +458,7 @@ function Detail({ onClose, todayUsage }) {
                 const colors = ['red', 'yellow', 'blue', 'green', 'orange', 'purple']; // 색상 배열
                 const datasets = filteredData.map((item, index) => {
                         return {
-                        label: `${DetailSelected} - ${SelectedFloor[index]} 층`,
+                        label: `${DetailSelected}` === "가스" ? `${DetailSelected}` : `(${DetailSelected} - ${SelectedFloor[index]} 층)`,
                         data: item.datas.map(d => d.usage),
                         borderColor: colors[index % colors.length],
                         backgroundColor: 'transparent',

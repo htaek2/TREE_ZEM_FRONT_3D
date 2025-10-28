@@ -821,7 +821,25 @@ function Wing({
           현황
         </Condition>
       )}
-      {activeModal === "analysis" && <Analysis onClose={() => setActiveModal(null)}>통합분석</Analysis>}
+      {activeModal === "analysis" && 
+        <Analysis 
+          onClose={() => setActiveModal(null)}
+          elecUsage={todayUsage.elec}
+          waterUsage={todayUsage.water}
+          gasUsage={todayUsage.gas}
+          yesterdayUsage={yesterdayUsage}
+          monthElecUsage={monthUsage.elec}
+          monthWaterUsage={monthUsage.water}
+          monthGasUsage={monthUsage.gas}
+          lastMonthUsage={lastMonthUsage}
+          buildingInfo={buildingInfo}
+          billInfo={billInfo}
+          todayComparisonRatio={todayComparisonRatio}
+          monthComparisonRatio={monthComparisonRatio} 
+          AvgFee={AvgFee}
+        >
+          통합분석
+        </Analysis>}
       {activeModal === "detail" && <Detail onClose={() => setActiveModal(null)} todayUsage={todayUsage}>상세분석</Detail>}
 
       {/* 우측 정보 스택 */}
