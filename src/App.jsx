@@ -63,7 +63,6 @@ function App() {
   const [active, setActive] = useState({ active: false, model: null });
   const modelsToShow = active.active ? [active.model] : MODELS;
   const [selectedDevice, setSelectedDevice] = useState(null);
-  const [computers, setComputer] = useState([]);
   const cameraSettings = useMemo(
     () => getResponsiveCameraSettings(auth.isAuthenticated, active),
     [auth.isAuthenticated, active]
@@ -1115,7 +1114,7 @@ function App() {
         />
 
         {selectedMarker && (
-          <MarkerPanel selectedMarker={selectedMarker} setSelectedMarker={setSelectedMarker} postSwitching={postSwitching} />
+          <MarkerPanel floors={floors} selectedMarker={selectedMarker} setSelectedMarker={setSelectedMarker} postSwitching={postSwitching} />
       )}
       </Container>
     </>
