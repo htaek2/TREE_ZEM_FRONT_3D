@@ -204,7 +204,7 @@ const MarkerPanel = ({ selectedMarker, setSelectedMarker, postSwitching }) => {
           
           <ActionButtons>
             <Button $active={selectedMarker.status === 1} $primary onClick={() => postSwitching(selectedMarker)}>
-              On
+              {selectedMarker.status === 1 ? "OFF" : "ON"}
             </Button>
           </ActionButtons>
         </ContentBody>

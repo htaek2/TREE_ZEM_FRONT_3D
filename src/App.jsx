@@ -157,30 +157,70 @@ function App() {
   });
 
 
+ 
 
-  const postSwitching = (selectedMarker) => {
-      fetch(`/api/device/${selectedMarker.deviceId}`, {
-      method: 'PATCH', // HTTP 메서드를 'PATCH'로 설정합니다.
-      headers: {
-        'Content-Type': 'application/json' // 보낼 데이터의 형식을 지정합니다.
-      },
-      body: {
-        "status" : selectedMarker.status
+
+   const postSwitching = async (selectedMarker) => {
+    try {
+      const newStatus = !selectedMarker.status ? 1 : 0;
+
+      const response = await fetch(`/api/device/${selectedMarker.deviceId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          status: newStatus
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
       }
-    })
-    .then(response => {
-  if (!response.ok) {
-    throw new Error('네트워크 응답이 좋지 않습니다.');
-  }
-  return response.json(); // 응답 데이터를 JSON으로 파싱합니다.
-})
-.then(data => {
-  console.log('성공:', data); // 성공적인 응답 데이터입니다.
-})
-.catch(error => {
-  console.error('에러:', error); // 요청 중 에러가 발생했을 때 처리합니다.
-});
-}
+
+      // 응답이 JSON인지 텍스트인지 확인
+      const contentType = response.headers.get('content-type');
+      let data;
+
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        data = await response.text();
+      }
+
+      console.log('성공:', data);
+
+      // state 업데이트: makerInfo의 해당 마커 상태 변경
+      setMakerInfo(prev => {
+        const updatedMarkers = prev.markerInfo.map(marker => {
+          if (marker.deviceId === selectedMarker.deviceId) {
+            return {
+              ...marker,
+              status: newStatus
+            };
+          }
+          return marker;
+        });
+        return {
+          ...prev,
+          markerInfo: updatedMarkers
+        };
+      });
+
+      // selectedMarker도 업데이트 (패널 즉시 반영)
+      setSelectedMarker(prev => ({
+        ...prev,
+        status: newStatus
+      }));
+
+      return data;
+    } catch (error) {
+      console.error('실패:', error);
+      throw error;
+    }
+  };
+
+
 
   const getDevices = () => {
     fetch(`/api/devices`)
