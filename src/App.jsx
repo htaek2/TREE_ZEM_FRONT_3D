@@ -954,6 +954,11 @@ function App() {
     }
   };
 
+    // iot 장비 층별로 제어하기
+  const FloorsButtonClick = async (floorNum) => {
+    console.log("층 선택!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",floorNum);
+  }
+
   // 로그인된 사용자 정보 조회 함수
   const fetchUserInfo = async () => {
     const user = localStorage.getItem("user");
@@ -969,6 +974,8 @@ function App() {
     }
     return null;
   };
+
+
 
   useEffect(() => {
     fetchUserInfo();
@@ -1113,9 +1120,9 @@ function App() {
         />
 
         {selectedMarker && (
-          <MarkerPanel floors={floors} selectedMarker={selectedMarker} setSelectedMarker={setSelectedMarker} postSwitching={postSwitching} />
+          <MarkerPanel floors={floors} selectedMarker={selectedMarker} setSelectedMarker={setSelectedMarker} postSwitching={postSwitching} FloorsButtonClick={FloorsButtonClick}/>
       )}
-      </Container>
+      </Container>  
     </>
   );
 }
