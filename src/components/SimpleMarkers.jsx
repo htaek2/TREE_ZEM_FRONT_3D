@@ -19,12 +19,13 @@ const Marker = ({ position , onClick, onPointerOver, onPointerOut , marker }) =>
   );
 };
 
-export const SimpleMarkers = ({ markerInfo = [], selectFloor, selectedMarker, setSelectedMarker }) => {
+export const SimpleMarkers = ({ markerInfo = [], selectFloor, selectedMarker, setSelectedMarker, floors }) => {
   // markerInfo가 없거나 빈 배열이면 렌더링하지 않음
   if (!markerInfo || markerInfo.length === 0) {
     return null;
   }
 
+  console.log("floors in SimpleMarkers!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!:", floors);
   const floorMap = {
     'f1': '1F',
     'f2': '2F',

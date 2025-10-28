@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import styled, { keyframes, css } from 'styled-components';
 
 
@@ -117,7 +118,7 @@ const StatCard = styled.div`
 
 const StatLabel = styled.p`
   margin: 0 0 4px 0;
-  font-size: 11px;
+  font-size: 12px;
   text-transform: uppercase;
   color: #8E8E93;
   font-weight: 600;
@@ -151,31 +152,37 @@ const Button = styled.button`
   ${props => props.$active ? css`
     background: linear-gradient(135deg, #00C9A7 0%, #00AA6F 100%);
     color: white;
-    
-    &:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 6px 16px rgba(0, 201, 167, 0.4);
-    }
   ` : css`
     background: linear-gradient(135deg, #722323ff 0%, #FF3B30 100%);
     color: white;
     box-shadow: 0 4px 12px rgba(0, 201, 167, 0.3);
-    
-    &:hover {
-      background: #E8E8EA;
-    }
   `}
 `;
 
 
 // 컴포넌트
-const MarkerPanel = ({ selectedMarker, setSelectedMarker, postSwitching }) => {
+const MarkerPanel = ({ floors, selectedMarker, setSelectedMarker, postSwitching }) => {
+  const [cnsInRlTm , setCnsInRlTm] = useState("불러오는중...");
+
+    useEffect(() => {
+    // selectedMarker가 변경될 때마다 실행
+    floors.forEach(floor => floor.devices.forEach(device => {
+      console.log(device);
+      if (device.deviceId  === selectedMarker.deviceId) {
+        console.log("device.electricityUsage.datas[0].usage:", device.electricityUsage.datas[0].usage);
+        setCnsInRlTm(device.electricityUsage.datas[0].usage);
+      }
+    }));
+  }, [selectedMarker, floors]);
+
+
+  
   return (
     <PanelWrapper>
       <PanelContent>
         <PanelHeader>
           <HeaderTop>
-            <Title>선택된 기기</Title>
+            <Title>층 정보 : {selectedMarker.floor}층</Title>
             <CloseIcon onClick={() => setSelectedMarker(null)}>
               ×
             </CloseIcon>
@@ -187,12 +194,12 @@ const MarkerPanel = ({ selectedMarker, setSelectedMarker, postSwitching }) => {
         <ContentBody>
           <StatsGrid>
             <StatCard $color="#F0FFFE" $accent="#00C9A7">
-              <StatLabel>실시간 소비량</StatLabel>
-              <StatValue>{selectedMarker.deviceId}</StatValue>
+              <StatLabel>⚡실시간 소비량</StatLabel>
+              <StatValue>{cnsInRlTm}</StatValue>
             </StatCard>
             
             <StatCard $color="#FFF8F0" $accent="#FF9500">
-              <StatLabel>디바이스 이름</StatLabel>
+              <StatLabel>기기 이름</StatLabel>
               <StatValue>{selectedMarker.deviceName}</StatValue>
             </StatCard>
 
@@ -203,7 +210,7 @@ const MarkerPanel = ({ selectedMarker, setSelectedMarker, postSwitching }) => {
           </StatsGrid>
           
           <ActionButtons>
-            <Button $active={selectedMarker.status === 1} $primary onClick={() => postSwitching(selectedMarker)}>
+            <Button $active={selectedMarker.status === 0} $primary onClick={() => postSwitching(selectedMarker)}>
               {selectedMarker.status === 1 ? "OFF" : "ON"}
             </Button>
           </ActionButtons>
