@@ -1282,33 +1282,6 @@ function Wing({
           </InfoWeather>
         </InfoGroup>
 
-        {/* 3) 경고/알림 */}
-        <InfoGroup>
-          <InfoItem
-            $IsEmissionBtn={IsEmissionBtn}
-            onClick={() => setOpenAlert((v) => !v)}
-            aria-expanded={openAlert}
-          >
-            <InfoIcon
-              src="/Icon/warning_icon.svg"
-              alt="경고/알림"
-              onError={imgFallback("/icon/warning_icon.svg")}
-            />
-            <InfoLabel>경고/알림</InfoLabel>
-            <InfoValue>{alertCount}</InfoValue>
-          </InfoItem>
-          <InfoAlert open={openAlert} $IsEmissionBtn={IsEmissionBtn}>
-            <p>경고 알림 제목</p>
-            <p>경고 알림 내용</p>
-            <p>경고 알림 내용</p>
-            <p>경고 알림 내용</p>
-            <p>경고 알림 내용</p>
-            <p>경고 알림 내용</p>
-            <p>경고 알림 내용</p>
-            <p>경고 알림 내용</p>
-
-          </InfoAlert>
-        </InfoGroup>
       </RightInfo>
 
       <>
