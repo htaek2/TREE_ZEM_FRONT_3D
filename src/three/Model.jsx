@@ -8,7 +8,7 @@ import { SortUtils } from "three/examples/jsm/Addons.js";
 function Model({ model, onClick, isSelected, nodeInfo }) {
   const { scene } = useGLTF(`../public/${model}.gltf`);
 
-  const [hovered, setHovered] = useState(false);
+  // const [hovered, setHovered] = useState(false);
   const originalData = useRef(new Map());
   const [deviceInfo, setDeviceInfo] = useState([]);
   const [combinedNodeInfo, setCombinedNodeInfo] = useState([]);
@@ -122,63 +122,65 @@ function Model({ model, onClick, isSelected, nodeInfo }) {
   //   });
   // }, [scene, combinedNodeInfo, model]);
 
-  // 부드러운 애니메이션
-  const { progress } = useSpring({
-    progress: hovered && !isSelected ? 1 : 0,
-    config: { tension: 400, friction: 40 },
-  });
 
-  // 매 프레임마다 호버 효과 적용 -> 성능개선?
-  useFrame(() => {
-    const currentProgress = progress.get();
+  // 호버 폐지 -> 일단 남겨둠
+  // // 부드러운 애니메이션
+  // const { progress } = useSpring({
+  //   progress: hovered && !isSelected ? 1 : 0,
+  //   config: { tension: 400, friction: 40 },
+  // });
 
-    scene.traverse((child) => {
-      if (child.isMesh) {
-        if (model === "top") return;
+  // // 매 프레임마다 호버 효과 적용 -> 성능개선?
+  // useFrame(() => {
+  //   const currentProgress = progress.get();
 
-        if (!originalData.current.has(child)) {
-          originalData.current.set(child, {
-            color: child.material.color.clone(),
-            transparent: child.material.transparent,
-            opacity: child.material.opacity,
-            emissive: child.material.emissive
-              ? child.material.emissive.clone()
-              : new THREE.Color(0x000000),
-            emissiveIntensity: child.material.emissiveIntensity || 0,
-          });
-        }
+  //   scene.traverse((child) => {
+  //     if (child.isMesh) {
+  //       if (model === "top") return;
 
-        const original = originalData.current.get(child);
+  //       if (!originalData.current.has(child)) {
+  //         originalData.current.set(child, {
+  //           color: child.material.color.clone(),
+  //           transparent: child.material.transparent,
+  //           opacity: child.material.opacity,
+  //           emissive: child.material.emissive
+  //             ? child.material.emissive.clone()
+  //             : new THREE.Color(0x000000),
+  //           emissiveIntensity: child.material.emissiveIntensity || 0,
+  //         });
+  //       }
 
-        const baseColor = child.userData.id
-          ? new THREE.Color(0x2ecc71) // 연결된 메쉬는 녹색으로
-          : original.color;
+  //       const original = originalData.current.get(child);
 
-        child.material.transparent = true;
-        child.material.color.lerpColors(
-          baseColor,
-          new THREE.Color(0xffffff),
-          currentProgress
-        );
-        child.material.opacity =
-          original.opacity + (0.8 - original.opacity) * currentProgress;
-        child.material.emissive =
-          child.material.emissive || new THREE.Color();
-        child.material.emissive.lerpColors(
-          original.emissive,
-          new THREE.Color(0x0000ff),
-          currentProgress
-        );
-        child.material.emissiveIntensity =
-          original.emissiveIntensity +
-          (1.5 - original.emissiveIntensity) * currentProgress;
+  //       const baseColor = child.userData.id
+  //         ? new THREE.Color(0x2ecc71) // 연결된 메쉬는 녹색으로
+  //         : original.color;
 
-        if (currentProgress < 0.01) {
-          child.material.transparent = original.transparent;
-        }
-      }
-    });
-  });
+  //       child.material.transparent = true;
+  //       child.material.color.lerpColors(
+  //         baseColor,
+  //         new THREE.Color(0xffffff),
+  //         currentProgress
+  //       );
+  //       child.material.opacity =
+  //         original.opacity + (0.8 - original.opacity) * currentProgress;
+  //       child.material.emissive =
+  //         child.material.emissive || new THREE.Color();
+  //       child.material.emissive.lerpColors(
+  //         original.emissive,
+  //         new THREE.Color(0x0000ff),
+  //         currentProgress
+  //       );
+  //       child.material.emissiveIntensity =
+  //         original.emissiveIntensity +
+  //         (1.5 - original.emissiveIntensity) * currentProgress;
+
+  //       if (currentProgress < 0.01) {
+  //         child.material.transparent = original.transparent;
+  //       }
+  //     }
+  //   });
+  // });
 
   const handleClick = (e) => {
     e.stopPropagation();
