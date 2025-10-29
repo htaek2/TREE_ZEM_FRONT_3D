@@ -309,9 +309,16 @@ function App() {
 
 
   const getDevices = () => {
-    fetch(`/api/devices`)
-      .then((response) => response.json())
-      .then((data) => {
+    const eventSource = new EventSource(`/api/energy/sse/devices`);
+
+    eventSource.onopen = function () {
+      console.log("✅ 장치 SSE 연결 성공");
+    };
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log("📡 장치 데이터 수신:", data);
 
         // 새로운 deviceInfo 객체 생성
         const newDeviceInfo = [
@@ -329,20 +336,18 @@ function App() {
           }
         });
 
-
         const markerCount = data.length;
         let markerInfo = [];
 
         data.forEach((device) => {
-      
           markerInfo.push({
             deviceId: device.deviceId,
             deviceType: device.deviceType,
             deviceName: device.deviceName,
             floor: device.floorNum,
-            installedTime : device.installedTime,
-            position : new THREE.Vector3(device.x, device.y, device.z),
-            status : device.status
+            installedTime: device.installedTime,
+            position: new THREE.Vector3(device.x, device.y, device.z),
+            status: device.status
           });
         });
 
@@ -352,12 +357,16 @@ function App() {
           markerInfo: markerInfo,
         });
 
-    
-      })
+        setDeviceInfo(newDeviceInfo);
+      } catch (error) {
+        console.error("❌ 장치 데이터 파싱 오류:", error);
+      }
+    };
 
-      .catch((error) => {
-        console.error("Fetch error:", error);
-      });
+    eventSource.onerror = function (err) {
+      console.error("❌ 장치 SSE 연결 오류:", err);
+      eventSource.close();
+    };
   };
 
 
@@ -403,6 +412,7 @@ function App() {
       try {
         const data = JSON.parse(event.data);
 
+        console.log(data);
 
         // 실시간 요금 업데이트
         setBillInfo((prev) => ({
