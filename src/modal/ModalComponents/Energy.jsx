@@ -407,8 +407,8 @@ function Energy({
           </EnergyChargeFooterL>
           <EnergyChargeFooterR>
             {/* 🍪 -백 10-20 */}
-            <div>{ThisMonthBillInfo < 0 ? 0 : ThisMonthBillInfo} 원</div>
-            <div>{LastMonthBillInfo < 0 ? 0 : LastMonthBillInfo} 원</div>
+            <div>{ThisMonthBillInfo < 0 ? 0 : ThisMonthBillInfo.toLocaleString()} 원</div>
+            <div>{LastMonthBillInfo < 0 ? 0 : LastMonthBillInfo.toLocaleString()} 원</div>
           </EnergyChargeFooterR>
         </EnergyChargeFooter>
       </EnergyCharge>

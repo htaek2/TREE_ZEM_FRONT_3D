@@ -1360,7 +1360,7 @@ const rangeYear = (y) => {
 
 // 실제 호출 (문서 포맷 준수: 공백 포함 → encodeURIComponent)
 async function apiCarbon(start, end, datetimeType) {
-  const u = `/api/stats/carbon?start=${urlTime(start,'enc')}&end=${urlTime(end,'enc')}&datetimeType=${datetimeType}`;
+  const u = `/api/energy/carbon?start=${urlTime(start,'enc')}&end=${urlTime(end,'enc')}&datetimeType=${datetimeType}`;
   const res = await fetch(u, { headers: { Accept:'application/json' } });
   if (!res.ok) {
     console.warn('[carbon] HTTP', res.status, u);

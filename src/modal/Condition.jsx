@@ -379,9 +379,9 @@ const [ratio, setRatio] = useState(Math.trunc(((billInfo.electricThisMonth + bil
               </div>
             </AverageChargeFooterL>
             <AverageChargeFooterR>
-              <div>{AvgFee.national} 원</div>
-              <div>{AvgFee.location} 원</div>
-              <div>{MyBuildingCharge} 원</div>
+              <div>{AvgFee.national.toLocaleString()} 원</div>
+              <div>{AvgFee.location.toLocaleString()} 원</div>
+              <div>{MyBuildingCharge.toLocaleString()} 원</div>
             </AverageChargeFooterR>
           </AverageChargeFooter>
 <Liner />
