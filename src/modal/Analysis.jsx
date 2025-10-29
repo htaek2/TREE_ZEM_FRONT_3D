@@ -10,8 +10,30 @@ import {
 import { useEffect, useState } from "react";
 // OPEN AI 연결
 import OpenAI from "openai";
+import ReactMarkdown from "react-markdown";
+// 차트 그리기
+import { Line } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
 
-
+// Chart.js 설정 등록
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 
 
@@ -483,6 +505,97 @@ const MachineDiv = styled.div`
     }
 `;
 
+const shimmer = keyframes`
+  0% { opacity: 0.5; }
+  50% { opacity: 1; }
+  100% { opacity: 0.5; }
+`;
+
+const LoadingPlaceholder = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+const SkeletonTitle = styled.div`
+  width: 60%;
+  height: 18px;
+  background: #333;
+  border-radius: 4px;
+  animation: ${shimmer} 1.2s infinite linear;
+`;
+
+const SkeletonText = styled.div`
+  width: ${({ short }) => (short ? "80%" : "100%")};
+  height: 12px;
+  background: #333;
+  border-radius: 4px;
+  animation: ${shimmer} 1.2s infinite linear;
+`;
+
+
+
+
+
+const data = {
+    labels: ["3월", "6월", "9월", "12월"], // X축
+    datasets: [
+      {
+        label: "Dataset 1",
+        data: [10, 20, 30, 25, 15, 25],
+        borderColor: "#00b894", // 라인 색
+        backgroundColor: "#00b894",
+        tension: 0.3, // 선 곡선 정도
+        fill: false,
+        pointRadius: 5, // 데이터 포인트 크기
+        pointBackgroundColor: "#fff", // 원 내부 색
+        pointBorderColor: "#00b894", // 원 테두리 색
+        pointBorderWidth: 2,
+      },
+      {
+        label: "Dataset 2",
+        data: [5, 15, 10, 20, 10, 15],
+        borderColor: "#dfe6e9",
+        borderDash: [5, 5], // 점선
+        backgroundColor: "#dfe6e9",
+        tension: 0.3,
+        fill: false,
+        pointRadius: 5,
+        pointBackgroundColor: "#fff",
+        pointBorderColor: "#dfe6e9",
+        pointBorderWidth: 2,
+      },
+    ],
+  };
+
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false, // 범례 숨기기
+      },
+    },
+    scales: {
+      x: {
+        grid: {
+          color: "#2d3436",
+        },
+      },
+      y: {
+        grid: {
+          color: "#2d3436",
+        },
+      },
+    },
+  };
+
+
+
+
+
+
+
 function Analysis({ 
   onClose,
   elecUsage,
@@ -510,6 +623,7 @@ function Analysis({
       // "조금 이따 샤워해 이대로 더 나를 안아줘 이렇게 니 품에서 얘기 하고파 조금 이따 샤워해 이대로 더 나를 안아줘 이렇게 니 품에서 장난 치고파 작지만 귀여운 너의 가슴이 난 좋아 니 머리카락 넘겨줄 때 손에 닿는 이마 내 몸 위에 올라 날 바라보는 그 눈동자 조명 아래 살짝 비친 하얀 살결의 빛깔 날 미치게 하는 이 못된 여자 때론 너와 사랑할 때 난 3년 만에 집에 온 뱃사람 같아 니가 날 거칠게 만드니까 침대는 바다가 되고 우린 헤엄쳐 서로의 상처를 치유하듯 부드럽게 어루만져  세상 가장 깨끗한 너의 품에 안겨 내 더렵혀진 영혼을 다 씻어 이대로 더 있어"
     const [machineReports, setMachineReports] = useState([]);
     const [typingPlans, setTypingPlans] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
     // [ADD] 분석 API 응답 상태
     const [analysis, setAnalysis] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -603,10 +717,16 @@ function Analysis({
               - 단순 나열이 아니라, 문장 연결과 흐름을 고려
               - LED 교체는 포함하지 않기
               - 제목은 쓰지 않기
-              - 한 단락 안에서 자연스럽게 3~5개의 권고사항을 제시
+              - 한 단락 안에서 자연스럽게 2~3개의 권고사항을 제시
             3. 외부 환경(온도 등)에 따른 냉난방 절감 가능성 또는 추천 온도 설명
-            4. 1,2,3번 종합 3줄 요약
-              1줄당 36글자 초과하지 않게
+            4. 1, 2, 3번 내용을 종합한 **3줄 요약**을 작성하되, 아래 조건을 따라줘.
+              - 줄바꿈 하지 않기
+              - "전반적인 평가로"라는 말로 시작
+              - 각 줄은 굵게(**) 표시하고, 맨 앞에 '##'를 붙여 제목처럼 강조해줘.
+              - 예시:
+                ## **전반적인 평가로 전기 사용량은 안정세를 보이고 있습니다.**
+                ## **가스 사용량은 증가세로 효율 개선이 필요합니다.**
+                ## **수도 사용은 평균 수준으로 유지 중입니다.**
 
           ### ⚡ 보고서2
           - **title**: 패턴 기반 분석 요약 제목 (한 줄)
@@ -697,7 +817,9 @@ function Analysis({
         console.error("AI 호출 실패:", err);
         setMachineTitle(["error"]);
         setMachinePlan(["AI 응답을 불러오지 못했습니다."]);
-      }
+      } finally {
+        setTimeout(() => setIsLoading(false), 500);
+  }
     };
 
     // if (Testing) { // 🍪 무슨 데이터로 ?? useState 바꿔야함
@@ -735,7 +857,7 @@ function Analysis({
                         {ExpectRatio[0] >= 0 ? <div>증가</div> : <div>감소</div>}
                       </UpDownFont>
                     </ExpectRatiodiv>
-                    <div>표</div>
+                    <div><Line data={data} options={options} /></div>
                   </MainTop>
 
                   <MainTop>
@@ -825,10 +947,18 @@ function Analysis({
                 <PlanMain>
                   {machineReports.map((d, index) => (
                     <MachineDiv key={index} title={d.num}>
+                      
                       <div>
                         <div>{d.title}</div>
-                        <div>{typingPlans[index]}</div>
+                        <div><ReactMarkdown 
+                                components={{
+                                  h2: ({node, ...props}) => (
+                                    <h2 style={{ fontSize: "1.0rem", fontWeight: "bold", color: "#FAFAFA" }} {...props} />
+                                  ),
+                                }}
+                            >{typingPlans[index]}</ReactMarkdown></div>
                       </div>
+                        
                       <div className={`MachineImg${index}`}>
                         <img src={AlertIcon[d.num]} alt={AlertIcon[d.num]} />
                       </div>
