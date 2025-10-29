@@ -225,7 +225,7 @@ const MarkerPanel = ({ floors, selectedMarker, setSelectedMarker, postSwitching,
         <ContentBody>
           <StatsGrid>
             <StatCard $color="#F0FFFE" $accent="#00C9A7">
-              <StatLabel>🎛️ 층별 장비 선택</StatLabel>
+              <StatLabel>🎛️ 층 선택하기 : 층별 On/Off </StatLabel>
              {Array.from({ length: lastfloor }, (_, i) => i + 1).map(floor => (
   <StatusTag $active={selectedFloor.includes(floor)} key={floor} onClick={() => handleFloorClick(floor)}>{floor}층</StatusTag>
 ))}
