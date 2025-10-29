@@ -53,10 +53,10 @@ const imgFallback = (fallback) => (e) => {
 const PANEL_ALPHA_OFF = 0.5; // 탄소배출 OFF일 때 패널 불투명도
 const PANEL_ALPHA_ON = 0.3; // 탄소배출 ON(초록)일 때 패널 불투명도
 const PANEL_BORDER_ALPHA = 0.12;
-const PANEL_SHADOW = "2px 3px 5px 0 rgba(0,0,0,.5)";
+const PANEL_SHADOW = "0 2px 6px rgba(0,0,0,.35)";
 const EMISSION_UNIT = "㎥";
-const SHADOW_TEXT   = "2px 3px 4px rgba(0,0,0,0.3)";
-const SHADOW_FILTER = "drop-shadow(2px 3px 4px rgba(0,0,0,0.3))";
+const SHADOW_TEXT   = "0 0.6px 0.6px rgba(0,0,0,.55), 0 1px 1.2px rgba(0,0,0,.28)";
+const SHADOW_FILTER = "drop-shadow(0 0.6px 0.6px rgba(0,0,0,.55)) drop-shadow(0 1.2px 2.0px rgba(0,0,0,.25))";
 
 const textShadowIfOn = css`
   ${({ $IsEmissionBtn }) => $IsEmissionBtn && `text-shadow: ${SHADOW_TEXT};`}
@@ -74,53 +74,43 @@ const panelBg = ({ $IsEmissionBtn }) =>
 const bgPill = ($IsEmissionBtn, alphaOff = 0.85, alphaOn = 1) =>
   $IsEmissionBtn ? `rgba(0,170,111, ${alphaOn})` : `rgba(45,45,45, ${alphaOff})`;
 
-// 알약형 공통 베이스(타이틀/라벨)
-const pillBase = css`
-  width: 184px;
-  min-width: 184px;
-  height: 34px;
-  min-height: 34px;
-  flex: 0 0 34px;
-  line-height: 14px;
-  
-  /* 안쪽 여백과 배치 */
-  box-sizing: border-box;
-  border-radius: 9999px 0 0 9999px;
-  padding: 8px 14px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  font-family: "Nanum Gothic", system-ui, sans-serif;
-  font-weight: 800;
-  font-size: 14px;
-  color: #FAFAFA;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+
+
+
+// 좌측 둥글고 우측 각진 알약 + 우측 페이드(배경만 희미, 텍스트/아이콘 선명)
+const pillFadeBg = css`
   position: relative;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px 0 0 9999px;
   overflow: hidden;
-  --fade: 36px;
-  --cut: 60%;
-  padding-right: calc(14px + var(--fade));
-  -webkit-mask-image: linear-gradient(
-    to right,
-    #000 0,
-    #000 calc(var(--cut, 60%) - var(--fade)),
-    rgba(0, 0, 0, 0.9) var(--cut, 60%),
-    rgba(0, 0, 0, 0) 100%
-  );
-  mask-image: linear-gradient(
-    to right,
-    #000 0,
-    #000 calc(var(--cut, 60%) - var(--fade)),
-    rgba(0, 0, 0, 0.9) var(--cut, 60%),
-    rgba(0, 0, 0, 0) 100%
-  );
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  &::before,
-  &::after {
-    content: none !important;
+  isolation: isolate;              /* 배경 레이어만 뒤로 */
+  --reveal: var(--fade, 26px);     /* 우측 투명 영역 폭 (기본 26px) */
+
+  /* 실제 콘텐츠는 항상 위 */
+  > * { position: relative; z-index: 1; }
+
+  /* 글자 렌더링 안정화 */
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
+
+  /* 배경 + '우측만' 투명화 마스크 */
+  &::before {
+    content: "";
+    position: absolute; inset: 0;
+    z-index: -1;
+    background: var(--pill-bg, rgba(45,45,45,0.85));
+    /* 오른쪽으로 갈수록 투명: 배경 레이어에만 적용되므로 텍스트는 선명 */
+    -webkit-mask-image: linear-gradient(
+      to right,
+      #000 0%,
+      #000 calc(100% - var(--reveal)),
+      rgba(0,0,0,0) 100%
+    );
+            mask-image: linear-gradient(
+      to right,
+      #000 0%,
+      #000 calc(100% - var(--reveal)),
+      rgba(0,0,0,0) 100%
+    );
   }
 `;
 
@@ -200,18 +190,21 @@ const FloorButtons = styled.div`
 `;
 
 const FloorButton = styled.button`
-  padding: 8px 8px;
+  display: grid;
+  place-items: center;   /* 가로·세로 한 번에 중앙 */
+  line-height: 1;        /* 베이스라인 영향 제거 */
   background: ${({ $IsEmissionBtn }) => bgPill($IsEmissionBtn)};
   color: white;
   border: 2px solid transparent;
   border-radius: 8px;
   cursor: pointer;
-  font-weight: 600;
-  font-size: 14px;
+  font-weight: 800;
+  font-size: 18px;
   transition: all 0.3s ease;
   white-space: nowrap;
   width: 50px;
   height: 50px;
+  ${textShadowIfOn}   /* ← 버튼 안의 '1F/2F/3F/4F' 등 흰 글자에 섀도우 */
   &.active {
     background-color: rgba(100, 100, 100, 0.95);
     border-color: rgba(255, 215, 0, 0.8);
@@ -220,6 +213,12 @@ const FloorButton = styled.button`
   > img.ToggleBtn {
     width: 20px;
     height: 20px;
+  }
+  /* 토글 버튼 이미지 섀도우 (ON일 때) */
+  &.ToggleBtn img {
+    width: 20px;
+    height: 20px;
+    filter: ${({ $IsEmissionBtn }) => ($IsEmissionBtn ? SHADOW_FILTER : "none")};
   }
 `;
 
@@ -264,10 +263,31 @@ const WingCard = styled.div`
 `;
 
 const CardTitle = styled.div`
-  ${pillBase}
-  background: ${({ $IsEmissionBtn }) => bgPill($IsEmissionBtn)};
-  ${textShadowIfOn}
+  --pill-bg: ${({ $IsEmissionBtn }) => bgPill($IsEmissionBtn)};
+  --fade: 60px; /* InfoItem과 동일 */
+
+  width: 184px;
+  min-width: 184px;
+  height: 34px;
+  min-height: 34px;
+  padding: 8px 14px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+
+  font-family: "Nanum Gothic", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 16.5px;
+  color: #FAFAFA;
+  white-space: nowrap;
+
+  ${pillFadeBg}      /* ← 좌둥/우각 + 우측 페이드 */
+  ${textShadowIfOn}  /* 배출모드일 때만 텍스트 그림자 */
+
+
 `;
+
 
 const StatList = styled.div`
   flex: 1;
@@ -323,7 +343,9 @@ const StatValue = styled.div`
   ${textShadowIfOn}
 `;
 
-const StatUnit = styled.span``;
+const StatUnit = styled.span`
+  ${textShadowIfOn}
+`;
 
 const ChartCard = styled(WingCard)`
   display: flex;
@@ -363,6 +385,7 @@ const LegendWrap = styled.div`
   gap: 6px;
   align-items: center;
   line-height: 1;
+  text-shadow: ${({$IsEmissionBtn}) => ($IsEmissionBtn ? SHADOW_TEXT : "none")};
 `;
 
 const LegendItem = styled.div`
@@ -372,6 +395,7 @@ const LegendItem = styled.div`
   font-size: 10px;
   color: #fafafa;
   white-space: nowrap;
+  text-shadow: ${({$IsEmissionBtn}) => ($IsEmissionBtn ? SHADOW_TEXT : "none")};
 `;
 
 const SwatchSquare = styled.span`
@@ -442,7 +466,7 @@ const DockLabel = styled.span`
   line-height: var(--dock-label-h);
   text-align: center;
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 600;
   pointer-events: none;
 
   > div {
@@ -479,7 +503,7 @@ const RightInfo = styled.div`
   pointer-events: ${({ $open }) => ($open ? "auto" : "none")};
   transition: transform 360ms cubic-bezier(0.22, 0.61, 0.36, 1), opacity 260ms ease-out;
   overflow: visible;
-  --right-panel-bg: rgba(45, 45, 45, 0.15);
+
 `;
 
 const InfoGroup = styled.div`
@@ -491,9 +515,6 @@ const InfoGroup = styled.div`
 
 /* 말풍선 패널 공통 */
 const InfoPanelBase = styled.div`
-  --tail: 8px;
-  --panel-bd: transparent;
-
   overflow: hidden;
   max-height: ${({ open }) => (open ? "120px" : "0")};
   opacity: ${({ open }) => (open ? 1 : 0)};
@@ -509,6 +530,7 @@ const InfoPanelBase = styled.div`
   position: relative;
   z-index: 1000;
   box-shadow: ${PANEL_SHADOW};
+  ${textShadowIfOn}  /* 탄소배출 ON 시 패널 내부 텍스트도 그림자 */
 
   & p {
     margin: 0;
@@ -566,8 +588,13 @@ const InfoWeather = styled(InfoPanelBase)`
     height: var(--icon-size);
     background-size: contain;
     background-repeat: no-repeat;
-    filter: brightness(0) invert(1);
+    /* 탄소배출 ON일 때만 아이콘 드롭섀도 추가 */
+   filter: ${({ $IsEmissionBtn }) =>
+      $IsEmissionBtn
+        ? `brightness(0) invert(1) ${SHADOW_FILTER}`
+        : "brightness(0) invert(1)"};
   }
+
   /* 행별 개별 오프셋 적용 */
   & p:nth-child(1)::before { transform: translateY(calc(-65% + var(--dy1))); left: calc(0px + var(--ix1)); }
   & p:nth-child(2)::before { transform: translateY(calc(-45% + var(--dy2))); left: calc(0px + var(--ix2)); }
@@ -596,56 +623,40 @@ const InfoWeather = styled(InfoPanelBase)`
 
 const InfoAlert = styled(InfoPanelBase)`
   max-height: ${({ open }) => (open ? "1000px" : "0")};
-  --panel-pad-b: 8px;
   display: flex;
   flex-direction: column;
+  /* 버튼 제거에 맞춰 패딩을 기본과 동일하게(아래 여유분 40px 제거) */
+  padding: ${({ open }) => (open ? "8px 8px 8px" : "0 8px 0")};
 `;
 
 const InfoItem = styled.div`
-  position: relative;
+  --pill-bg: ${({ $IsEmissionBtn }) => bgPill($IsEmissionBtn)};
+  --fade: 60px;
+
   display: grid;
   grid-template-columns: 20px var(--label-w, 64px) 1fr;
   align-items: center;
   column-gap: 10px;
-  box-sizing: border-box;
   width: 184px;
   min-width: 184px;
   height: 34px;
   min-height: 34px;
   padding: 7px 14px;
-
-  --fade: 26px;
-  padding-right: calc(14px + var(--fade));
-  border-radius: 9999px 0 0 9999px;
-  background: ${({ $IsEmissionBtn }) => bgPill($IsEmissionBtn)};
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #FAFAFA;
-  font-size: 16px;
-  font-weight: 700;
-  overflow: hidden;
+  box-sizing: border-box;
   white-space: nowrap;
-
-  --cut: 60%;
-  -webkit-mask-image: linear-gradient(
-    to right,
-    #000 0,
-    #000 calc(var(--cut, 60%) - var(--fade)),
-    rgba(0, 0, 0, 0.9) var(--cut, 60%),
-    rgba(0, 0, 0, 0) 100%
-  );
-  mask-image: linear-gradient(
-    to right,
-    #000 0,
-    #000 calc(var(--cut, 60%) - var(--fade)),
-    rgba(0, 0, 0, 0.9) var(--cut, 60%),
-    rgba(0, 0, 0, 0) 100%
-  );
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-
   cursor: pointer;
-  box-shadow: ${PANEL_SHADOW};
+
+  ${pillFadeBg} /* ← 여기! 배경만 페이드, 텍스트/아이콘은 선명 */
+  * { position: relative; z-index: 1; } /* 중첩 자식까지 전체 상단 보장 */
+
+  color: #FAFAFA;
+  font-size: 16.5px;
+  font-weight: 700;
+  ${textShadowIfOn}   /* ← 행의 라벨/값(책임자, 외부온도, 경고 알림 숫자)도 그림자 */
+
+
 `;
+
 
 const InfoIcon = styled.img`
   width: 20px;
@@ -653,9 +664,10 @@ const InfoIcon = styled.img`
   flex-shrink: 0;
   display: block;
   filter: ${({ $white, $IsEmissionBtn }) => {
-   const base = $white ? "brightness(0) invert(1)" : "none";
-   return $IsEmissionBtn ? `${base} ${SHADOW_FILTER}` : base;
- }};
+    const base = $white ? "brightness(0) invert(1)" : "";
+    if ($IsEmissionBtn) return base ? `${base} ${SHADOW_FILTER}` : SHADOW_FILTER;
+    return base || "none";
+  }};
 `;
 
 const InfoLabel = styled.span`
@@ -696,7 +708,7 @@ const PanelBtn = styled.button`
   border: 1px solid
     ${({ $IsEmissionBtn }) => ($IsEmissionBtn ? "rgba(0,170,111,1)" : "#2D2D2D")};
   color: #FAFAFA;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
   line-height: 20px;
   display: inline-flex;
@@ -977,7 +989,7 @@ function Wing({
         {/* 실시간 사용량 */}
         <WingCard $IsEmissionBtn={IsEmissionBtn}>
           <CardTitle $IsEmissionBtn={IsEmissionBtn}>
-            {EmissionNaming("실시간 사용량")}
+            <span>{EmissionNaming("실시간 사용량")}</span>
           </CardTitle>
           <StatList $IsEmissionBtn={IsEmissionBtn}>
             <StatRow $IsEmissionBtn={IsEmissionBtn}>
@@ -1039,7 +1051,7 @@ function Wing({
           return (
             <ChartCard $IsEmissionBtn={IsEmissionBtn}>
               <CardTitle $IsEmissionBtn={IsEmissionBtn}>
-                {EmissionNaming("전일 대비 전력 사용량")}
+                <span>{EmissionNaming("전일 대비 전력 사용량")}</span>
               </CardTitle>
               <DailyElecCompareMini
                 today={IsEmissionBtn ? emDaily.today : todayElec}
@@ -1054,7 +1066,7 @@ function Wing({
         {/* 전년 대비 전력 사용량 → 당월/전월 비교 (미니차트) */}
         <ChartCard $IsEmissionBtn={IsEmissionBtn}>
           <CardTitle $IsEmissionBtn={IsEmissionBtn}>
-            {EmissionNaming("전년 대비 전력 사용량")}
+            <span>{EmissionNaming("전년 대비 전력 사용량")}</span>
           </CardTitle>
           <YearCompareLineMini
               thisYear={IsEmissionBtn
@@ -1238,10 +1250,7 @@ function Wing({
             <p>경고 알림 내용</p>
             <p>경고 알림 내용</p>
             <p>경고 알림 내용</p>
-            <PanelActions>
-              <PanelBtn $IsEmissionBtn={IsEmissionBtn}>메모 보기</PanelBtn>
-              <PanelBtn $IsEmissionBtn={IsEmissionBtn}>메모 쓰기</PanelBtn>
-            </PanelActions>
+
           </InfoAlert>
         </InfoGroup>
       </RightInfo>
@@ -1351,16 +1360,10 @@ const rangeMonth = (y, m) => {
   return [s,e];
 };
 
-// (필요 시) 연 범위
-const rangeYear = (y) => {
-  const s = new Date(y, 0, 1, 0,0,0,0);
-  const e = new Date(y,11,31,23,59,59,999);
-  return [s,e];
-};
 
 // 실제 호출 (문서 포맷 준수: 공백 포함 → encodeURIComponent)
 async function apiCarbon(start, end, datetimeType) {
-  const u = `/api/stats/carbon?start=${urlTime(start,'enc')}&end=${urlTime(end,'enc')}&datetimeType=${datetimeType}`;
+  const u = `/api/energy/carbon?start=${urlTime(start,'enc')}&end=${urlTime(end,'enc')}&datetimeType=${datetimeType}`;
   const res = await fetch(u, { headers: { Accept:'application/json' } });
   if (!res.ok) {
     console.warn('[carbon] HTTP', res.status, u);
@@ -1389,7 +1392,6 @@ async function monthlyTotalByType2(y, m) {
 // --- 응답 스키마 방어 유틸(배치: urlTime 아래) ---
 const unwrapRows = (json) => Array.isArray(json?.data) ? json.data : (Array.isArray(json) ? json : []);
 
-const pickTs = (r) => r?.timestamp ?? r?.time ?? r?.date ?? r?.datetime ?? "";
 
 const pickVal = (r) => {
   // 서버가 배출량을 usage/value/amount/total 등으로 줄 수 있음 → 숫자만 안전 추출
@@ -1452,7 +1454,7 @@ function DailyElecCompareMini({ today = 0, yesterday = 0, labels = ["어제", "�
   const aTop = H - PB - h(yesterday);
   const bTop = H - PB - h(today);
 
-  const axis = "rgba(255,255,255,0.28)";
+  const axis = "#ffffff47";
 
   const colA = "rgba(180,180,180,0.9)"; // 어제
   const colB = "#FAFAFA";                // 오늘
@@ -1525,11 +1527,11 @@ function DailyElecCompareMini({ today = 0, yesterday = 0, labels = ["어제", "�
 
       {/* 우측 상단 레전드 */}
       <LegendWrap aria-hidden="true">
-        <LegendItem>
+        <LegendItem $IsEmissionBtn={IsEmissionBtn}>
           <SwatchSquare $color={colA} />
           <span>전일</span>
         </LegendItem>
-        <LegendItem>
+        <LegendItem $IsEmissionBtn={IsEmissionBtn}>
           <SwatchSquare $color={colB} />
           <span>금일</span>
         </LegendItem>
@@ -1610,7 +1612,7 @@ function YearCompareLineMini({ thisYear = [], lastYear = [], IsEmissionBtn }) {
   const pathThis = toPathByIdx(thisY, quarterIdx);
 
   const colAxis = "rgba(255,255,255,0.28)";
-  const colLast = "rgba(255,255,255,0.28)";
+  const colLast = "rgba(180,180,180,0.9)";
   const colThis = "#FAFAFA";
   const labelC  = "rgba(255,255,255,0.98)";
   const labelY  = H - 5;
@@ -1704,11 +1706,11 @@ function YearCompareLineMini({ thisYear = [], lastYear = [], IsEmissionBtn }) {
       </svg>
       {/* 우측 상단 레전드 : 동그라미+선 */}
       <LegendWrap aria-hidden="true">
-        <LegendItem>
+        <LegendItem $IsEmissionBtn={IsEmissionBtn}>
           <LineDot line={colLast} dot={colLast} />
           <span>전년</span>
         </LegendItem>
-        <LegendItem>
+        <LegendItem $IsEmissionBtn={IsEmissionBtn}>
           <LineDot line={colThis} dot={colThis} />
           <span>금년</span>
         </LegendItem>
@@ -1717,14 +1719,6 @@ function YearCompareLineMini({ thisYear = [], lastYear = [], IsEmissionBtn }) {
     </ChartCanvas>
   );
 }
-
-
-
-
-
-
-
-
 
 
 export default Wing;
