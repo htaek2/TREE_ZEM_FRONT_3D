@@ -432,6 +432,28 @@ function App() {
           return newFloors;
         });
 
+        // 장치 상태 실시간 동기화 (SSE로 받은 데이터로 업데이트)
+        setMakerInfo((prev) => {
+          const updatedMarkers = prev.markerInfo.map((marker) => {
+            // SSE 데이터에서 해당 장치 찾기
+            for (const floor of data.floors) {
+              const device = floor.devices.find(d => d.deviceId === marker.deviceId);
+              if (device && device.status !== undefined) {
+                return {
+                  ...marker,
+                  status: device.status // 서버에서 받은 최신 상태로 업데이트
+                };
+              }
+            }
+            return marker;
+          });
+
+          return {
+            ...prev,
+            markerInfo: updatedMarkers
+          };
+        });
+
         if (data.floors.length === 0) {
           return;
         }
