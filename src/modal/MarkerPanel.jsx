@@ -178,29 +178,7 @@ const Button = styled.button`
 const MarkerPanel = ({ floors, selectedMarker, setSelectedMarker, postSwitching, FloorsButtonClick}) => {
   const [cnsInRlTm , setCnsInRlTm] = useState("불러오는중...");
   const [selectedFloor, setSelectedFloor] = useState([]);
-
-  // 안전하게 마지막 층 번호 추출
-  const getLastFloor = () => {
-    // floors 배열이 비어있거나 유효하지 않으면 4를 기본값으로 반환
-    if (!floors || floors.length === 0) return 4;
-
-    // 마지막 층의 devices 확인
-    const lastFloorData = floors[floors.length - 1];
-    if (!lastFloorData || !lastFloorData.devices || lastFloorData.devices.length === 0) return 4;
-
-    // 마지막 디바이스의 deviceName 확인
-    const lastDevice = lastFloorData.devices[lastFloorData.devices.length - 1];
-    if (!lastDevice || !lastDevice.deviceName) return 4;
-
-    // deviceName에서 층 번호 추출 (예: "4F-Computer-01" -> "4")
-    const floorNum = lastDevice.deviceName.split('F')[0];
-    const parsed = parseInt(floorNum, 10);
-
-    // 유효한 숫자인지 확인
-    return isNaN(parsed) ? 4 : parsed;
-  };
-
-  const lastfloor = getLastFloor();
+  const lastfloor = floors[floors.length - 1].devices[floors[floors.length - 1].devices.length - 1].deviceName.split('F')[0];
 
   useEffect(() => {
     // selectedMarker가 변경될 때마다 실행
@@ -217,12 +195,15 @@ const MarkerPanel = ({ floors, selectedMarker, setSelectedMarker, postSwitching,
     console.log("층 버튼 클릭됨:", floorNum);
     if(selectedFloor.includes(floorNum)){
       setSelectedFloor(prev => prev.filter(floor => floor !== floorNum));
-      return;
+    } else {
+      setSelectedFloor(prev => [...prev, floorNum]);
     }
-    setSelectedFloor(prev => [...prev, floorNum]);
-    console.log("선택된 층들:", selectedFloor);
-
+    // console.log 제거 - useEffect에서 확인
   };
+  
+   useEffect(() => {
+    console.log("선택된 층들:", selectedFloor);
+  }, [selectedFloor]);
   
   return (
     <PanelWrapper>

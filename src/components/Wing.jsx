@@ -837,6 +837,7 @@ function Wing({
   setSelectedDevice = () => {},
   setRailOpen = () => {},
   billInfo = {},
+  onFloorButtonClick = {},
   weatherNow = null,
   todayComparisonRatio = {},
   monthComparisonRatio = {},
