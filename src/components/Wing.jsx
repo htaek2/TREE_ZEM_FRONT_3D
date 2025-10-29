@@ -893,6 +893,15 @@ function Wing({
   });
   const [emLoading, setEmLoading] = useState(false);
 
+  // 전력(kWh) 월별 합계 (올해 vs 작년)
+  // IsEmissionBtn === false일 때 YearCompareLineMini에 넘길 값
+  const [elecYear, setElecYear] = useState({
+    thisYear: [], // [1월합계, 2월합계, ... , 12월합계] (kWh)
+    lastYear: [], // [작년1월합계, ... , 작년12월합계] (kWh)
+  });
+
+
+
   // 탄소배출 모드가 켜질 때만 API 호출
   useEffect(() => {
   if (!IsEmissionBtn) return;
@@ -954,6 +963,45 @@ function Wing({
 
   return () => { abort = true; };
 }, [IsEmissionBtn]);
+
+
+  // === 전력(kWh) 월별 합계 불러오기 ===
+  // 탄소배출 모드랑은 별개로, Wing이 자체적으로 올해/작년 월별 사용량을 만든다.
+  useEffect(() => {
+    let abort = false;
+
+    (async () => {
+      const nowKST = KSTnow();
+      const thisYearNum = nowKST.getFullYear();     // 예: 2025
+      const lastYearNum = thisYearNum - 1;          // 예: 2024
+
+      const thisYearArr = [];
+      const lastYearArr = [];
+
+      // 올해 1~12월
+      for (let m = 1; m <= 12; m++) {
+        const [ms, me] = rangeMonth(thisYearNum, m); // 그 달의 1일~말일
+        const rows = await apiElecMonthRange(ms, me);
+        thisYearArr.push(sumElecUsage(rows));
+      }
+
+      // 작년 1~12월
+      for (let m = 1; m <= 12; m++) {
+        const [ms, me] = rangeMonth(lastYearNum, m);
+        const rows = await apiElecMonthRange(ms, me);
+        lastYearArr.push(sumElecUsage(rows));
+      }
+
+      if (!abort) {
+        setElecYear({
+          thisYear: thisYearArr,
+          lastYear: lastYearArr,
+        });
+      }
+    })();
+
+    return () => { abort = true; };
+  }, []);
 
 
 
@@ -1069,12 +1117,20 @@ function Wing({
             <span>{EmissionNaming("전년 대비 전력 사용량")}</span>
           </CardTitle>
           <YearCompareLineMini
-              thisYear={IsEmissionBtn
-                ? (emYear.thisYearProjected.length ? emYear.thisYearProjected : emYear.thisYear)
-                : [120,140,180,150,200,220,240,210,260,300,280,310]}
-              lastYear={IsEmissionBtn
+            thisYear={
+              IsEmissionBtn
+                ? (
+                    emYear.thisYearProjected.length
+                      ? emYear.thisYearProjected
+                      : emYear.thisYear
+                  )
+                : elecYear.thisYear
+            }
+            lastYear={
+              IsEmissionBtn
                 ? emYear.lastYear
-                : [100,130,160,140,180,190,200,180,210,250,230,260]}
+                : elecYear.lastYear
+            }
             IsEmissionBtn={IsEmissionBtn}
           />
         </ChartCard>
@@ -1359,6 +1415,50 @@ const rangeMonth = (y, m) => {
   const e = new Date(y, m,   0, 23,59,59,999); // 그 달의 마지막 날 23:59:59
   return [s,e];
 };
+
+
+/* ---------------------------
+   전력(kWh) 월합계용 API 헬퍼
+   (/api/energy/elec)
+---------------------------- */
+
+// month 범위를 받아서 datetimeType=2로 호출
+async function apiElecMonthRange(startDate, endDate) {
+  // API 명세: start/end는 "yyyy-MM-dd HH:mm:ss"
+  // 우리는 이미 ymd_hms(d)로 그 포맷 만들 수 있으니 그대로 encodeURIComponent만 해주면 됨.
+  const startStr = encodeURIComponent(ymd_hms(startDate));
+  const endStr   = encodeURIComponent(ymd_hms(endDate));
+
+  const url = `/api/energy/elec?start=${startStr}&end=${endStr}&datetimeType=2`;
+
+  try {
+    const res = await fetch(url, {
+      headers: { Accept: "application/json" },
+    });
+    if (!res.ok) {
+      console.warn("[elec] HTTP", res.status, url);
+      return []; // 실패 시 빈 배열로
+    }
+
+    const json = await res.json();
+    // 명세에 따르면 { energyType, datas: [ {timestamp, usage}, ... ] }
+    const rows = Array.isArray(json?.datas) ? json.datas : [];
+    return rows;
+  } catch (err) {
+    console.warn("[elec] fetch error:", err);
+    return [];
+  }
+}
+
+// usage 합계만 뽑는 안전한 합산기
+function sumElecUsage(rows) {
+  return rows.reduce((acc, r) => {
+    const v = Number(r?.usage ?? 0);
+    return acc + (Number.isFinite(v) ? v : 0);
+  }, 0);
+}
+
+
 
 
 // 실제 호출 (문서 포맷 준수: 공백 포함 → encodeURIComponent)
