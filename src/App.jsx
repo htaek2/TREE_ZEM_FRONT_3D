@@ -411,7 +411,7 @@ function App() {
       try {
         const data = JSON.parse(event.data);
 
-        console.log(data);
+        console.log("data!!!!!!!!!",data);
 
         // 실시간 요금 업데이트
         setBillInfo((prev) => ({
@@ -1225,6 +1225,7 @@ function App() {
             FloorsButtonClick={FloorsButtonClick}
             onFloorSelect={handleFloorSelect}
             selectedFloorMarkers={selectedFloorMarkers}
+            setSelectedFloorMarkers={setSelectedFloorMarkers}
           />
       )}
       </Container>  

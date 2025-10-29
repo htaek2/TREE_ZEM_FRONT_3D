@@ -175,7 +175,7 @@ const Button = styled.button`
 
 
 // 컴포넌트
-const MarkerPanel = ({ floors, selectedMarker, setSelectedMarker, postSwitching, onFloorSelect, selectedFloorMarkers }) => {
+const MarkerPanel = ({ floors, selectedMarker, setSelectedMarker, postSwitching, onFloorSelect, selectedFloorMarkers, setSelectedFloorMarkers }) => {
   const [cnsInRlTm , setCnsInRlTm] = useState("불러오는중...");
   const [selectedFloor, setSelectedFloor] = useState([]);
 
@@ -211,7 +211,7 @@ const MarkerPanel = ({ floors, selectedMarker, setSelectedMarker, postSwitching,
         <PanelHeader>
           <HeaderTop>
             <Title>층 정보 : {selectedMarker.floor}층</Title>
-            <CloseIcon onClick={() => setSelectedMarker(null)}>
+            <CloseIcon onClick={() => { setSelectedMarker(null); setSelectedFloorMarkers([]); }}>
               ×
             </CloseIcon>
           </HeaderTop>
