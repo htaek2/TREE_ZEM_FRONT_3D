@@ -22,7 +22,6 @@
     "dayjs": "^1.11.18",
     "openai": "^6.7.0",
     "react": "^19.1.1",
-    "react-animated-numbers": "^1.1.1",
     "react-chartjs-2": "^5.3.0",
     "react-dom": "^19.1.1",
     "react-router-dom": "^7.9.4",

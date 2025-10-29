@@ -175,10 +175,12 @@ const Button = styled.button`
 
 
 // 컴포넌트
-const MarkerPanel = ({ floors, selectedMarker, setSelectedMarker, postSwitching, FloorsButtonClick}) => {
+const MarkerPanel = ({ floors, selectedMarker, setSelectedMarker, postSwitching, onFloorSelect }) => {
   const [cnsInRlTm , setCnsInRlTm] = useState("불러오는중...");
   const [selectedFloor, setSelectedFloor] = useState([]);
-  const lastfloor = floors[floors.length - 1].devices[floors[floors.length - 1].devices.length - 1].deviceName.split('F')[0];
+
+  // const lastfloor = floors[floors.length - 1].devices[floors[floors.length - 1].devices.length - 1].deviceName.split('F')[0]
+  const lastfloor = 4;
 
   useEffect(() => {
     // selectedMarker가 변경될 때마다 실행
@@ -192,19 +194,17 @@ const MarkerPanel = ({ floors, selectedMarker, setSelectedMarker, postSwitching,
 
 
   const handleFloorClick = (floorNum) => {
-    console.log("층 버튼 클릭됨:", floorNum);
+    let newFloors;
     if(selectedFloor.includes(floorNum)){
-      setSelectedFloor(prev => prev.filter(floor => floor !== floorNum));
+      newFloors = selectedFloor.filter(floor => floor !== floorNum);
     } else {
-      setSelectedFloor(prev => [...prev, floorNum]);
+      newFloors = [...selectedFloor, floorNum];
     }
-    // console.log 제거 - useEffect에서 확인
+    setSelectedFloor(newFloors);
+    onFloorSelect(newFloors); // 계산된 최신 값을 즉시 전달
   };
-  
-   useEffect(() => {
-    console.log("선택된 층들:", selectedFloor);
-  }, [selectedFloor]);
-  
+
+
   return (
     <PanelWrapper>
       <PanelContent>
