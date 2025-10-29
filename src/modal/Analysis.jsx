@@ -438,6 +438,8 @@ const PlanMain = styled.div`
     min-height: 64px;
     border: 1px solid rgba(166, 166, 166, 0.2);
     border-radius: 10px;
+    white-Space: pre-line;
+    overflow: auto;
 
     flex-wrap: wrap;
     padding: 8px;
@@ -462,6 +464,7 @@ const MachineDiv = styled.div`
       font: 400 14px "나눔고딕";
       color: #FAFAFA;
       padding: 0px 8px;
+
 
       > div:first-child {
         font: bold 18px "나눔고딕";
@@ -496,6 +499,7 @@ function Analysis({
   todayComparisonRatio = { gas: 0, elec: 0, water: 0 },
   monthComparisonRatio = { gas: 0, elec: 0, water: 0 },
   AvgFee ={ national: 0, location: 0 },
+  weatherNow
  }) {
     const [ExpectRatio, setExpectRatio] = useState([20, -30]);
     // MachinePlan 예시 데이터는 8개까지 가능
@@ -505,6 +509,7 @@ function Analysis({
       // "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaheight 고정값 제거 height: 15% 대신 min-height나 auto로 변경. 텍스트가 여러 줄일 때 자동 줄바꿈 설정 flex-wrap: wrap 또는 word-break: break-word 추가 정렬이 깨지지 않도록 align-items: flex-start 로 조정", 
       // "조금 이따 샤워해 이대로 더 나를 안아줘 이렇게 니 품에서 얘기 하고파 조금 이따 샤워해 이대로 더 나를 안아줘 이렇게 니 품에서 장난 치고파 작지만 귀여운 너의 가슴이 난 좋아 니 머리카락 넘겨줄 때 손에 닿는 이마 내 몸 위에 올라 날 바라보는 그 눈동자 조명 아래 살짝 비친 하얀 살결의 빛깔 날 미치게 하는 이 못된 여자 때론 너와 사랑할 때 난 3년 만에 집에 온 뱃사람 같아 니가 날 거칠게 만드니까 침대는 바다가 되고 우린 헤엄쳐 서로의 상처를 치유하듯 부드럽게 어루만져  세상 가장 깨끗한 너의 품에 안겨 내 더렵혀진 영혼을 다 씻어 이대로 더 있어"
     const [machineReports, setMachineReports] = useState([]);
+    const [typingPlans, setTypingPlans] = useState([]);
     // [ADD] 분석 API 응답 상태
     const [analysis, setAnalysis] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -562,103 +567,134 @@ function Analysis({
 
 
 
-  // const Openai = new OpenAI({
-  //   apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-  //   dangerouslyAllowBrowser: true, // 브라우저 직접 호출
-  // });
+  const Openai = new OpenAI({
+    apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+    dangerouslyAllowBrowser: true, // 브라우저 직접 호출
+  });
 
   
-  // useEffect(()=>{
-  //   const fetchAI = async () => {
-  //     try {
-  //       const prompt = `
-  //         너는 에너지 분석 전문가야.
+  useEffect(()=>{
+    const fetchAI = async () => {
+      try {
+        const prompt = `
+          너는 에너지 사용량을 줄이기 위한 에너지 분석 및 솔루션 전문가야.
 
-  //         아래 JSON 데이터를 기반으로 건물의 에너지 사용 현황을 분석하고,
-  //         두 개의 보고서를 작성해줘.
+          아래 JSON 데이터를 기반으로 건물의 에너지 사용 현황을 분석하고,
+          두 개의 보고서를 작성해줘.
 
-  //         ---
+          ---
 
-  //         ### 📘 보고서1
-  //         - **title**: 전반적 에너지 사용 요약 제목 (한 줄)
-  //         - **plan**:
-  //           1. 전기, 가스, 수도의 전일/전월 증감율 및 비용 분석 + 권고사항
-  //           2. 외부 환경(온도 등)에 따른 냉난방 절감 가능성 또는 추천 온도
+          ### 📘 보고서1
+          - **title**: 전반적 에너지 사용 요약 제목 (한 줄)
+          - **plan**:
+            1. 아래와 같이 **표 형태를 문자열로** 만들어서 출력
+              전일/전월, 전기, 가스, 수도 컬럼 순으로 작성
+              예시 (문자 그대로):
 
-  //         ### ⚡ 보고서2
-  //         - **title**: 패턴 기반 분석 요약 제목 (한 줄)
-  //         - **plan**:
-  //           1. 피크 시간대, 이상 패턴, 특정 층/장비의 에너지 사용 이상 탐지
-  //           2. 전반적 절감 방향 또는 개선 방안을 한 줄로 제시
+                ----------| 전기 | 가스 | 수도
+                ----------|-------|-------|-------
+                전일 증감률 | 17% 감소 | 238% 증가 | 34% 감소
+                전월 증감률 | 18% 감소 | 7% 감소   | 변화 없음
+                전월 비용증감률 | 25,000 원 감소 | 12,000 원 감소 | 변화 없음
 
-  //         ---
+            2. 데이터에 입각한 구체적 권고사항과 이유 설명
+            3. 외부 환경(온도 등)에 따른 냉난방 절감 가능성 또는 추천 온도 설명
+
+          ### ⚡ 보고서2
+          - **title**: 패턴 기반 분석 요약 제목 (한 줄)
+          - **plan**:
+            1. 피크 시간대, 이상 패턴, 특정 층/장비의 에너지 사용 이상 탐지
+            2. 전반적 절감 방향 또는 개선 방안을 한 줄로 제시
+
+          보고서안 번호별 단락 끝에 '\\n\\n'을 넣어 JSON 문자열 내에서도 줄바꿈 처리해줘.
+          그리고 번호는 없애줘.
+          ---
 
           
-  //         ### 출력 형식 (반드시 유효한 JSON으로, 속성 이름은 항상 큰따옴표 사용)
-  //         [
-  //           {"num": "report1", "title": "제목", "plan": "내용"},
-  //           {"num": "report2", "title": "제목", "plan": "내용"}
-  //         ]
+          ### 출력 형식 (반드시 유효한 JSON으로, 속성 이름은 항상 큰따옴표 사용)
+          [
+            {"num": "report1", "title": "제목", "plan": "내용"},
+            {"num": "report2", "title": "제목", "plan": "내용"}
+          ]
 
-  //         ### 데이터 목록
-  //         {
-  //         "elecUsage" : ${JSON.stringify(elecUsage || {}, null, 2)}
-  //         "waterUsage" : ${JSON.stringify(waterUsage || {}, null, 2)} 
-  //         "gasUsage" : ${JSON.stringify(gasUsage || {}, null, 2)} 
-  //         "yesterdayUsage" : ${JSON.stringify(yesterdayUsage || {}, null, 2)} 
-  //         "monthElecUsage" : ${JSON.stringify(monthElecUsage || {}, null, 2)} 
-  //         "monthWaterUsage" : ${JSON.stringify(monthWaterUsage || {}, null, 2)} 
-  //         "monthGasUsage" : ${JSON.stringify(monthGasUsage || {}, null, 2)} 
-  //         "lastMonthUsage" : ${JSON.stringify(lastMonthUsage || {}, null, 2)} 
-  //         "buildingInfo" : ${JSON.stringify(buildingInfo || {}, null, 2)} 
-  //         "billInfo" : ${JSON.stringify(billInfo || {}, null, 2)} 
-  //         "todayComparisonRatio" : ${JSON.stringify(todayComparisonRatio || {}, null, 2)} 
-  //         "monthComparisonRatio" : ${JSON.stringify(monthComparisonRatio || {}, null, 2)} 
-  //         "AvgFee" : ${JSON.stringify(AvgFee || {}, null, 2)} 
-  //         }
-  //       `;
+          ### 데이터 목록
+          {
+          "elecUsage" : ${JSON.stringify(elecUsage || {}, null, 2)},
+          "waterUsage" : ${JSON.stringify(waterUsage || {}, null, 2)}, 
+          "gasUsage" : ${JSON.stringify(gasUsage || {}, null, 2)},
+          "yesterdayUsage" : ${JSON.stringify(yesterdayUsage || {}, null, 2)},
+          "monthElecUsage" : ${JSON.stringify(monthElecUsage || {}, null, 2)},
+          "monthWaterUsage" : ${JSON.stringify(monthWaterUsage || {}, null, 2)},
+          "monthGasUsage" : ${JSON.stringify(monthGasUsage || {}, null, 2)},
+          "lastMonthUsage" : ${JSON.stringify(lastMonthUsage || {}, null, 2)},
+          "buildingInfo" : ${JSON.stringify(buildingInfo || {}, null, 2)},
+          "billInfo" : ${JSON.stringify(billInfo || {}, null, 2)},
+          "todayComparisonRatio" : ${JSON.stringify(todayComparisonRatio || {}, null, 2)},
+          "monthComparisonRatio" : ${JSON.stringify(monthComparisonRatio || {}, null, 2)},
+          "AvgFee" : ${JSON.stringify(AvgFee || {}, null, 2)},
+          "weatherNow" : ${JSON.stringify(weatherNow || {}, null, 2)}
+          }
+        `;
 
-  //       const completion = await Openai.chat.completions.create({
-  //         model : "gpt-4o-mini",
-  //         messages : [
-  //           {role: "system", content: ""},
-  //           {role: "user", content: prompt},
-  //         ],
-  //         temperature: 0.5, // 0.0 (항상 비슷 답변) , 0.3 ~ 0.7 (설명, 보고서용), 1.0 이상 (답변 다양, 일관성x)
-  //       });
+        const completion = await Openai.chat.completions.create({
+          model : "gpt-4o-mini",
+          messages : [
+            {role: "system", content: ""},
+            {role: "user", content: prompt},
+          ],
+          temperature: 0.5, // 0.0 (항상 비슷 답변) , 0.3 ~ 0.7 (설명, 보고서용), 1.0 이상 (답변 다양, 일관성x)
+        });
 
-  //       let text = completion.choices[0].message.content;
-  //       text = text.replace(/```json|```/g, "").trim();
-  //       console.log("AI 응답:", text);
+        let text = completion.choices[0].message.content;
+        text = text.replace(/```json|```/g, "").trim();
+        console.log("AI 응답:", text);
 
-  //       // JSON 파싱 시도
-  //       const parsed = JSON.parse(text);
-  //       setMachineReports(parsed);
+        // JSON 파싱 시도
+        const parsed = JSON.parse(text);
+        setMachineReports(parsed);
+        console.log("💸 OpenAI 사용량:", completion.usage);
 
-  //       const reports = parsed.reduce(
-  //         (acc, d) => {
-  //           if (d.num === "report1") {
-  //             acc.report1 = { title: d.title, plan: d.plan };
-  //           } else if (d.num === "report2") {
-  //             acc.report2 = { title: d.title, plan: d.plan };
-  //           }
-  //           return acc;
-  //         }, {});
+        // 화면 타이핑 애니메이션
+        parsed.forEach((d, idx) => {
+          const fullText = d.plan;
+          
+          const typeWriter = (i = 0) => {
+            if (i > fullText.length) return; // 종료 조건
+            setTypingPlans((prev) => {
+              const newArr = [...prev];
+              newArr[idx] = fullText.slice(0, i); // 0~i까지 출력
+              return newArr;
+            });
+            setTimeout(() => typeWriter(i + 1), 25); // 25ms 간격으로 재귀 호출
+          };
 
-  //       // 상태 업데이트
-  //       setMachineTitle([reports.report1.title, reports.report2.title]);
-  //       setMachinePlan([reports.report1.plan, reports.report2.plan]);
-  //     } catch (err) {
-  //       console.error("AI 호출 실패:", err);
-  //       setMachineTitle(["error"]);
-  //       setMachinePlan(["AI 응답을 불러오지 못했습니다."]);
-  //     }
-  //   };
+          typeWriter(); // 시작
+        });
 
-  //   // if (Testing) { // 🍪 무슨 데이터로 ?? useState 바꿔야함
-  //     fetchAI();
-  //   // }
-  // }, []); // 🍪 무슨 데이터로 ?? useState 바꿔야함
+        const reports = parsed.reduce(
+          (acc, d) => {
+            if (d.num === "report1") {
+              acc.report1 = { title: d.title, plan: d.plan };
+            } else if (d.num === "report2") {
+              acc.report2 = { title: d.title, plan: d.plan };
+            }
+            return acc;
+          }, {});
+
+        // 상태 업데이트
+        setMachineTitle([reports.report1.title, reports.report2.title]);
+        setMachinePlan([reports.report1.plan, reports.report2.plan]);
+      } catch (err) {
+        console.error("AI 호출 실패:", err);
+        setMachineTitle(["error"]);
+        setMachinePlan(["AI 응답을 불러오지 못했습니다."]);
+      }
+    };
+
+    // if (Testing) { // 🍪 무슨 데이터로 ?? useState 바꿔야함
+      fetchAI();
+    // }
+  }, []); // 🍪 무슨 데이터로 ?? useState 바꿔야함
   
     return (
         <Overlay>
@@ -782,7 +818,7 @@ function Analysis({
                     <MachineDiv key={index} title={d.num}>
                       <div>
                         <div>{d.title}</div>
-                        <div>{d.plan}</div>
+                        <div>{typingPlans[index]}</div>
                       </div>
                       <div className={`MachineImg${index}`}>
                         <img src={AlertIcon[d.num]} alt={AlertIcon[d.num]} />
