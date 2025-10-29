@@ -133,6 +133,7 @@ function App() {
 
   const [selectedMarker, setSelectedMarker] = useState(null);
 
+  const [selectedFloorMarkers, setSelectedFloorMarkers] = useState([]);
 
   const [buildingInfo, setBuildingInfo] = useState({
     totalArea: 0, // 건물 총 면적
@@ -156,11 +157,26 @@ function App() {
   });
 
 
- 
+  
+  
+
+   const handleFloorSelect = (floorsArray) => {
+    const markers = makerInfo.markerInfo.filter(marker =>
+      floorsArray.includes(marker.floor)
+    );
+
+    setSelectedFloorMarkers(markers);
+    console.log("선택된 층들:", floorsArray);
+    console.log("선택된 층의 모든 마커들:", markers); // 계산된 최신 값 출력
+
+  };
 
 
-   const postSwitching = async (selectedMarker) => {
+  
+  const postSwitching = async (selectedMarker, selectedFloorMarkers) => {
     try {
+      console.log(selectedMarker);
+      console.log(selectedFloorMarkers);
       const newStatus = !selectedMarker.status ? 1 : 0;
 
       const response = await fetch(`/api/device/${selectedMarker.deviceId}`, {
@@ -372,7 +388,7 @@ function App() {
         if (nowGasUsage < 0) {
           nowGasUsage = 0;
         }
-
+      
         setTodayUsage((prev) => ({
           ...prev,
           water: Math.floor((prev.water + totalWater) * 100000) / 100000,
@@ -1120,7 +1136,7 @@ function App() {
         />
 
         {selectedMarker && (
-          <MarkerPanel floors={floors} selectedMarker={selectedMarker} setSelectedMarker={setSelectedMarker} postSwitching={postSwitching} FloorsButtonClick={FloorsButtonClick}/>
+          <MarkerPanel floors={floors} selectedMarker={selectedMarker} setSelectedMarker={setSelectedMarker} postSwitching={postSwitching} FloorsButtonClick={FloorsButtonClick} onFloorSelect={handleFloorSelect}/>
       )}
       </Container>  
     </>
