@@ -1154,6 +1154,7 @@ function Wing({
           todayComparisonRatio={todayComparisonRatio}
           monthComparisonRatio={monthComparisonRatio} 
           AvgFee={AvgFee}
+          weatherNow={weatherNow}
         >
           통합분석
         </Analysis>}

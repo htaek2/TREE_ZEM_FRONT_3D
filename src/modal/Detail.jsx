@@ -770,7 +770,7 @@ function Detail({ onClose, todayUsage }) {
 
                 <DetailChart>
                     <DetailShare>
-                        <div><img src="/Icon/share_icon.svg" alt="공유" />공유하기</div>
+                        {/* <div><img src="/Icon/share_icon.svg" alt="공유" />공유하기</div> */}
                     </DetailShare>
                     <div><Line data={chartData} options={options} /></div>
                 </DetailChart>

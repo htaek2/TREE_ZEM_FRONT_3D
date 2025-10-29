@@ -25,7 +25,7 @@ export const SimpleMarkers = ({ markerInfo = [], selectFloor, selectedMarker, se
     return null;
   }
 
-  console.log("floors in SimpleMarkers!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!:", floors);
+  // console.log("floors in SimpleMarkers!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!:", floors);
   const floorMap = {
     'f1': '1F',
     'f2': '2F',
