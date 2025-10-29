@@ -200,6 +200,7 @@ const FloorButtons = styled.div`
 `;
 
 const FloorButton = styled.button`
+
   padding: 8px 8px;
   background: ${({ $IsEmissionBtn }) => bgPill($IsEmissionBtn)};
   color: white;
