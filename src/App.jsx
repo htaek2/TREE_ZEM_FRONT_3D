@@ -318,7 +318,6 @@ function App() {
     eventSource.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        console.log("📡 장치 데이터 수신:", data);
 
         // 새로운 deviceInfo 객체 생성
         const newDeviceInfo = [
