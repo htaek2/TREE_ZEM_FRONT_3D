@@ -22,6 +22,6 @@
 - npm i react-chartjs-2
 - [o] OPEN AI API
 - npm install openai
-.env 파일 생성필요
+TREE_ZEM_FRONT_3D 아래 .env 파일 생성필요 key는 카톡 참고
 
 npm install react-router-dom styled-components @mui/x-date-pickers @mui/material @emotion/react @emotion/styled dayjs dayjs react-animated-numbers
