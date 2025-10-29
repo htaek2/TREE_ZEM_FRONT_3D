@@ -161,7 +161,7 @@ function Login({ onLoginSuccess }) {
           if (response.ok) {
             const token = response.headers.get("Authorization");
             if (token) {
-              localStorage.setItem("authToken", token);
+              sessionStorage.setItem("authToken", token);
 
               // 사용자 정보 생성
               const userWithToken = {
@@ -169,7 +169,7 @@ function Login({ onLoginSuccess }) {
                 email: email,
                 accessToken: token,
               };
-              localStorage.setItem("user", JSON.stringify(userWithToken));
+              sessionStorage.setItem("user", JSON.stringify(userWithToken));
 
               setTimeout(() => {
                 setLoginText("로그인 성공!");

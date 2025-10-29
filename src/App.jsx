@@ -1057,7 +1057,7 @@ function App() {
 
   // 로그인된 사용자 정보 조회 함수
   const fetchUserInfo = async () => {
-    const user = localStorage.getItem("user");
+    const user = sessionStorage.getItem("user");
     if (user) {
       try {
         const userObj = JSON.parse(user);
@@ -1077,7 +1077,7 @@ function App() {
     fetchUserInfo();
   }, []);
 
-  // 로그인 됫을때 작동하는 useEffect
+  // ㅈ인 됫을때 작동하는 useEffect
   useEffect(() => {
     if (!auth.isAuthenticated) return;
 
@@ -1146,7 +1146,7 @@ function App() {
   // 좌측 층 버튼 패널 접힘/펼침 상태
   const [railOpen, setRailOpen] = useState(() => {
     try {
-      const s = localStorage.getItem("floor-rail-open");
+      const s = sessionStorage.getItem("floor-rail-open");
       if (s != null) return s === "1";
     } catch {
       console.log("로컬스토리지 접근 불가");
@@ -1156,7 +1156,7 @@ function App() {
 
   useEffect(() => {
     try {
-      localStorage.setItem("floor-rail-open", railOpen ? "1" : "0");
+      sessionStorage.setItem("floor-rail-open", railOpen ? "1" : "0");
     } catch {}
   }, [railOpen]);
 

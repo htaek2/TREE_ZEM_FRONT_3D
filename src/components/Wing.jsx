@@ -1248,10 +1248,10 @@ function Wing({
           </InfoItem>
           <InfoManager open={openManager} $IsEmissionBtn={IsEmissionBtn}>
             <PanelActions>
-              <PanelBtn $IsEmissionBtn={IsEmissionBtn}>로그아웃</PanelBtn>
+              <PanelBtn $IsEmissionBtn={IsEmissionBtn} onClick={() => { sessionStorage.removeItem("user"); location.reload(); }}>로그아웃</PanelBtn>
             </PanelActions>
           </InfoManager>
-        </InfoGroup>
+        </InfoGroup>  
 
         {/* 2) 외부날씨 */}
         <InfoGroup>
