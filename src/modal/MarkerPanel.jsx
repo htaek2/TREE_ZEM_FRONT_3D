@@ -175,7 +175,7 @@ const Button = styled.button`
 
 
 // 컴포넌트
-const MarkerPanel = ({ floors, selectedMarker, setSelectedMarker, postSwitching, onFloorSelect }) => {
+const MarkerPanel = ({ floors, selectedMarker, setSelectedMarker, postSwitching, onFloorSelect, selectedFloorMarkers }) => {
   const [cnsInRlTm , setCnsInRlTm] = useState("불러오는중...");
   const [selectedFloor, setSelectedFloor] = useState([]);
 
@@ -248,7 +248,7 @@ const MarkerPanel = ({ floors, selectedMarker, setSelectedMarker, postSwitching,
           </StatsGrid>
           
           <ActionButtons>
-            <Button $active={selectedMarker.status === 0} $primary onClick={() => postSwitching(selectedMarker)}>
+            <Button $active={selectedMarker.status === 0} $primary onClick={() => postSwitching(selectedMarker, selectedFloorMarkers)}>
               {selectedMarker.status === 1 ? "OFF" : "ON"}
             </Button>
           </ActionButtons>

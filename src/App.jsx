@@ -165,70 +165,141 @@ function App() {
       floorsArray.includes(marker.floor)
     );
 
-    setSelectedFloorMarkers(markers);
     console.log("선택된 층들:", floorsArray);
     console.log("선택된 층의 모든 마커들:", markers); // 계산된 최신 값 출력
-
+    setSelectedFloorMarkers(prev => [...markers]);
   };
 
 
   
   const postSwitching = async (selectedMarker, selectedFloorMarkers) => {
     try {
-      console.log(selectedMarker);
-      console.log(selectedFloorMarkers);
+      console.log("선택된 마커:", selectedMarker);
       const newStatus = !selectedMarker.status ? 1 : 0;
 
-      const response = await fetch(`/api/device/${selectedMarker.deviceId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          status: newStatus
-        })
-      });
+      // selectedFloorMarkers가 존재하면 Promise.all로 여러 기기 상태 변경
+      if (selectedFloorMarkers && selectedFloorMarkers.length > 0) {
+        console.log("선택된 층의 마커들:", selectedFloorMarkers);
 
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
+        const responses = await Promise.all(
+          selectedFloorMarkers.map(async (marker) => {
+            const response = await fetch(`/api/device/${marker.deviceId}`, {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                status: newStatus
+              })
+            });
 
-      // 응답이 JSON인지 텍스트인지 확인
-      const contentType = response.headers.get('content-type');
-      let data;
+            if (!response.ok) {
+              throw new Error(`Network response was not ok for device ${marker.deviceId}`);
+            }
 
-      if (contentType && contentType.includes('application/json')) {
-        data = await response.json();
-      } else {
-        data = await response.text();
-      }
+            // 서버 응답 파싱
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+              return await response.json();
+            }
+            return await response.text();
+          })
+        );
 
-      console.log('성공:', data);
+        console.log('층 전체 기기 상태 변경 성공:', responses);
 
-      // state 업데이트: makerInfo의 해당 마커 상태 변경
-      setMakerInfo(prev => {
-        const updatedMarkers = prev.markerInfo.map(marker => {
-          if (marker.deviceId === selectedMarker.deviceId) {
-            return {
-              ...marker,
-              status: newStatus
-            };
-          }
-          return marker;
+        // state 업데이트: 서버 응답 데이터로 상태 변경
+        setMakerInfo(prev => {
+          const updatedMarkers = prev.markerInfo.map(marker => {
+            // 서버 응답에서 해당 deviceId 찾기
+            const serverData = responses.find(res =>
+              res.deviceId === marker.deviceId || res.id === marker.deviceId
+            );
+
+            if (serverData) {
+              return {
+                ...marker,
+                status: serverData.status // 서버가 반환한 실제 상태 사용
+              };
+            }
+            return marker;
+          });
+          return {
+            ...prev,
+            markerInfo: updatedMarkers
+          };
         });
-        return {
+
+        // selectedMarker도 서버 응답으로 업데이트
+        const selectedMarkerData = responses.find(res =>
+          res.deviceId === selectedMarker.deviceId || res.id === selectedMarker.deviceId
+        );
+
+        if (selectedMarkerData) {
+          setSelectedMarker(prev => ({
+            ...prev,
+            status: selectedMarkerData.status
+          }));
+        }
+
+        return responses;
+      } else {
+        // 단일 기기 상태 변경
+        const response = await fetch(`/api/device/${selectedMarker.deviceId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            status: newStatus
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+
+        // 응답이 JSON인지 텍스트인지 확인
+        const contentType = response.headers.get('content-type');
+        let data;
+
+        if (contentType && contentType.includes('application/json')) {
+          data = await response.json();
+        } else {
+          data = await response.text();
+        }
+
+        console.log('단일 기기 상태 변경 성공:', data);
+
+        // state 업데이트: 서버 응답 데이터로 상태 변경
+        const serverStatus = typeof data === 'object' && data.status !== undefined
+          ? data.status
+          : newStatus; // 서버가 status를 반환하지 않으면 fallback
+
+        setMakerInfo(prev => {
+          const updatedMarkers = prev.markerInfo.map(marker => {
+            if (marker.deviceId === selectedMarker.deviceId) {
+              return {
+                ...marker,
+                status: serverStatus // 서버 응답 사용
+              };
+            }
+            return marker;
+          });
+          return {
+            ...prev,
+            markerInfo: updatedMarkers
+          };
+        });
+
+        // selectedMarker도 서버 응답으로 업데이트
+        setSelectedMarker(prev => ({
           ...prev,
-          markerInfo: updatedMarkers
-        };
-      });
+          status: serverStatus
+        }));
 
-      // selectedMarker도 업데이트 (패널 즉시 반영)
-      setSelectedMarker(prev => ({
-        ...prev,
-        status: newStatus
-      }));
-
-      return data;
+        return data;
+      }
     } catch (error) {
       console.error('실패:', error);
       throw error;
@@ -1108,6 +1179,7 @@ function App() {
             onFloorButtonClick={onFloorButtonClick}
           />
 
+
           <SimpleMarkers markerInfo={makerInfo.markerInfo} selectFloor={active.model} selectedMarker={selectedMarker} setSelectedMarker={setSelectedMarker} />
         </Canvas>
 
@@ -1136,7 +1208,15 @@ function App() {
         />
 
         {selectedMarker && (
-          <MarkerPanel floors={floors} selectedMarker={selectedMarker} setSelectedMarker={setSelectedMarker} postSwitching={postSwitching} FloorsButtonClick={FloorsButtonClick} onFloorSelect={handleFloorSelect}/>
+          <MarkerPanel
+            floors={floors}
+            selectedMarker={selectedMarker}
+            setSelectedMarker={setSelectedMarker}
+            postSwitching={postSwitching}
+            FloorsButtonClick={FloorsButtonClick}
+            onFloorSelect={handleFloorSelect}
+            selectedFloorMarkers={selectedFloorMarkers}
+          />
       )}
       </Container>  
     </>

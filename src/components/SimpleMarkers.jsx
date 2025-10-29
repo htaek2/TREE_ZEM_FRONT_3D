@@ -2,6 +2,8 @@ import { Instance, Instances } from '@react-three/drei';
 import * as THREE from 'three';
 
 const Marker = ({ position , onClick, onPointerOver, onPointerOut , marker }) => {
+
+
   return (
     <group position={position} onClick={onClick} onPointerOver={onPointerOver} onPointerOut={onPointerOut}>
       {/* 검정색 테두리 (뒤쪽) */}
@@ -25,10 +27,6 @@ export const SimpleMarkers = ({ markerInfo = [], selectFloor, selectedMarker, se
     return null;
   }
 
-<<<<<<< HEAD
-=======
-  // console.log("floors in SimpleMarkers!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!:", floors);
->>>>>>> cdec2e30de24bbd012c435a339753c8d1b2dd546
   const floorMap = {
     'f1': '1F',
     'f2': '2F',
