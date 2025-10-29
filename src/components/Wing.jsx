@@ -1152,7 +1152,7 @@ function Wing({
       )}
       {activeModal === "analysis" && 
         <Analysis 
-          onClose={() => setActiveModal(null)}
+          onClose={() => setActiveModal(null)}ㄴㄹㄴgi
           elecUsage={todayUsage.elec}
           waterUsage={todayUsage.water}
           gasUsage={todayUsage.gas}
