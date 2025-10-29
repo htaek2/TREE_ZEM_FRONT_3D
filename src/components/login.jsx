@@ -239,7 +239,6 @@ function Login({ onLoginSuccess }) {
               onChange={(e) => setPassword(e.target.value)}
             />
             <Button type="submit">Login</Button>
-            <Button onClick={() => handleSubmit(null, true)}>자동로그인</Button>
           </InputGroup>
           {errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
         </LoginForm>
