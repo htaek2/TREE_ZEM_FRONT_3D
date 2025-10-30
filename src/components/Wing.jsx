@@ -76,6 +76,18 @@ const bgPill = ($IsEmissionBtn, alphaOff = 0.85, alphaOn = 1) =>
 
 
 
+const crispText = css`
+  color: #fff;
+  opacity: 1 !important;                 /* 상속된 opacity 차단 */
+  mix-blend-mode: normal;                 /* 합성으로 인한 흐림 방지 */
+  filter: none !important;                /* 상위 filter 영향 차단 */
+  -webkit-font-smoothing: auto;           /* LCD AA 다시 켜기 */
+  text-rendering: geometricPrecision;
+  paint-order: stroke fill;               /* 필요시 외곽선 먼저 */
+  /* 너무 두꺼워지지 않게 아주 얇은 외곽선 */
+  -webkit-text-stroke: .2px rgba(0,0,0,.28);
+`;
+
 
 // 좌측 둥글고 우측 각진 알약 + 우측 페이드(배경만 희미, 텍스트/아이콘 선명)
 const pillFadeBg = css`
@@ -88,8 +100,7 @@ const pillFadeBg = css`
   /* 실제 콘텐츠는 항상 위 */
   > * { position: relative; z-index: 1; }
 
-  /* 글자 렌더링 안정화 */
-  -webkit-font-smoothing: antialiased;
+  /* 글자 렌더링: 개입 줄이기 (상위에서 CrispText가 처리) */
   text-rendering: geometricPrecision;
 
   /* 배경 + '우측만' 투명화 마스크 */
@@ -168,6 +179,7 @@ const HeaderIcon = styled.img`
 const HeaderText = styled.span`
   white-space: nowrap;
   ${textShadowIfOn}
+  ${crispText}
 `;
 
 /* ===========================
@@ -284,7 +296,7 @@ const CardTitle = styled.div`
 
   ${pillFadeBg}      /* ← 좌둥/우각 + 우측 페이드 */
   ${textShadowIfOn}  /* 배출모드일 때만 텍스트 그림자 */
-
+  ${crispText} 
 
 `;
 
@@ -330,6 +342,7 @@ const StatLabel = styled.span`
   letter-spacing: -0.2px;
   white-space: nowrap;
   ${textShadowIfOn}
+  ${crispText}
 `;
 
 const StatValue = styled.div`
@@ -341,10 +354,16 @@ const StatValue = styled.div`
   font-weight: 700;
   font-size: 17px;
   ${textShadowIfOn}
+  ${crispText}
 `;
 
 const StatUnit = styled.span`
+  ${crispText}
   ${textShadowIfOn}
+  font-size: ${({ $small }) => ($small ? "12px" : "inherit")};
+  line-height: 1;
+  opacity: 1; 
+  margin-left: 1px;
 `;
 
 const ChartCard = styled(WingCard)`
@@ -518,8 +537,8 @@ const InfoGroup = styled.div`
 const InfoPanelBase = styled.div`
   overflow: hidden;
   max-height: ${({ open }) => (open ? "120px" : "0")};
-  opacity: ${({ open }) => (open ? 1 : 0)};
-  transition: max-height 220ms ease, opacity 150ms ease;
+  visibility: ${({ open }) => (open ? "visible" : "hidden")};
+  transition: max-height 220ms ease, visibility 0s linear ${({ open }) => (open ? "0s" : "220ms")};
   padding: ${({ open }) => (open ? "8px 8px 40px" : "0 8px 0")};
   margin-top: ${({ open }) => (open ? "6px" : "0")};
 
@@ -545,6 +564,9 @@ const InfoPanelBase = styled.div`
 const InfoManager = styled(InfoPanelBase)``;
 
 const InfoWeather = styled(InfoPanelBase)`
+  & p { ${crispText} }
+  font-weight: 700;
+  text-shadow: ${({ $IsEmissionBtn }) => ($IsEmissionBtn ? SHADOW_TEXT : "none")};
   padding: ${({ open }) => (open ? "12px" : "0 12px")};
   display: block; /* 줄 간격을 행별로 제어하기 쉽게 block로 */
 
@@ -590,10 +612,9 @@ const InfoWeather = styled(InfoPanelBase)`
     background-size: contain;
     background-repeat: no-repeat;
     /* 탄소배출 ON일 때만 아이콘 드롭섀도 추가 */
+   /* 아이콘에만 filter, 텍스트엔 영향 없음 */
    filter: ${({ $IsEmissionBtn }) =>
-      $IsEmissionBtn
-        ? `brightness(0) invert(1) ${SHADOW_FILTER}`
-        : "brightness(0) invert(1)"};
+      $IsEmissionBtn ? `brightness(0) invert(1) ${SHADOW_FILTER}` : "brightness(0) invert(1)"};
   }
 
   /* 행별 개별 오프셋 적용 */
@@ -645,6 +666,7 @@ const InfoItem = styled.div`
   * { position: relative; z-index: 1; } /* 중첩 자식까지 전체 상단 보장 */
 
   color: #FAFAFA;
+  ${crispText}
   font-size: 16.5px;
   font-weight: 700;
   ${textShadowIfOn}   /* ← 행의 라벨/값(책임자, 외부온도, 경고 알림 숫자)도 그림자 */
@@ -670,6 +692,7 @@ const InfoLabel = styled.span`
   text-overflow: ellipsis;
   line-height: 20px;
   ${textShadowIfOn}
+  ${crispText}
 `;
 
 const InfoValue = styled.span`
@@ -681,6 +704,7 @@ const InfoValue = styled.span`
   white-space: nowrap;
   line-height: 20px;
   ${textShadowIfOn}
+  ${crispText}
 `;
 
 /* 우측 하단 고정 액션 영역 */
@@ -1081,8 +1105,13 @@ function Wing({
             <StatRow $IsEmissionBtn={IsEmissionBtn} className="TotalEmission">
               <StatLabel $IsEmissionBtn={IsEmissionBtn}>총 배출량</StatLabel>
               <StatValue $IsEmissionBtn={IsEmissionBtn}>
-                <span>{(emDaily.today).toLocaleString('ko-KR')}</span>
-                <StatUnit>{EMISSION_UNIT}</StatUnit>
+                <span>{
+                  new Intl.NumberFormat('ko-KR', {
+                    minimumFractionDigits: 1,
+                    maximumFractionDigits: 1,
+                  }).format(emDaily.today)
+                }</span>
+                <StatUnit $small>{EMISSION_UNIT}</StatUnit>
               </StatValue>
             </StatRow>
           </StatList>
