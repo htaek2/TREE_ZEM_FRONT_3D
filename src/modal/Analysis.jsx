@@ -784,7 +784,7 @@ function Analysis({
 
         const res2 = await fetch(`/api/energy/bill?start=2025-10-01 00:00:00&end=${formatted}&datetimeType=1`);
         const json2 = await res2.json();
-
+        console.log("📦 서버 응답2:", json2);
         const dailySumMap = {};
         // 2. 모든 energyType과 datas를 순회
         json2.forEach(item => {
