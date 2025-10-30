@@ -1374,42 +1374,54 @@ const rangeMonth = (y, m) => {
 };
 
 
-// 4) 탄소배출 API 헬퍼 (여기에 추가)
-async function apiCarbon(startDate, endDate, datetimeType /* 1|2 */) {
-  const startStr = encodeURIComponent(ymd_hms(startDate));
-  const endStr   = encodeURIComponent(ymd_hms(endDate));
-  const url = `/api/energy/carbon?start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`;
+// ✅ 교체: apiCarbon (공백/플러스 · datetimeType 폴백 모두 시도)
+async function apiCarbon(startDate, endDate, datetimeType /* 1=day, 2=month */) {
+  const makeStamp = (d) => {
+    const p = (n) => String(n).padStart(2, "0");
+    const s = `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+    return s;
+  };
 
-  try {
+  const rawStart = makeStamp(startDate);
+  const rawEnd   = makeStamp(endDate);
+
+  // ① 현재 구현: 공백을 %20으로 인코딩
+  const q1 = `/api/energy/carbon?start=${encodeURIComponent(rawStart)}&end=${encodeURIComponent(rawEnd)}&datetimeType=${datetimeType}`;
+
+  // ② 일부 서버: 공백 대신 + 를 요구
+  const toPlus = (s) => s.replace(/ /g, "+");
+  const q2 = `/api/energy/carbon?start=${toPlus(rawStart)}&end=${toPlus(rawEnd)}&datetimeType=${datetimeType}`;
+
+  // ③ 일부 서버: day(1) 대신 hour(0)만 응답 (일 합계가 비어오는 환경)
+  const q3 = `/api/energy/carbon?start=${toPlus(rawStart)}&end=${toPlus(rawEnd)}&datetimeType=0`;
+
+  const tryFetch = async (url) => {
     const res = await fetch(url, { headers: { Accept: "application/json" } });
-
-    if (!res.ok) { 
-      console.warn("[carbon] HTTP", res.status, url); return []; 
-    }
-
+    if (!res.ok) return null;
     const text = await res.text();
+    if (!text) return [];
+    try { return JSON.parse(text); } catch { return []; }
+  };
 
-    if (!text) {
-      return [];
+  // 순차 폴백
+  const cands = [q1, q2, (datetimeType === 1 ? q3 : null)].filter(Boolean);
+  for (const url of cands) {
+    try {
+      const json = await tryFetch(url);
+      if (json && unwrapRows(json).length) {
+        const rows = unwrapRows(json);
+        console.debug("[carbon] OK", url, "rows:", rows.length, "head:", rows[0]);
+        return rows;
+      } else {
+        console.debug("[carbon] empty", url);
+      }
+    } catch (e) {
+      console.warn("[carbon] error", url, e);
     }
-    let json;
-
-    try { 
-      json = JSON.parse(text); 
-    }
-    catch (e) { 
-      console.warn("[carbon] parse error:", e, "raw body:", text); return []; 
-    }
-
-    const rows = unwrapRows(json);
-    console.debug('[carbon] rows.len=', rows.length, 'keys=', Object.keys(json||{}), 'head=', rows[0]);
-
-    return rows;
-  } catch (err) {
-    console.warn("[carbon] fetch error:", err);
-    return [];
   }
+  return [];
 }
+
 
 // day 전용 래퍼
 const apiCarbonDay = (startDate, endDate) => apiCarbon(startDate, endDate, 1);
