@@ -411,7 +411,7 @@ function App() {
       try {
         const data = JSON.parse(event.data);
 
-        console.log("data!!!!!!!!!",data);
+        // console.log("data!!!!!!!!!",data);
 
         // 실시간 요금 업데이트
         setBillInfo((prev) => ({

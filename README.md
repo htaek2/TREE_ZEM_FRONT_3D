@@ -25,5 +25,7 @@
 TREE_ZEM_FRONT_3D 아래 .env 파일 생성필요 key는 카톡 참고
 - [o] markdown
 > npm install react-markdown
+- [o] date
+> npm install date-fns
 
 npm install react-router-dom styled-components @mui/x-date-pickers @mui/material @emotion/react @emotion/styled dayjs dayjs react-animated-numbers

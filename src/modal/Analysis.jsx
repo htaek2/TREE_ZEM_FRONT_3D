@@ -1,4 +1,5 @@
 import styled, { keyframes } from "styled-components";
+import { format } from "date-fns";
 import {
   Overlay,
   ModalHeader,
@@ -317,7 +318,7 @@ const MainTop = styled.div`
     display: flex;
     justify-content: center;
     align-items: center;
-    width: 100%;
+    width: calc(100% - 4px);
     height: 70%;
     border: 1px solid rgba(166, 166, 166, 0.2);
     margin-top: 8px;
@@ -461,7 +462,6 @@ const PlanMain = styled.div`
     border: 1px solid rgba(166, 166, 166, 0.2);
     border-radius: 10px;
     white-Space: pre-line;
-    overflow: auto;
 
     flex-wrap: wrap;
     padding: 8px;
@@ -475,7 +475,8 @@ const MachineDiv = styled.div`
     background: ${({ title }) => 
     title === 'report1' ? 'rgba(37, 127, 255, 0.3)' :
     title === 'report2' ? 'rgba(251, 44, 54, 0.3)' :
-    'rgba(35, 212, 147, 0.3)'};    
+    'rgba(35, 212, 147, 0.3)'};  
+    overflow: auto;  
 
     > div:first-child {
       display: flex;
@@ -486,7 +487,6 @@ const MachineDiv = styled.div`
       font: 400 14px "나눔고딕";
       color: #FAFAFA;
       padding: 0px 8px;
-
 
       > div:first-child {
         font: bold 18px "나눔고딕";
@@ -515,6 +515,8 @@ const LoadingPlaceholder = styled.div`
   display: flex;
   flex-direction: column;
   gap: 8px;
+  background: rgba(37, 127, 255, 0.3);
+  animation: ${shimmer} 1.2s infinite linear;
 `;
 
 const SkeletonTitle = styled.div`
@@ -537,58 +539,7 @@ const SkeletonText = styled.div`
 
 
 
-const data = {
-    labels: ["3월", "6월", "9월", "12월"], // X축
-    datasets: [
-      {
-        label: "Dataset 1",
-        data: [10, 20, 30, 25, 15, 25],
-        borderColor: "#00b894", // 라인 색
-        backgroundColor: "#00b894",
-        tension: 0.3, // 선 곡선 정도
-        fill: false,
-        pointRadius: 5, // 데이터 포인트 크기
-        pointBackgroundColor: "#fff", // 원 내부 색
-        pointBorderColor: "#00b894", // 원 테두리 색
-        pointBorderWidth: 2,
-      },
-      {
-        label: "Dataset 2",
-        data: [5, 15, 10, 20, 10, 15],
-        borderColor: "#dfe6e9",
-        borderDash: [5, 5], // 점선
-        backgroundColor: "#dfe6e9",
-        tension: 0.3,
-        fill: false,
-        pointRadius: 5,
-        pointBackgroundColor: "#fff",
-        pointBorderColor: "#dfe6e9",
-        pointBorderWidth: 2,
-      },
-    ],
-  };
 
-  const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: false, // 범례 숨기기
-      },
-    },
-    scales: {
-      x: {
-        grid: {
-          color: "#2d3436",
-        },
-      },
-      y: {
-        grid: {
-          color: "#2d3436",
-        },
-      },
-    },
-  };
 
 
 
@@ -619,15 +570,17 @@ function Analysis({
     const [MachineTitle, setMachineTitle] = useState([]);
     // useState(["usage", "warning",]);
     const [MachinePlan, setMachinePlan] = useState([]);
-      // "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaheight 고정값 제거 height: 15% 대신 min-height나 auto로 변경. 텍스트가 여러 줄일 때 자동 줄바꿈 설정 flex-wrap: wrap 또는 word-break: break-word 추가 정렬이 깨지지 않도록 align-items: flex-start 로 조정", 
-      // "조금 이따 샤워해 이대로 더 나를 안아줘 이렇게 니 품에서 얘기 하고파 조금 이따 샤워해 이대로 더 나를 안아줘 이렇게 니 품에서 장난 치고파 작지만 귀여운 너의 가슴이 난 좋아 니 머리카락 넘겨줄 때 손에 닿는 이마 내 몸 위에 올라 날 바라보는 그 눈동자 조명 아래 살짝 비친 하얀 살결의 빛깔 날 미치게 하는 이 못된 여자 때론 너와 사랑할 때 난 3년 만에 집에 온 뱃사람 같아 니가 날 거칠게 만드니까 침대는 바다가 되고 우린 헤엄쳐 서로의 상처를 치유하듯 부드럽게 어루만져  세상 가장 깨끗한 너의 품에 안겨 내 더렵혀진 영혼을 다 씻어 이대로 더 있어"
     const [machineReports, setMachineReports] = useState([]);
     const [typingPlans, setTypingPlans] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
     // [ADD] 분석 API 응답 상태
     const [analysis, setAnalysis] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    // 예측 데이터
+    const [monthData, setMonthData] = useState([]);
+    const [yearData, setYearData] = useState([]);
+    const [VSmonthData, setVSMonthData] = useState([]);
+    const [VSyearData, setVSYearData] = useState([]);
 
     // [ADD] GET /api/bill/analysis (Request Body 없음)
     useEffect(() => {
@@ -696,50 +649,35 @@ function Analysis({
           아래 JSON 데이터를 기반으로 건물의 에너지 사용 현황을 분석하고,
           두 개의 보고서를 작성해줘.
 
-          ---
+---
 
-          ### 📘 보고서1
-          - **title**: 전반적 에너지 사용 요약 제목 (한 줄)
-          - **plan**:
-            1. 아래와 같이 **표 형태를 문자열로** 만들어서 출력
-              전일/전월, 전기, 가스, 수도 컬럼 순으로 작성
-              예시 (문자 그대로):
+### 📘 보고서1
+- "title": 전반적 에너지 사용 요약 제목 (한 줄)
+- "plan": 다음 4개 항목을 포함
+  1. 전기·가스·수도 사용량을 종합한 3줄 요약 (줄바꿈 금지, 각 줄은 '## **내용**' 형식)
+  2. 아래 예시와 같은 표를 문자열로 출력 (문자 그대로)
+        ----------| 전기 | 가스 | 수도
+        ----------|-------|-------|-------
+        전일 증감률 | 17% 감소 | 238% 증가 | 34% 감소
+        전월 증감률 | 18% 감소 | 7% 감소 | 변화 없음
+        전월 비용증감률 | 25,000 원 감소 | 12,000 원 감소 | 변화 없음
+  3. 건물 관리자용 권고문 (전기·가스·수도 증감률 및 비용 반영, 구체적 점검 방법과 기대효과 포함, LED 교체 제외)
+  4. 외부 온도·날씨에 따른 냉난방 절감 가능성 또는 추천 온도
 
-                ----------| 전기 | 가스 | 수도
-                ----------|-------|-------|-------
-                전일 증감률 | 17% 감소 | 238% 증가 | 34% 감소
-                전월 증감률 | 18% 감소 | 7% 감소   | 변화 없음
-                전월 비용증감률 | 25,000 원 감소 | 12,000 원 감소 | 변화 없음
+---
 
-            2. 아래 에너지 사용 데이터를 바탕으로 건물 관리자를 위한 전문적 권고문을 작성해줘.
-              - 전기, 가스, 수도 사용량 증감률과 비용 변화를 반영
-              - 각 권고사항마다 구체적 점검 방법, 관리방안과 기대 효과를 포함
-              - 단순 나열이 아니라, 문장 연결과 흐름을 고려
-              - LED 교체는 포함하지 않기
-              - 제목은 쓰지 않기
-              - 한 단락 안에서 자연스럽게 2~3개의 권고사항을 제시
-            3. 외부 환경(온도 등)에 따른 냉난방 절감 가능성 또는 추천 온도 설명
-            4. 1, 2, 3번 내용을 종합한 **3줄 요약**을 작성하되, 아래 조건을 따라줘.
-              - 줄바꿈 하지 않기
-              - "전반적인 평가로"라는 말로 시작
-              - 각 줄은 굵게(**) 표시하고, 맨 앞에 '##'를 붙여 제목처럼 강조해줘.
-              - 예시:
-                ## **전반적인 평가로 전기 사용량은 안정세를 보이고 있습니다.**
-                ## **가스 사용량은 증가세로 효율 개선이 필요합니다.**
-                ## **수도 사용은 평균 수준으로 유지 중입니다.**
+### ⚡ 보고서2
+- "title": 패턴 기반 분석 요약 제목 (한 줄)
+- "plan": 
+  1. 피크 시간대·이상 패턴·층/장비별 이상 탐지
+  2. 전반적 절감 방향 또는 개선 방안을 한 줄로 제시
+  (가스는 층별 분석 제외)
 
-          ### ⚡ 보고서2
-          - **title**: 패턴 기반 분석 요약 제목 (한 줄)
-          - **plan**:
-            1. 피크 시간대, 이상 패턴, 특정 층/장비의 에너지 사용 이상 탐지
-            2. 전반적 절감 방향 또는 개선 방안을 한 줄로 제시
-          단, 가스는 층별로 없고 건물에 있음
+---
 
           보고서안 번호별 단락 끝에 '\\n\\n'을 넣어 JSON 문자열 내에서도 줄바꿈 처리해줘.
           그리고 번호는 없애줘.
           ---
-
-          
           ### 출력 형식 (반드시 유효한 JSON으로, 속성 이름은 항상 큰따옴표 사용)
           [
             {"num": "report1", "title": "제목", "plan": "내용"},
@@ -815,17 +753,144 @@ function Analysis({
         setMachinePlan([reports.report1.plan, reports.report2.plan]);
       } catch (err) {
         console.error("AI 호출 실패:", err);
-        setMachineTitle(["error"]);
-        setMachinePlan(["AI 응답을 불러오지 못했습니다."]);
-      } finally {
-        setTimeout(() => setIsLoading(false), 500);
-  }
+
+        // if (err.status === 429) { // RateLimitError
+        //   console.warn("Rate limit, 60초 후 재시도...");
+        //   setTimeout(fetchAI, 60000);
+        // } else {
+        //   setMachineTitle(["error"]);
+        //   setMachinePlan(["AI 응답을 불러오지 못했습니다."]);
+        // }
+      } 
     };
 
-    // if (Testing) { // 🍪 무슨 데이터로 ?? useState 바꿔야함
-      fetchAI();
-    // }
+
+      // fetchAI();🍪🍪
+
   }, []); // 🍪 무슨 데이터로 ?? useState 바꿔야함
+
+  const nowdate = new Date()
+  const formatted = format(nowdate, "yyyy-MM-dd HH:mm:ss");
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await fetch("/api/predict/bill");
+        const json = await res.json();
+        setMonthData(json.month || []);
+        setYearData(json.year || []);
+        console.log("📦 서버 응답:", json);
+        
+
+        const res2 = await fetch(`/api/energy/bill?start=2025-10-01 00:00:00&end=${formatted}&datetimeType=1`);
+        const json2 = await res2.json();
+
+        const dailySumMap = {};
+        // 2. 모든 energyType과 datas를 순회
+        json2.forEach(item => {
+          item.datas.forEach(({ timestamp, usage }) => {
+            const date = timestamp.split(" ")[0]; // "YYYY-MM-DD"만 추출
+            if (!dailySumMap[date]) dailySumMap[date] = 0;
+            dailySumMap[date] += usage;
+          });
+        });
+
+        // 3. 객체를 배열로 변환
+        const dailySum = Object.entries(dailySumMap).map(([date, usage]) => ({
+          date,
+          usage
+        }));
+
+        
+
+        setVSMonthData(dailySum || []);
+        setVSYearData(dailySum || []);
+
+      } catch (err) {
+        console.error("데이터 불러오기 실패:", err);
+      }
+    };
+    fetchData();
+  }, []);
+
+
+  const totalUsage = (VSmonthData || []).reduce((acc, energy) => {
+    const sum = (energy.datas || []).reduce((s, item) => s + Math.floor(item.usage), 0);
+    return acc + sum;
+  }, 0);
+
+
+
+  const data1 = {
+    labels: VSmonthData, // X축
+    datasets: [
+      {
+        data: [5, 15, 10, 20, 10, 15],
+        borderColor: "#00b894", // 라인 색
+        backgroundColor: "#00b894",
+        tension: 0.3, // 선 곡선 정도
+        fill: false,
+        pointRadius: 5, // 데이터 포인트 크기
+        pointBackgroundColor: "#fff", // 원 내부 색
+        pointBorderColor: "#00b894", // 원 테두리 색
+        pointBorderWidth: 2,
+      },
+      {
+        data: monthData.map((d) => d.value),
+        borderColor: "#dfe6e9",
+        borderDash: [5, 5], // 점선
+        backgroundColor: "#dfe6e9",
+        tension: 0.3,
+        fill: false,
+        pointRadius: 5,
+        pointBackgroundColor: "#fff",
+        pointBorderColor: "#dfe6e9",
+        pointBorderWidth: 2,
+      },
+    ],
+  };
+
+  const data2 = {
+    labels: yearData.map((d) => d.quarter), // X축
+    datasets: [
+      {
+        data: yearData.map((d) => d.value),
+        borderColor: "#00b894", // 라인 색
+        backgroundColor: "#00b894",
+        tension: 0.3, // 선 곡선 정도
+        fill: false,
+        pointRadius: 5, // 데이터 포인트 크기
+        pointBackgroundColor: "#fff", // 원 내부 색
+        pointBorderColor: "#00b894", // 원 테두리 색
+        pointBorderWidth: 2,
+      }
+    ],
+  };
+
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false, // 범례 숨기기
+      },
+    },
+    scales: {
+      x: {
+        grid: {
+          color: "#2d3436",
+        },
+      },
+      y: {
+        grid: {
+          color: "#2d3436",
+        },
+      },
+    },
+  };
+
+
+
   
     return (
         <Overlay>
@@ -840,7 +905,7 @@ function Analysis({
                 <AnalysisMainTop>
                   <MainTop>
                     <div>금월 예상 비용</div>
-                    <div>0,000,000 원</div>
+                    <div>{totalUsage.toLocaleString()} 원</div>
                     {/* [FIX] ExpectRatio prop 미전달 + 조건부 렌더 */}
                     <ExpectRatiodiv
                       style={{ color: ExpectRatio[0] >= 0 ? "#5AD" : "#F55" }} // 기존 TodayRatio 색상 논리 대체
@@ -857,12 +922,12 @@ function Analysis({
                         {ExpectRatio[0] >= 0 ? <div>증가</div> : <div>감소</div>}
                       </UpDownFont>
                     </ExpectRatiodiv>
-                    <div><Line data={data} options={options} /></div>
+                    <div><Line data={data1} options={options} /></div>
                   </MainTop>
 
                   <MainTop>
                     <div>금년 예상 비용</div>
-                    <div>00,000,000 원</div>
+                    <div>{Math.floor(yearData.reduce((sum, item) => sum + item.value, 0)).toLocaleString()} 원</div>
                     {/* [FIX] ExpectRatio prop 미전달 + 조건부 렌더 */}
                     <ExpectRatiodiv
                       style={{ color: ExpectRatio[1] >= 0 ? "#5AD" : "#F55" }}
@@ -879,7 +944,7 @@ function Analysis({
                         {ExpectRatio[1] >= 0 ? <div>증가</div> : <div>감소</div>}
                       </UpDownFont>
                     </ExpectRatiodiv>
-                    <div>표</div>
+                    <div><Line data={data2} options={options} /></div>
                   </MainTop>
                 </AnalysisMainTop>
 
@@ -945,25 +1010,50 @@ function Analysis({
               <AnalysisPlan>
                 <PlanTop>에너지 절감 방안 제시</PlanTop>
                 <PlanMain>
-                  {machineReports.map((d, index) => (
-                    <MachineDiv key={index} title={d.num}>
-                      
-                      <div>
-                        <div>{d.title}</div>
-                        <div><ReactMarkdown 
-                                components={{
-                                  h2: ({node, ...props}) => (
-                                    <h2 style={{ fontSize: "1.0rem", fontWeight: "bold", color: "#FAFAFA" }} {...props} />
-                                  ),
-                                }}
-                            >{typingPlans[index]}</ReactMarkdown></div>
-                      </div>
+                  {loading ? (
+                        // 로딩 중 표시 (GIF, Skeleton 등 선택 가능)
+                        <LoadingPlaceholder>
+                          <SkeletonTitle />
+                          <SkeletonText />
+                          <SkeletonText short />
+                          <SkeletonText />
+                        </LoadingPlaceholder>
                         
-                      <div className={`MachineImg${index}`}>
-                        <img src={AlertIcon[d.num]} alt={AlertIcon[d.num]} />
-                      </div>
-                    </MachineDiv>
-                  ))}
+                      ) : error ? (
+                        // 에러 표시
+                        <div>데이터를 불러오지 못했습니다.</div>
+                      ) : (
+                        // 데이터가 준비된 경우 기존 렌더
+                        machineReports.map((d, index) => (
+                          <MachineDiv key={index} title={d.num}>
+                            <div>
+                              <div>{d.title}</div>
+                              <div>
+                                <ReactMarkdown
+                                  components={{
+                                    h2: ({ node, ...props }) => (
+                                      <h2
+                                        style={{
+                                          fontSize: "1.0rem",
+                                          fontWeight: "bold",
+                                          color: "#FAFAFA",
+                                        }}
+                                        {...props}
+                                      />
+                                    ),
+                                  }}
+                                >
+                                  {typingPlans[index]}
+                                </ReactMarkdown>
+                              </div>
+                            </div>
+
+                            <div className={`MachineImg${index}`}>
+                              <img src={AlertIcon[d.num]} alt={AlertIcon[d.num]} />
+                            </div>
+                          </MachineDiv>
+                        ))
+                    )}
                 </PlanMain>
               </AnalysisPlan>
             </Maindiv>

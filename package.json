@@ -19,6 +19,7 @@
     "@react-three/drei": "^10.7.6",
     "@react-three/fiber": "^9.4.0",
     "chart.js": "^4.5.1",
+    "date-fns": "^4.1.0",
     "dayjs": "^1.11.18",
     "openai": "^6.7.0",
     "react": "^19.1.1",
