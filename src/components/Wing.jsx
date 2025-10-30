@@ -864,6 +864,7 @@ function Wing({
   const outerHumidity = weatherNow?.humidity ?? null;
   const outerWind = weatherNow?.windSpeed ?? null;
 
+  
   const handleModelButtonClick = (modelName) => {
     if (modelName === "top") return;
     // SceneContainer의 handleFloorButtonClick 호출 (OrbitControls 타겟 업데이트 포함)
