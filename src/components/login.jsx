@@ -255,7 +255,10 @@ const Container = styled.div`
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: #bfbfc6;
+  background-image: url("public/img/BG3.png");
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center; /* 왼쪽으로 100px 이동 */
   touch-action: none;
   z-index: ${(props) => (props.$isFadeOut === true ? 0 : 20)};
 `;

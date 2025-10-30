@@ -776,51 +776,12 @@ const weeklySum = {
   "5주차": 190380,
 };
 
-<<<<<<< HEAD
-        const res2 = await fetch(`/api/energy/bill?start=2025-10-01 00:00:00&end=${formatted}&datetimeType=1`);
-        const json2 = await res2.json();
-        console.log("📦 서버 응답2:", json2);
-        const dailySumMap = {};
-        // 2. 모든 energyType과 datas를 순회
-        json2.forEach(item => {
-          item.datas.forEach(({ timestamp, usage }) => {
-            const date = timestamp.split(" ")[0]; // "YYYY-MM-DD"만 추출
-            if (!dailySumMap[date]) dailySumMap[date] = 0;
-            dailySumMap[date] += usage;
-          });
-        });
-
-        // 3. 객체를 배열로 변환
-        const dailySum = Object.entries(dailySumMap).map(([date, usage]) => ({
-          date,
-          usage
-        }));
-
-        
-
-        setVSMonthData(dailySum || []);
-        setVSYearData(dailySum || []);
-
-      } catch (err) {
-        console.error("데이터 불러오기 실패:", err);
-      }
-    };
-    fetchData();
-  }, []);
-
-
-  const totalUsage = (VSmonthData || []).reduce((acc, energy) => {
-    const sum = (energy.datas || []).reduce((s, item) => s + Math.floor(item.usage), 0);
-    return acc + sum;
-  }, 0);
-=======
   const yearData = {
     "1분기" : 4946440,
     "2분기" : 3176928,
     "3분기" : 5157823,
     "4분기" : 5654841,
   }
->>>>>>> e5f01d35ce9dbed8bc72d5faf583e2038a9e8c6e
 
 
 

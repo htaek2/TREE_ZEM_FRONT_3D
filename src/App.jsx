@@ -54,7 +54,7 @@ const getResponsiveCameraSettings = (isAuthenticated, active) => {
       activeFov: 35,
       minDistance: 0,
       maxDistance: 65,
-      target: [13, 5, -8],
+      target: [13 , 5, -8],
     };
   }
 };
@@ -1175,7 +1175,7 @@ function App() {
       {!auth.isAuthenticated && <Login onLoginSuccess={fetchUserInfo} />}
 
       <Container>
-        <GlobalStyle />
+        {/* <GlobalStyle /> */}
 
         <Canvas
           camera={{
@@ -1202,7 +1202,7 @@ function App() {
           <SimpleMarkers markerInfo={makerInfo.markerInfo} selectFloor={active.model} selectedMarker={selectedMarker} setSelectedMarker={setSelectedMarker} />
         </Canvas>
 
-        <BrandClock />
+         <BrandClock /> 
 
         <Wing
           railOpen={railOpen}
@@ -1238,7 +1238,7 @@ function App() {
             selectedFloorMarkers={selectedFloorMarkers}
             setSelectedFloorMarkers={setSelectedFloorMarkers}
           />
-      )}
+      )} 
       </Container>  
     </>
   );
