@@ -195,25 +195,25 @@ function Model({ model, onClick, isSelected, nodeInfo }) {
     }
   };
 
-  const handlePointerOver = (e) => {
-    e.stopPropagation();
-    if (!isSelected) {
-      setHovered(true);
-      document.body.style.cursor = "pointer";
-    }
-  };
+  // const handlePointerOver = (e) => {
+  //   e.stopPropagation();
+  //   if (!isSelected) {
+  //     setHovered(true);
+  //     document.body.style.cursor = "pointer";
+  //   }
+  // };
 
-  const handlePointerOut = (e) => {
-    e.stopPropagation();
-    setHovered(false);
-    document.body.style.cursor = "default";
-  };
+  // const handlePointerOut = (e) => {
+  //   e.stopPropagation();
+  //   setHovered(false);
+  //   document.body.style.cursor = "default";
+  // };
 
   return (
     <group
       onClick={handleClick}
-      onPointerOver={handlePointerOver}
-      onPointerOut={handlePointerOut}
+      // onPointerOver={handlePointerOver}
+      // onPointerOut={handlePointerOut}
     >
       <primitive object={scene} />
       

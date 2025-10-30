@@ -49,7 +49,7 @@ const getResponsiveCameraSettings = (isAuthenticated, active) => {
     return {
       defaultPosition: [-60, 28, 22],
       // activePosition: active.model === 'f1' ? [-15, 80, 30] : active.model === 'f2' ? [-15, 150, 30] : active.model === 'f3' ? [-15, 140, 30] : active.model === 'f4' ? [-15, 210, 30] : [15, 5, 0],
-      activePosition0: [-15, 150, 30],
+      activePosition: [-15, 150, 30],
       defaultFov: 40,
       activeFov: 35,
       minDistance: 0,
