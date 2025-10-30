@@ -1347,26 +1347,12 @@ function Wing({
 const KSTnow = () => new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
 const pad2 = (n) => String(n).padStart(2, "0");
 const md = (d) => `${pad2(d.getMonth() + 1)}/${pad2(d.getDate())}`;
-// yyyy-MM-dd HH:mm:ss 포맷
+// yyyy-MM-dd HH:mm:ss (공백 유지) → URL에서 encodeURIComponent로 감쌈
 const ymd_hms = (d) => {
-  const pad = (n) => String(n).padStart(2, "0");
-  const yyyy = d.getFullYear();
-  const MM   = pad2(d.getMonth() + 1);
-  const dd   = pad2(d.getDate());
-  const HH   = pad2(d.getHours());
-  const mm   = pad2(d.getMinutes());
-  const ss   = pad2(d.getSeconds());
-  return `${yyyy}-${MM}-${dd} ${HH}:${mm}:${ss}`;
-};
-// 서버별로 공백/구분자 취향이 다름 → 3가지 포맷 제공
-const ymd_hms_T  = (d) => ymd_hms(d).replace(' ', 'T'); // ISO풍: 2025-10-28T00:00:00
-const ymd_hms_plus = (d) => ymd_hms(d).replace(' ', '+'); // 쿼리: 2025-10-28+00:00:00
+   const p = (n) => String(n).padStart(2, "0");
+   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+ };
 
-const urlTime = (d, mode='enc') => {
-  if (mode === 'plus')   return ymd_hms_plus(d);         // ‘+’ 선호 서버
-  if (mode === 'isoT')   return ymd_hms_T(d);          // ‘T’ 선호 서버
-  return encodeURIComponent(ymd_hms(d));               // 기본: 공백→%20
-};
 
 /* ---------------------------
    탄소배출 API 헬퍼 (slice 호출)
@@ -1387,10 +1373,45 @@ const rangeMonth = (y, m) => {
 };
 
 
-/* ---------------------------
-   전력(kWh) 월합계용 API 헬퍼
-   (/api/energy/elec)
----------------------------- */
+// 4) 탄소배출 API 헬퍼 (여기에 추가)
+async function apiCarbon(startDate, endDate, datetimeType /* 1|2 */) {
+  const startStr = encodeURIComponent(ymd_hms(startDate));
+  const endStr   = encodeURIComponent(ymd_hms(endDate));
+  const url = `/api/energy/carbon?start=${startStr}&end=${endStr}&datetimeType=${datetimeType}`;
+
+  try {
+    const res = await fetch(url, { headers: { Accept: "application/json" } });
+
+    if (!res.ok) { 
+      console.warn("[carbon] HTTP", res.status, url); return []; 
+    }
+
+    const text = await res.text();
+
+    if (!text) {
+      return [];
+    }
+    let json;
+
+    try { 
+      json = JSON.parse(text); 
+    }
+    catch (e) { 
+      console.warn("[carbon] parse error:", e, "raw body:", text); return []; 
+    }
+
+    const rows = unwrapRows(json);
+    console.debug('[carbon] rows.len=', rows.length, 'keys=', Object.keys(json||{}), 'head=', rows[0]);
+
+    return rows;
+  } catch (err) {
+    console.warn("[carbon] fetch error:", err);
+    return [];
+  }
+}
+
+// day 전용 래퍼
+const apiCarbonDay = (startDate, endDate) => apiCarbon(startDate, endDate, 1);
 
 // month 범위를 받아서 datetimeType=2로 호출
 async function apiElecMonthRange(startDate, endDate) {
@@ -1446,10 +1467,6 @@ function sumElecUsage(rows) {
 }
 
 
-// 공통: 응답에서 usage만 안전합산
-const sumUsage = (rows) => 
-  unwrapRows(rows).reduce((acc, r) => acc + pickVal(r), 0);
-
 // 월별 합계 (그 달 하루하루를 백엔드가 day(1)만 허용한다면 day루프가 필요하지만,
 // 문서에 month(2)가 있다면 "한 달을 month(2) 한 번"으로 충분)
 async function monthlyTotalByType2(y, m) {
@@ -1460,16 +1477,50 @@ async function monthlyTotalByType2(y, m) {
 
 
 
-// --- 응답 스키마 방어 유틸(배치: urlTime 아래) ---
-const unwrapRows = (json) => Array.isArray(json?.data) ? json.data : (Array.isArray(json) ? json : []);
+
+// --- 응답 스키마 방어 유틸 ---
+const unwrapRows = (json) => {
+  if (!json) return [];
+
+  // 1) 객체 형태에서 표준 컬렉션 키
+  if (Array.isArray(json?.datas)) return json.datas;
+  if (Array.isArray(json?.data))  return json.data;
+  if (Array.isArray(json?.rows))  return json.rows;
+
+  // 2) 단일 시리즈 객체 { energyType, datas: [...] }
+  if (json?.energyType && Array.isArray(json?.datas)) return json.datas;
+
+  // 3) 배열 최상위일 때 케이스별 분기
+  if (Array.isArray(json)) {
+    if (json.length === 0) return [];
+
+    // 3-1) 이미 낱개 포인트 배열 [{timestamp, usage}, ...]
+    if (json[0]?.timestamp !== undefined && (json[0]?.usage !== undefined || json[0]?.value !== undefined)) {
+      return json;
+    }
+
+    // 3-2) 시리즈 배열 [{ energyType, datas:[...] }, ...] → datas 평탄화
+    const hasSeries = json.some((s) => Array.isArray(s?.datas));
+    if (hasSeries) {
+      return json.flatMap((s) => Array.isArray(s?.datas) ? s.datas : []);
+    }
+  }
+
+  // 4) 그 밖의 예외는 빈 배열 처리
+  return [];
+};
+
+
 
 
 const pickVal = (r) => {
   // 서버가 배출량을 usage/value/amount/total 등으로 줄 수 있음 → 숫자만 안전 추출
-  const n = Number(r?.usage ?? r?.value ?? r?.amount ?? r?.total ?? 0);
+  const n = Number(r?.usage ?? r?.value ?? r?.amount ?? r?.total ?? r?.emission ?? 0);
   return Number.isFinite(n) ? n : 0;
 };
 
+const sumUsage = (rows) =>
+  unwrapRows(rows).reduce((acc, r) => acc + pickVal(r), 0);
 
 
 /* 전일 대비 (프롭 기반 미니 바차트) */
@@ -1502,7 +1553,7 @@ function DailyElecCompareMini({ today = 0, yesterday = 0, labels = ["어제", "�
     setTip({
       show: true,
       x, y,
-      title: "전일 대비 전력 사용량",
+      title: IsEmissionBtn ? "전일 대비 탄소 배출량" : "전일 대비 전력 사용량",
       unit: IsEmissionBtn ? EMISSION_UNIT : "kWh",
       lines: [{ label, value: Number(value || 0).toLocaleString("ko-KR") }],
     });
@@ -1645,7 +1696,7 @@ function YearCompareLineMini({ thisYear = [], lastYear = [], IsEmissionBtn }) {
     const { x, y } = getLocalXY(e);
     setTip({
       show: true, x, y,
-      title: "전년 대비 전력 사용량",
+      title: IsEmissionBtn ? "연간 탄소 배출량" : "전년 대비 전력 사용량",
       unit: IsEmissionBtn ? EMISSION_UNIT : "kWh",
       lines: [{ label, value: fmtSmart(value) }],
     });
