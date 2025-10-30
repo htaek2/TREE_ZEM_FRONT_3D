@@ -70,6 +70,21 @@ export default function SceneContainer({
     }
   }, [onFloorButtonClick]);
 
+  useEffect(() => {
+  if (controlsRef.current && !active.active) {
+    // 전체보기 상태일 때만 target 복원
+    const initialTarget = new THREE.Vector3(
+      cameraSettings.target[0],
+      cameraSettings.target[1],
+      cameraSettings.target[2]
+    );
+    controlsRef.current.target.copy(initialTarget);
+    controlsRef.current.update();
+
+    console.log('🔄 Target 초기화:', initialTarget.toArray());
+  }
+}, [active.active, cameraSettings.target]);
+
   const handleDeviceClick = (device) => {
     console.log("🎯 handleDeviceClick 호출됨:", device);
     setSelectedDevice((prev) => {
@@ -79,6 +94,9 @@ export default function SceneContainer({
     });
   };
 
+  
+
+  
   const handleCloseDeviceCard = () => {
     setSelectedDevice(null);
   };
@@ -162,7 +180,9 @@ export default function SceneContainer({
             maxDistance={cameraSettings.maxDistance}
           />
         </>
-      )}
+      )
+      
+      }
     </>
   );
 }

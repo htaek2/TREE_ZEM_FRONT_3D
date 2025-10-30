@@ -47,12 +47,13 @@ const getResponsiveCameraSettings = (isAuthenticated, active) => {
   // 태블릿 및 PC (768px 이상) - 모두 태블릿 설정 사용
   else if (width >= 768) {
     return {
-      defaultPosition: [-60, 32, 22],
-      activePosition: active.model === 'f1' ? [-15, 80, 30] : active.model === 'f2' ? [-15, 150, 30] : active.model === 'f3' ? [-15, 140, 30] : active.model === 'f4' ? [-15, 210, 30] : [15, 5, 0],
+      defaultPosition: [-60, 28, 22],
+      // activePosition: active.model === 'f1' ? [-15, 80, 30] : active.model === 'f2' ? [-15, 150, 30] : active.model === 'f3' ? [-15, 140, 30] : active.model === 'f4' ? [-15, 210, 30] : [15, 5, 0],
+      activePosition0: [-15, 150, 30],
       defaultFov: 40,
       activeFov: 35,
       minDistance: 0,
-      maxDistance: 55,
+      maxDistance: 65,
       target: [13, 5, -8],
     };
   }
@@ -158,7 +159,16 @@ function App() {
 
 
   
-  
+  const handleResetView = () => {
+  // OrbitControls target 초기화
+  if (controlsRef.current) {
+    const initialTarget = new THREE.Vector3(13, 5, -8);
+    controlsRef.current.target.copy(initialTarget);
+    controlsRef.current.update();
+  }
+
+  setActive({ active: false, model: null });
+};
 
    const handleFloorSelect = (floorsArray) => {
     const markers = makerInfo.markerInfo.filter(marker =>
@@ -1209,6 +1219,7 @@ function App() {
           lastMonthUsage={lastMonthUsage}
           buildingInfo={buildingInfo}
           billInfo={billInfo}
+          onResetView={handleResetView}
           // 3개 추가
           todayComparisonRatio={todayComparisonRatio}
           monthComparisonRatio={monthComparisonRatio}
