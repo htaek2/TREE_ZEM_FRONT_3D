@@ -54,7 +54,7 @@ const PANEL_ALPHA_OFF = 0.5; // 탄소배출 OFF일 때 패널 불투명도
 const PANEL_ALPHA_ON = 0.3; // 탄소배출 ON(초록)일 때 패널 불투명도
 const PANEL_BORDER_ALPHA = 0.12;
 const PANEL_SHADOW = "0 2px 6px rgba(0,0,0,.35)";
-const EMISSION_UNIT = "㎥";
+const EMISSION_UNIT = "kgCO₂e";
 const SHADOW_TEXT   = "0 0.6px 0.6px rgba(0,0,0,.55), 0 1px 1.2px rgba(0,0,0,.28)";
 const SHADOW_FILTER = "drop-shadow(0 0.6px 0.6px rgba(0,0,0,.55)) drop-shadow(0 1.2px 2.0px rgba(0,0,0,.25))";
 
@@ -386,6 +386,7 @@ const LegendWrap = styled.div`
   align-items: center;
   line-height: 1;
   text-shadow: ${({$IsEmissionBtn}) => ($IsEmissionBtn ? SHADOW_TEXT : "none")};
+  pointer-events: none; 
 `;
 
 const LegendItem = styled.div`
@@ -621,13 +622,7 @@ const InfoWeather = styled(InfoPanelBase)`
   }
 `;
 
-const InfoAlert = styled(InfoPanelBase)`
-  max-height: ${({ open }) => (open ? "1000px" : "0")};
-  display: flex;
-  flex-direction: column;
-  /* 버튼 제거에 맞춰 패딩을 기본과 동일하게(아래 여유분 40px 제거) */
-  padding: ${({ open }) => (open ? "8px 8px 8px" : "0 8px 0")};
-`;
+
 
 const InfoItem = styled.div`
   --pill-bg: ${({ $IsEmissionBtn }) => bgPill($IsEmissionBtn)};
@@ -863,7 +858,7 @@ function Wing({
   },
 }) {
   const [managerName] = useState("이**");
-  const [alertCount, setAlertCount] = useState(0);
+
 
   const outerTemp = weatherNow?.nowTemperature ?? null;
   const outerHumidity = weatherNow?.humidity ?? null;
@@ -920,8 +915,8 @@ function Wing({
       const [sT, eT] = rangeDay(today);
 
       const [rowsY, rowsT] = await Promise.all([
-        apiCarbon(sY, eY, 1),   // 어제 하루
-        apiCarbon(sT, eT, 1),   // 오늘 하루
+        apiCarbonDay(sY, eY), // datetimeType=1 로 호출
+        apiCarbonDay(sT, eT),
       ]);
 
       const daily = {
@@ -1022,7 +1017,7 @@ function Wing({
   /* 독립 토글 */
   const [openManager, setOpenManager] = useState(false);
   const [openWeather, setOpenWeather] = useState(false);
-  const [openAlert, setOpenAlert] = useState(false);
+
 
   // 전일/당일 라벨
   const now = KSTnow();
@@ -1208,7 +1203,7 @@ function Wing({
       )}
       {activeModal === "analysis" && 
         <Analysis 
-          onClose={() => setActiveModal(null)}ㄴㄹㄴgi
+          onClose={() => setActiveModal(null)}
           elecUsage={todayUsage.elec}
           waterUsage={todayUsage.water}
           gasUsage={todayUsage.gas}
@@ -1225,7 +1220,8 @@ function Wing({
           weatherNow={weatherNow}
         >
           통합분석
-        </Analysis>}
+        </Analysis>
+      }
       {activeModal === "detail" && <Detail onClose={() => setActiveModal(null)} todayUsage={todayUsage}>상세분석</Detail>}
 
       {/* 우측 정보 스택 */}
@@ -1288,7 +1284,7 @@ function Wing({
         {/* 헤더 */}
         <HeaderBox $IsEmissionBtn={IsEmissionBtn}>
           <HeaderIcon
-            src="public/Icon/header_title_logo.svg"
+            src="Icon/header_title_logo.svg"
             alt="토리 빌딩"
             onError={imgFallback("/Icon/header_title_logo.svg")}
             $IsEmissionBtn={IsEmissionBtn}
@@ -1309,7 +1305,7 @@ function Wing({
             $IsEmissionBtn={IsEmissionBtn}
           >
             <FloorImg
-              src="public/Icon/Home_logo.svg"
+              src="/Icon/Home_logo.svg"
               alt="전체보기"
               width={24}
               onError={imgFallback("/Icon/Home_logo.svg")}
@@ -1353,6 +1349,7 @@ const pad2 = (n) => String(n).padStart(2, "0");
 const md = (d) => `${pad2(d.getMonth() + 1)}/${pad2(d.getDate())}`;
 // yyyy-MM-dd HH:mm:ss 포맷
 const ymd_hms = (d) => {
+  const pad = (n) => String(n).padStart(2, "0");
   const yyyy = d.getFullYear();
   const MM   = pad2(d.getMonth() + 1);
   const dd   = pad2(d.getDate());
@@ -1397,8 +1394,6 @@ const rangeMonth = (y, m) => {
 
 // month 범위를 받아서 datetimeType=2로 호출
 async function apiElecMonthRange(startDate, endDate) {
-  // API 명세: start/end는 "yyyy-MM-dd HH:mm:ss"
-  // 우리는 이미 ymd_hms(d)로 그 포맷 만들 수 있으니 그대로 encodeURIComponent만 해주면 됨.
   const startStr = encodeURIComponent(ymd_hms(startDate));
   const endStr   = encodeURIComponent(ymd_hms(endDate));
 
@@ -1408,13 +1403,31 @@ async function apiElecMonthRange(startDate, endDate) {
     const res = await fetch(url, {
       headers: { Accept: "application/json" },
     });
+
+    // 200~299 아닐 때: 그냥 빈 달로 취급
     if (!res.ok) {
       console.warn("[elec] HTTP", res.status, url);
-      return []; // 실패 시 빈 배열로
+      return [];
     }
 
-    const json = await res.json();
-    // 명세에 따르면 { energyType, datas: [ {timestamp, usage}, ... ] }
+    // 어떤 달은 204(No Content)거나 body가 빈 문자열일 수 있음
+    const text = await res.text();
+
+    // body가 비어있으면 데이터 없음으로 간주
+    if (!text) {
+      return [];
+    }
+
+    // body가 있으면 직접 파싱 시도
+    let json;
+    try {
+      json = JSON.parse(text);
+    } catch (parseErr) {
+      console.warn("[elec] parse error:", parseErr, "raw body:", text);
+      return [];
+    }
+
+    // 명세: { energyType, datas: [{ timestamp, usage }, ...] }
     const rows = Array.isArray(json?.datas) ? json.datas : [];
     return rows;
   } catch (err) {
@@ -1422,6 +1435,7 @@ async function apiElecMonthRange(startDate, endDate) {
     return [];
   }
 }
+
 
 // usage 합계만 뽑는 안전한 합산기
 function sumElecUsage(rows) {
@@ -1432,25 +1446,9 @@ function sumElecUsage(rows) {
 }
 
 
-
-
-// 실제 호출 (문서 포맷 준수: 공백 포함 → encodeURIComponent)
-async function apiCarbon(start, end, datetimeType) {
-  const u = `/api/energy/carbon?start=${urlTime(start,'enc')}&end=${urlTime(end,'enc')}&datetimeType=${datetimeType}`;
-  const res = await fetch(u, { headers: { Accept:'application/json' } });
-  if (!res.ok) {
-    console.warn('[carbon] HTTP', res.status, u);
-    return [];
-  }
-  try {
-    return await res.json();
-  } catch {
-    return [];
-  }
-}
-
 // 공통: 응답에서 usage만 안전합산
-const sumUsage = (rows) => unwrapRows(rows).reduce((acc, r) => acc + pickVal(r), 0);
+const sumUsage = (rows) => 
+  unwrapRows(rows).reduce((acc, r) => acc + pickVal(r), 0);
 
 // 월별 합계 (그 달 하루하루를 백엔드가 day(1)만 허용한다면 day루프가 필요하지만,
 // 문서에 month(2)가 있다면 "한 달을 month(2) 한 번"으로 충분)
@@ -1545,11 +1543,18 @@ function DailyElecCompareMini({ today = 0, yesterday = 0, labels = ["어제", "�
       >
         {IsEmissionBtn && (
           <defs>
-            <filter id="svgTextShadow" x="-50%" y="-50%" width="200%" height="200%">
-              <feDropShadow dx="2" dy="3" stdDeviation="2" flood-color="#000" flood-opacity="0.3"/>
+            <filter id="svgTextShadowY" x="-50%" y="-50%" width="200%" height="200%">
+              <feDropShadow
+                dx="2"
+                dy="3"
+                stdDeviation="2"
+                floodColor="#000"
+                floodOpacity="0.3"
+              />
             </filter>
           </defs>
         )}
+
         
         {/* 축 */}
         <line x1={PL} y1={H-PB} x2={W-PR} y2={H-PB} stroke={axis} strokeWidth="1.2" strokeLinecap="round" />
@@ -1599,7 +1604,7 @@ function DailyElecCompareMini({ today = 0, yesterday = 0, labels = ["어제", "�
       </svg>
 
       {/* 우측 상단 레전드 */}
-      <LegendWrap aria-hidden="true">
+      <LegendWrap aria-hidden="true" >
         <LegendItem $IsEmissionBtn={IsEmissionBtn}>
           <SwatchSquare $color={colA} />
           <span>전일</span>
@@ -1709,7 +1714,13 @@ function YearCompareLineMini({ thisYear = [], lastYear = [], IsEmissionBtn }) {
         {IsEmissionBtn && (
           <defs>
             <filter id="svgTextShadowY" x="-50%" y="-50%" width="200%" height="200%">
-              <feDropShadow dx="2" dy="3" stdDeviation="2" flood-color="#000" flood-opacity="0.3"/>
+              <feDropShadow
+                dx="2"
+                dy="3"
+                stdDeviation="2"
+                floodColor="#000"
+                floodOpacity="0.3"
+              />
             </filter>
           </defs>
         )}
@@ -1736,46 +1747,77 @@ function YearCompareLineMini({ thisYear = [], lastYear = [], IsEmissionBtn }) {
           <path d={pathThis} stroke={colThis} strokeWidth="2.0" {...commonLineProps} />
         </g>
 
-        {/* 전년도 도트 + 넉넉한 클릭 영역 */}
+        {/* 전년도 도트 (시각만) */}
         {quarterIdx.map((i) => {
           const cx = x(i), cy = y(lastY[i]);
-          const label = `${new Date().getFullYear()-1}년 ${i+1}월`;
           return (
             <g key={`last-${i}`}>
-              <circle cx={cx} cy={cy} r={R_LAST} fill={colLast} />
-              <circle
-                cx={cx} cy={cy} r={R_THIS+4}
-                fill="transparent" role="button" tabIndex={0}
-                onPointerDown={(e)=>toggleTip(e, label, lastY[i])}
-                aria-label={`${label} 사용량 ${Number(lastY[i]||0).toLocaleString("ko-KR")} ${IsEmissionBtn ? "kgCO₂e":"kWh"} 보기`}
-              />
+              <circle cx={cx} cy={cy} r={R_LAST} fill={colLast} pointerEvents="none" />
             </g>
           );
         })}
 
-        {/* 금년도 도트 + 넉넉한 클릭 영역 */}
+        {/* 금년도 도트 (시각만) */}
         {quarterIdx.map((i) => {
           const cx = x(i), cy = y(thisY[i]);
-          const label = `${new Date().getFullYear()}년 ${i+1}월`;
           return (
             <g key={`this-${i}`}>
-              <circle cx={cx} cy={cy} r={R_THIS} fill={colThis} />
-              <circle
-                cx={cx} cy={cy} r={R_THIS+4}
-                fill="transparent" role="button" tabIndex={0}
-                onPointerDown={(e)=>toggleTip(e, label, thisY[i])}
-                aria-label={`${label} 사용량 ${Number(thisY[i]||0).toLocaleString("ko-KR")} ${IsEmissionBtn ? "kgCO₂e":"kWh"} 보기`}
-              />
+              <circle cx={cx} cy={cy} r={R_THIS} fill={colThis} pointerEvents="none" />
             </g>
           );
         })}
 
         {/* 라벨 */}
         {quarterIdx.map((i) => (
-          <text key={`label-${i}`} filter={IsEmissionBtn ? "url(#svgTextShadowY)" : undefined} x={x(i)} y={labelY} fontSize="10" fontWeight="800" fill={labelC} textAnchor="middle">
-            {i + 1}<tspan fontSize="7" dx="0.5">월</tspan>
+          <text
+            key={`label-${i}`}
+            pointerEvents="none"
+            filter={IsEmissionBtn ? "url(#svgTextShadow)" : undefined}
+            x={x(i)}
+            y={labelY}
+            fontSize="10"
+            fontWeight="800"
+            fill={labelC}
+            textAnchor="middle"
+          >
+            {i + 1}
+            <tspan fontSize="7" dx="0.5">월</tspan>
           </text>
         ))}
+
+        {/* ✅ 월별 ‘결정 밴드’: 클릭 시 더 가까운 시리즈 선택 */}
+        {quarterIdx.map((i, j) => {
+          const cx = x(i);
+          const prev = quarterIdx[j - 1];
+          const next = quarterIdx[j + 1];
+          const left  = j === 0 ? PL : (x(prev) + cx) / 2;
+          const right = j === quarterIdx.length - 1 ? (W - PR) : (cx + x(next)) / 2;
+          const bandW = Math.max(8, right - left);
+
+          return (
+            <rect
+              key={`band-${i}`}
+              x={left}
+              y={PT}
+              width={bandW}
+              height={H - PT - PB}
+              fill="transparent"
+              role="button"
+              tabIndex={0}
+              style={{ cursor: 'pointer' }}
+              onPointerDown={(e) => {
+                const { y: yClick } = getLocalXY(e);
+                const yLast = y(lastY[i]);
+                const yThis = y(thisY[i]);
+                const pickThis = Math.abs(yClick - yThis) <= Math.abs(yClick - yLast);
+                const yLabel = `${new Date().getFullYear() - (pickThis ? 0 : 1)}년 ${i + 1}월`;
+                const val = pickThis ? thisY[i] : lastY[i];
+                toggleTip(e, yLabel, val);
+              }}
+              aria-label={`${i + 1}월 클릭: 전년/금년 중 더 가까운 값 선택`}
+            />
+          );
+        })}
       </svg>
       {/* 우측 상단 레전드 : 동그라미+선 */}
       <LegendWrap aria-hidden="true">
