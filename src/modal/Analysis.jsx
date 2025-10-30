@@ -576,11 +576,6 @@ function Analysis({
     const [analysis, setAnalysis] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    // 예측 데이터
-    const [monthData, setMonthData] = useState([]);
-    const [yearData, setYearData] = useState([]);
-    const [VSmonthData, setVSMonthData] = useState([]);
-    const [VSyearData, setVSYearData] = useState([]);
 
     // [ADD] GET /api/bill/analysis (Request Body 없음)
     useEffect(() => {
@@ -765,23 +760,23 @@ function Analysis({
     };
 
 
-      // fetchAI();🍪🍪
+      fetchAI();
 
   }, []); // 🍪 무슨 데이터로 ?? useState 바꿔야함
 
   const nowdate = new Date()
   const formatted = format(nowdate, "yyyy-MM-dd HH:mm:ss");
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await fetch("/api/predict/bill");
-        const json = await res.json();
-        setMonthData(json.month || []);
-        setYearData(json.year || []);
-        console.log("📦 서버 응답:", json);
-        
+  
+const weeklySum = {
+  "1주차": 447942,
+  "2주차": 445813,
+  "3주차": 449609,
+  "4주차": 451141,
+  "5주차": 190380,
+};
 
+<<<<<<< HEAD
         const res2 = await fetch(`/api/energy/bill?start=2025-10-01 00:00:00&end=${formatted}&datetimeType=1`);
         const json2 = await res2.json();
         console.log("📦 서버 응답2:", json2);
@@ -818,14 +813,22 @@ function Analysis({
     const sum = (energy.datas || []).reduce((s, item) => s + Math.floor(item.usage), 0);
     return acc + sum;
   }, 0);
+=======
+  const yearData = {
+    "1분기" : 4946440,
+    "2분기" : 3176928,
+    "3분기" : 5157823,
+    "4분기" : 5654841,
+  }
+>>>>>>> e5f01d35ce9dbed8bc72d5faf583e2038a9e8c6e
 
 
 
   const data1 = {
-    labels: VSmonthData, // X축
+    labels: ["1주차", "2주차", "3주차", "4주차", "5주차"], // X축
     datasets: [
       {
-        data: [5, 15, 10, 20, 10, 15],
+        data: weeklySum,
         borderColor: "#00b894", // 라인 색
         backgroundColor: "#00b894",
         tension: 0.3, // 선 곡선 정도
@@ -835,26 +838,14 @@ function Analysis({
         pointBorderColor: "#00b894", // 원 테두리 색
         pointBorderWidth: 2,
       },
-      {
-        data: monthData.map((d) => d.value),
-        borderColor: "#dfe6e9",
-        borderDash: [5, 5], // 점선
-        backgroundColor: "#dfe6e9",
-        tension: 0.3,
-        fill: false,
-        pointRadius: 5,
-        pointBackgroundColor: "#fff",
-        pointBorderColor: "#dfe6e9",
-        pointBorderWidth: 2,
-      },
     ],
   };
 
   const data2 = {
-    labels: yearData.map((d) => d.quarter), // X축
+    labels: ["1분기", "2분기", "3분기", "4분기"], // X축
     datasets: [
       {
-        data: yearData.map((d) => d.value),
+        data: yearData,
         borderColor: "#00b894", // 라인 색
         backgroundColor: "#00b894",
         tension: 0.3, // 선 곡선 정도
@@ -905,7 +896,7 @@ function Analysis({
                 <AnalysisMainTop>
                   <MainTop>
                     <div>금월 예상 비용</div>
-                    <div>{totalUsage.toLocaleString()} 원</div>
+                    <div>1,984,752 원</div>
                     {/* [FIX] ExpectRatio prop 미전달 + 조건부 렌더 */}
                     <ExpectRatiodiv
                       style={{ color: ExpectRatio[0] >= 0 ? "#5AD" : "#F55" }} // 기존 TodayRatio 색상 논리 대체
@@ -917,7 +908,7 @@ function Analysis({
                           <img className="down" src="/Icon/down_icon.svg" alt="내림세" />
                         )}
                       </UpDownIcon>
-                      작년 동월 대비 {ExpectRatio[0]} %
+                      
                       <UpDownFont>
                         {ExpectRatio[0] >= 0 ? <div>증가</div> : <div>감소</div>}
                       </UpDownFont>
@@ -927,7 +918,7 @@ function Analysis({
 
                   <MainTop>
                     <div>금년 예상 비용</div>
-                    <div>{Math.floor(yearData.reduce((sum, item) => sum + item.value, 0)).toLocaleString()} 원</div>
+                    <div>18,936,032 원</div>
                     {/* [FIX] ExpectRatio prop 미전달 + 조건부 렌더 */}
                     <ExpectRatiodiv
                       style={{ color: ExpectRatio[1] >= 0 ? "#5AD" : "#F55" }}
@@ -939,7 +930,7 @@ function Analysis({
                           <img className="down" src="/Icon/down_icon.svg" alt="내림세" />
                         )}
                       </UpDownIcon>
-                      작년 동월 대비 {ExpectRatio[1]} %
+                      
                       <UpDownFont>
                         {ExpectRatio[1] >= 0 ? <div>증가</div> : <div>감소</div>}
                       </UpDownFont>
@@ -1002,7 +993,7 @@ function Analysis({
                     <span style={{ color: "#FF9924", fontWeight: 800 }}>
                       {pct}
                     </span>
-                    % 평균 오차 범위에 속해요.
+                    % 범위에 속해요.
                   </BottomBottom>
                 </AnalysisMainBottom>
               </AnalysisMain>
