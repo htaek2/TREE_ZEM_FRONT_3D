@@ -1175,7 +1175,7 @@ function App() {
       {!auth.isAuthenticated && <Login onLoginSuccess={fetchUserInfo} />}
 
       <Container>
-        {/* <GlobalStyle /> */}
+        <GlobalStyle /> 
 
         <Canvas
           camera={{
