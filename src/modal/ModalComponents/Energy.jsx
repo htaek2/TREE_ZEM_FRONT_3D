@@ -282,13 +282,13 @@ function Energy({
           </Energy1UsageFooterL>
           <Energy1UsageFooterR>
             <div>
-              {yesterdayUsage} {unitFilter}
+              {yesterdayUsage.toFixed(2)} {unitFilter}
             </div>
             <div>
               {usagePerArea} {unitFilter}
             </div>
             <div>
-              {yesterdayMaxUsage} {unitFilter}
+              {yesterdayMaxUsage.toFixed(2)} {unitFilter}
             </div>
           </Energy1UsageFooterR>
         </Energy1UsageFooter>
@@ -370,13 +370,13 @@ function Energy({
           </Energy30UsageFooterL>
           <Energy30UsageFooterR>
             <div>
-              {lastMonthUsage} {unitFilter}
+              {lastMonthUsage.toFixed(2)} {unitFilter}
             </div>
             <div>
               {monthUsagePerArea} {unitFilter}
             </div>
             <div>
-              {lastMonthMaxUsage} {unitFilter}
+              {lastMonthMaxUsage.toFixed(2)} {unitFilter}
             </div>
           </Energy30UsageFooterR>
         </Energy30UsageFooter>

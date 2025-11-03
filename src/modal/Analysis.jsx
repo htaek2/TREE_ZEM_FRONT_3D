@@ -773,7 +773,6 @@ const weeklySum = {
   "2주차": 445813,
   "3주차": 449609,
   "4주차": 451141,
-  "5주차": 190380,
 };
 
   const yearData = {
@@ -786,7 +785,7 @@ const weeklySum = {
 
 
   const data1 = {
-    labels: ["1주차", "2주차", "3주차", "4주차", "5주차"], // X축
+    labels: ["1주차", "2주차", "3주차", "4주차"], // X축
     datasets: [
       {
         data: weeklySum,
@@ -829,11 +828,17 @@ const weeklySum = {
     },
     scales: {
       x: {
+        ticks: {
+        color: "#fffde2ff", // ✅ X축 글자 색상
+        },
         grid: {
           color: "#2d3436",
         },
       },
       y: {
+        ticks: {
+        color: "#fffde2ff", // ✅ X축 글자 색상
+        },
         grid: {
           color: "#2d3436",
         },
