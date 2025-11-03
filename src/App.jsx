@@ -458,7 +458,7 @@ function App() {
         // 모든 층의 디바이스 전력 사용량 합산하여 elecUsage 업데이트
         let totalFloorElecUsage = data.floors.reduce((sum, floor) => {
           const floorTotal = floor.devices.reduce((deviceSum, device) => {
-            const deviceUsage = device.electricityUsage?.datas?.[0]?.usage || 0;
+            const deviceUsage = device.electricityUsage?.datas?.[0]?.usage ?? 0;
             return deviceSum + deviceUsage;
           }, 0);
           return sum + floorTotal;
